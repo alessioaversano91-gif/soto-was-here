@@ -817,7 +817,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const models = lms.filter((l) => l.model && LM[l.model]), clearR = LM_SCALE * 1.9;
     const top = new Float32Array(NX * NZ), terr = [], wat = [], bridges = [], bld = [], roofs = [], trees = [];
     const gy = (k) => Math.round((G.e[k] * wpm * TEX) / STEP) * STEP;
-    const seaCells = [], isB = new Uint8Array(NX * NZ), xtr = [], gab = [], ct = new Array(NX * NZ);
+    const seaCells = [], isB = new Uint8Array(NX * NZ), xtr = [], gab = [], ct = new Array(NX * NZ), cones = [], props = [], dbox = [], umb = [], av = [];
     const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
     const wdp = new Uint8Array(NX * NZ).fill(9);
     for (let k = 0; k < NX * NZ; k++) if (G.t[k] !== 'w' && G.t[k] !== 'x') wdp[k] = 0;
@@ -837,7 +837,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       ct[k] = c; terr.push([x, z, y, c]); top[k] = y;
       if (c === 'b') {
         isB[k] = 1;
-      } else if (c === 'p' && r() < 0.6) trees.push([x + (r() - 0.5) * cs * 0.3, z + (r() - 0.5) * cs * 0.3, y, cs * (0.85 + r() * 0.5)]);
+      } else if (c === 'p' && r() < 0.6) (r() < 0.3 ? cones : trees).push([x + (r() - 0.5) * cs * 0.3, z + (r() - 0.5) * cs * 0.3, y, cs * (0.85 + r() * 0.5)]);
       else if (c === 'o' && r() < 0.08) trees.push([x, z, y, cs * 0.8]);
       else if (c === 'k' && r() < 0.05) trees.push([x, z, y, cs * 0.6]);
     }
@@ -880,7 +880,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const xtrM = inst(B(1, 1, 1), white(), xtr, (o, [x, z, y, q, h], col) => { o.position.set(x, y + h / 2, z); o.scale.set(q, h, q); col.set('#b9b2c2'); });
     const greens = ['#4f7f3a', '#5f9444', '#3f6e33'];
     const treeM = inst(new THREE.IcosahedronGeometry(0.42, 0), white(), trees, (o, [x, z, y, s], col) => { o.position.set(x, y + 0.42 * s, z); o.scale.setScalar(s); o.rotation.y = r() * 3; col.set(greens[(r() * 3) | 0]); });
-    [terrM, watM, brM, bldM, roofM, gabM, treeM].forEach((m) => g.add(m));
+    const coneM = inst(new THREE.ConeGeometry(0.32, 1, 6), white(), cones, (o, [x, z, y, q], col) => { o.position.set(x, y + 0.62 * q, z); o.scale.set(q, q * 1.25, q); col.set(['#2f5a34', '#3a6b3c', '#2a4f3a'][(r() * 3) | 0]); });
+    [terrM, watM, brM, bldM, roofM, gabM, treeM, coneM].forEach((m) => g.add(m));
     // Dettagli che compaiono solo da vicino: segnaletica, lampioni, binari, volumi sui tetti.
     const det = new THREE.Group(); g.add(det); det.add(xtrM);
     const quiet = (m) => { m.castShadow = false; m.frustumCulled = false; return m; };
@@ -896,12 +897,12 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
           const zebra = T(i + 1, j - 1) === 'R' || T(i + 1, j + 1) === 'R';
           if (zebra) [-0.28, 0, 0.28].forEach((d) => marks.push([x, y, z + d * cs, cs * 0.5, cs * 0.12, '#e9e4f0']));
           else if (i % 2 === 0) marks.push([x, y, z, cs * 0.45, cs * 0.07, '#d9d2e6']);
-          if ((i + j) % 3 === 0) lamps.push([x, y, z + side * cs]);
+          if ((i + j) % 3 === 0) lamps.push([x, y, z + side * cs]); else if ((i + j) % 3 === 1 && r() < 0.55) av.push([x, z - side * cs, y, cs * 0.5]);
         } else {
           const zebra = T(i - 1, j + 1) === 'R' || T(i + 1, j + 1) === 'R';
           if (zebra) [-0.28, 0, 0.28].forEach((d) => marks.push([x + d * cs, y, z, cs * 0.12, cs * 0.5, '#e9e4f0']));
           else if (j % 2 === 0) marks.push([x, y, z, cs * 0.07, cs * 0.45, '#d9d2e6']);
-          if ((i + j) % 3 === 0) lamps.push([x + side * cs, y, z]);
+          if ((i + j) % 3 === 0) lamps.push([x + side * cs, y, z]); else if ((i + j) % 3 === 1 && r() < 0.55) av.push([x - side * cs, z, y, cs * 0.5]);
         }
       } else if (c === 't') {
         const h = T(i - 1, j) === 't' || T(i + 1, j) === 't', v = T(i, j - 1) === 't' || T(i, j + 1) === 't';
@@ -937,6 +938,51 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       carM.instanceMatrix.needsUpdate = true;
     };
     tickCars(0); g.add(carM);
+    g.add(inst(new THREE.IcosahedronGeometry(0.42, 0), white(), av, (o, [x, z, y, q], col) => { o.position.set(x, y + 0.5 * q, z); o.scale.setScalar(q); col.set(greens[(r() * 3) | 0]); }));
+    // Porti, barche ormeggiate, chiatte, ombrelloni.
+    const wat4 = (i, j) => { for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const c = T(i + a, j + b); if (c === 'w') return [a, b]; } return null; };
+    const box = (x, y, z, sx, sy, sz, c) => props.push([x, y + sy / 2, z, sx, sy, sz, c]);
+    const CONT = ['#d24b3a', '#3f78c4', '#e8b93a', '#3f9a6c', '#e8792e', '#9aa0a8'];
+    const PORT = { genova: [44.396, 8.9, 44.4125, 8.924], marsiglia: [43.2975, 5.352, 43.302, 5.366] }[id], cranes = [];
+    const inPort = (i, j) => { if (!PORT) return false; const la = G.b[2] - ((j + 0.5) / NZ) * (G.b[2] - G.b[0]), lo = G.b[1] + ((i + 0.5) / NX) * (G.b[3] - G.b[1]); return la > PORT[0] && la < PORT[2] && lo > PORT[1] && lo < PORT[3]; };
+    let moored = 0;
+    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+      const k = j * NX + i, c = ct[k], x = ox + (i + 0.5) * cs, z = oz + (j + 0.5) * cs, y = top[k];
+      if ((c === 'q' || c === 'o') && inPort(i, j)) {
+        const w = wat4(i, j);
+        if (w && cranes.length < 9 && !cranes.some((q) => Math.abs(q.i - i) + Math.abs(q.j - j) < 7)) cranes.push({ i, j, x, y, z, w });
+        else if (!w && r() < 0.07) { const n = 1 + ((r() * 3) | 0), ax = r() < 0.5; for (let q = 0; q < n; q++) box(x, y + q * cs * 0.3, z, cs * (ax ? 0.85 : 0.36), cs * 0.3, cs * (ax ? 0.36 : 0.85), CONT[(r() * CONT.length) | 0]); }
+      } else if (c === 'w' && wdp[k] === 1 && moored < 160 && r() < 0.12) {
+        const q = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([a, b]) => T(i + a, j + b) === 'q');
+        if (q) { moored++; const ax = q[0] === 0; box(x, y - 0.01, z, cs * (ax ? 0.7 : 0.26), cs * 0.16, cs * (ax ? 0.26 : 0.7), r() < 0.7 ? '#f2efe8' : CONT[(r() * 3) | 0]); }
+      } else if (c === 's' && r() < 0.22) { umb.push([x, y, z, CONT[(r() * 5) | 0]]); dbox.push([x, y + cs * 0.2, z, cs * 0.05, cs * 0.4, cs * 0.05, '#d9d4c8']); }
+    }
+    cranes.forEach((q, n) => {
+      const [a, b] = q.w, u = cs, alongX = b !== 0, col = n % 2 ? '#d24b3a' : '#e8792e';
+      [-0.5, 0.5].forEach((d) => box(q.x + (alongX ? d * u : 0), q.y, q.z + (alongX ? 0 : d * u), u * 0.18, u * 3, u * 0.18, col));
+      box(q.x, q.y + u * 3, q.z, u * (alongX ? 1.3 : 0.3), u * 0.22, u * (alongX ? 0.3 : 1.3), col);
+      box(q.x + a * u * 1.3, q.y + u * 3.2, q.z + b * u * 1.3, u * (a ? 3.6 : 0.2), u * 0.2, u * (b ? 3.6 : 0.2), col);
+      box(q.x, q.y + u * 2.55, q.z, u * 0.42, u * 0.42, u * 0.42, '#f1eff5');
+      if (n < 3) for (let d = 4; d < 11; d++) {
+        const si = q.i + a * d, sj = q.j + b * d; if (T(si, sj) !== 'w' || wdp[sj * NX + si] < 3) continue;
+        const sx = ox + (si + 0.5) * cs, sz = oz + (sj + 0.5) * cs, sy = top[sj * NX + si], L = (l, w2) => (alongX ? [l, w2] : [w2, l]), P = (o) => (alongX ? [sx + o, sz] : [sx, sz + o]);
+        const hull = L(u * 4.6, u * 1.1), sup = L(u * 0.9, u * 0.9), ps = P(-u * 1.6);
+        box(sx, sy - 0.02, sz, hull[0], u * 0.55, hull[1], n === 1 ? '#f1eff5' : '#2a2436'); box(sx, sy + u * 0.5, sz, hull[0] * 0.96, u * 0.08, hull[1] * 0.9, '#b5523b');
+        box(ps[0], sy + u * 0.55, ps[1], sup[0], u * 0.8, sup[1], '#f1eff5'); box(ps[0], sy + u * 1.35, ps[1], u * 0.3, u * 0.4, u * 0.3, '#e8792e');
+        if (n !== 1) [-0.4, 0.6, 1.6].forEach((o) => { const pc = P(o * u), cl = L(u * 0.85, u * 0.8); box(pc[0], sy + u * 0.55, pc[1], cl[0], u * (0.3 + r() * 0.3), cl[1], CONT[(r() * CONT.length) | 0]); });
+        else { const cl = L(u * 2.6, u * 0.8), pc = P(u * 0.4); box(pc[0], sy + u * 0.55, pc[1], cl[0], u * 0.5, cl[1], '#e9e4f0'); }
+        break;
+      }
+    });
+    if (id === 'lione' || id === 'mantova') for (let n = 0, tries = 0; n < 6 && tries < 400; tries++) {
+      const i = 3 + ((r() * (NX - 6)) | 0), j = 3 + ((r() * (NZ - 6)) | 0), k = j * NX + i; if (ct[k] !== 'w' || wdp[k] < 2) continue;
+      const ax = T(i - 2, j) === 'w' && T(i + 2, j) === 'w', x = ox + (i + 0.5) * cs, z = oz + (j + 0.5) * cs;
+      box(x, top[k] - 0.01, z, cs * (ax ? 2.4 : 0.6), cs * 0.22, cs * (ax ? 0.6 : 2.4), '#3a3448'); box(x + (ax ? cs * 0.8 : 0), top[k] + cs * 0.2, z + (ax ? 0 : cs * 0.8), cs * 0.5, cs * 0.35, cs * 0.5, '#f1eff5'); n++;
+    }
+    const propM = inst(B(1, 1, 1), white(), props, (o, [x, y, z, sx, sy, sz, c], col) => { o.position.set(x, y, z); o.scale.set(sx, sy, sz); col.set(c); });
+    propM.frustumCulled = false; g.add(propM);
+    det.add(quiet(inst(B(1, 1, 1), white(), dbox, (o, [x, y, z, sx, sy, sz, c], col) => { o.position.set(x, y, z); o.scale.set(sx, sy, sz); col.set(c); })));
+    det.add(quiet(inst(new THREE.ConeGeometry(0.5, 0.3, 8), white(), umb, (o, [x, y, z, c], col) => { o.position.set(x, y + cs * 0.45, z); o.scale.setScalar(cs * 0.75); col.set(c); })));
     add(g, B(NX * cs + 0.3, 1.4, NZ * cs + 0.3), '#1b1428', 0, BOT - 0.7, 0, { noShadow: true });
     // basamento: bordo, striscia luminosa viola e alone sotto il diorama
     add(g, B(NX * cs + 0.6, 0.12, NZ * cs + 0.6), '#2c2144', 0, BOT - 0.06, 0, { noShadow: true });
