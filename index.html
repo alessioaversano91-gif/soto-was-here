@@ -81,7 +81,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     return m;
   }
   /* Rifinitura grafica: piccoli innesti negli shader Lambert (finestre sugli edifici, strati di terra, profondità dell'acqua). */
-  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 } };
+  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 } };
   const SHADE = {
     build: `if (abs(vSN.y) < 0.5) {
         bool fx = abs(vSN.x) > 0.5;
@@ -89,11 +89,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         float gf = step(sg.y, 1.0) * step(1.5, vSI.x);
         float win = step(0.26, sf.x) * step(sf.x, 0.74) * step(0.32, sf.y) * step(sf.y, 0.78);
         win = mix(win, step(0.18, sf.x) * step(sf.x, 0.82) * step(sf.y, 0.64), gf);
-        float lit = step(0.5, fract(sin(dot(sid + vSI.y * 37.0 + abs(vSN.x) * 11.0, vec2(41.3, 289.1))) * 9173.3));
+        float lit = step(mix(0.5, 0.3, uNight), fract(sin(dot(sid + vSI.y * 37.0 + abs(vSN.x) * 11.0, vec2(41.3, 289.1))) * 9173.3));
         diffuseColor.rgb *= 0.86 + 0.14 * step(0.22, sg.y);
         diffuseColor.rgb *= 1.0 + 0.12 * uWin * step(vSI.x - 0.14, sg.y);
         diffuseColor.rgb *= 1.0 - 0.42 * win * uWin * (1.0 - lit);
-        totalEmissiveRadiance += vec3(1.0, 0.74, 0.38) * (win * lit * uWin * 0.8 + step(0.88, vSI.y) * (1.0 - uWin) * 0.2);
+        totalEmissiveRadiance += vec3(1.0, 0.74, 0.38) * (win * lit * uWin * (0.8 + 0.9 * uNight) + step(mix(0.88, 0.45, uNight), vSI.y) * (1.0 - uWin) * max(0.0, mix(0.2, 0.6, uNight)));
       } else if (vSN.y > 0.5) {
         float ed = min(min(vSP.x, 1.0 - vSP.x), min(vSP.z, 1.0 - vSP.z));
         vec3 rf = mix(diffuseColor.rgb, vec3(0.6, 0.56, 0.64), 0.55);
@@ -113,7 +113,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   function shade(m, kind) {
     m.customProgramCacheKey = () => 'soto-' + kind;
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uRow = SOTO_U.uRow;
+      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uRow = SOTO_U.uRow; sh.uniforms.uNight = SOTO_U.uNight;
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nuniform float uRow;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -126,7 +126,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         #endif
         vSI = vec3(max(1.0, floor(sSy / uRow + 0.5)), fract(sin(dot(sC.xz, vec2(12.9898, 78.233))) * 43758.5453), sSy);`);
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nuniform float uWin;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
+        .replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      ' + SHADE[kind]);
     };
     return m;
@@ -430,10 +430,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   }
 
   const TCOL = { road: '#3a3247', quay: '#9c8f7a', plaza: '#b3a58b', park: '#5e8a45', build: '#6f6559' };
-  let WCOL, WHI, WDEP, WFOAM, WLOW;
+  let WCOL, WHI, WDEP, WFOAM, WLOW, WSUN, WMOON;
   const initCol = () => {
     if (WCOL) return;
-    WCOL = new THREE.Color('#3f86c4'); WHI = new THREE.Color('#8cc4ec'); WFOAM = new THREE.Color('#d6f0fa'); WLOW = new THREE.Color('#2f66a3');
+    WCOL = new THREE.Color('#3f86c4'); WHI = new THREE.Color('#8cc4ec'); WFOAM = new THREE.Color('#d6f0fa'); WLOW = new THREE.Color('#2f66a3'); WSUN = new THREE.Color('#ffdca6'); WMOON = new THREE.Color('#cdd6ff');
     WDEP = ['#6cc0e0', '#6cc0e0', '#57a6d6', '#4793cb', '#3f86c4', '#3879b9', '#326dad'].map((c) => new THREE.Color(c));
   };
 
@@ -1065,9 +1065,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   }
 
   const LIGHT = {
-    tramonto: { sky: '#c7b2ff', gnd: '#2a1d40', hi: 0.9, sun: '#ffc283', si: 1.1, sp: [14, 16, 6] },
-    notte: { sky: '#5b4ea8', gnd: '#0e0b18', hi: 0.6, sun: '#9fb2ff', si: 0.5, sp: [-10, 18, 8] },
-    giorno: { sky: '#ffffff', gnd: '#7a7080', hi: 0.85, sun: '#fff1d6', si: 1.05, sp: [10, 20, 12] }
+    tramonto: { sky: '#c7b2ff', gnd: '#2a1d40', hi: 0.9, sun: '#ffc283', si: 1.1, sp: [14, 16, 6], n: 0, bg: 'radial-gradient(ellipse 62% 48% at 50% 60%, rgba(124,77,219,0.30), rgba(240,130,90,0.07) 55%, rgba(11,10,15,0) 76%)' },
+    notte: { sky: '#5b4ea8', gnd: '#0e0b18', hi: 0.5, sun: '#9fb2ff', si: 0.42, sp: [-10, 18, 8], n: 1, bg: 'radial-gradient(ellipse 60% 46% at 50% 60%, rgba(70,60,170,0.24), rgba(11,10,15,0) 72%)' },
+    giorno: { sky: '#ffffff', gnd: '#7a7080', hi: 0.85, sun: '#fff1d6', si: 1.05, sp: [10, 20, 12], n: -0.5, bg: 'radial-gradient(ellipse 75% 60% at 50% 55%, rgba(150,175,255,0.34), rgba(120,110,210,0.14) 55%, rgba(11,10,15,0) 82%)' }
   };
   const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
   const back = (k) => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
@@ -1085,7 +1085,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const bg = document.createElement('div');
       bg.style.cssText = 'position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 62% 48% at 50% 60%, rgba(124,77,219,0.30), rgba(240,130,90,0.07) 55%, rgba(11,10,15,0) 76%)';
       this.stars = [0, 1].map((n) => { const c = document.createElement('canvas'); c.className = 'soto-stars' + n; c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated'; return c; });
-      cityEl.appendChild(bg); this.stars.forEach((c) => cityEl.appendChild(c));
+      this.bg = bg; cityEl.appendChild(bg); this.stars.forEach((c) => cityEl.appendChild(c));
       cityEl.appendChild(R.domElement);
       this.scene = new THREE.Scene();
       this.camera = new THREE.PerspectiveCamera(28, 1, 1, 500);
@@ -1149,9 +1149,12 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
     setOptions(o) { const pxCh = o.pixel !== undefined && o.pixel !== this.opts.pixel; Object.assign(this.opts, o); this.applyOpts(); if (pxCh) this.resize(); }
     applyOpts() {
-      const L = LIGHT[this.opts.light] || LIGHT.tramonto;
-      this.hemi.color.set(L.sky); this.hemi.groundColor.set(L.gnd); this.hemi.intensity = L.hi;
-      this.sun.color.set(L.sun); this.sun.intensity = L.si; this.sun.position.set(...L.sp);
+      const name = this.opts.light === 'auto' ? this.autoL || 'tramonto' : this.opts.light, L = LIGHT[name] || LIGHT.tramonto;
+      this.lightName = LIGHT[name] ? name : 'tramonto';
+      this.tg = { sky: new THREE.Color(L.sky), gnd: new THREE.Color(L.gnd), sun: new THREE.Color(L.sun), hi: L.hi, si: L.si, sp: new THREE.Vector3(...L.sp), n: L.n };
+      if (!this.lit) { this.lit = true; this.hemi.color.copy(this.tg.sky); this.hemi.groundColor.copy(this.tg.gnd); this.hemi.intensity = L.hi; this.sun.color.copy(this.tg.sun); this.sun.intensity = L.si; this.sun.position.copy(this.tg.sp); SOTO_U.uNight.value = L.n; }
+      if (this.bg) this.bg.style.background = L.bg;
+      if (this.stars) this.stars.forEach((c) => { c.style.visibility = this.lightName === 'giorno' ? 'hidden' : 'inherit'; });
     }
     setActive(view) { this.view = view; if (view === 'home') this.drawEuro(); }
     setCity(id) {
@@ -1229,23 +1232,27 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         // finestre: compaiono solo quando un edificio occupa abbastanza pixel
         const ppb = (c.cs * this.renderer.domElement.height) / (2 * cd * 0.2493), fdt = this.reduce ? 0 : Math.min(0.1, (t - (this.pt || t)) / 1000); this.pt = t;
         SOTO_U.uWin.value = cl01((ppb - 4) / 3);
+        if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'tramonto', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
+        if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; }
         if (c.life && !this.reduce) c.life(t);
         if (c.spins && fdt) c.spins.forEach((o) => { o.rotation.y += o.userData.spin * fdt; });
         if (c.cars) { c.cars.mesh.visible = ppb > 2.4; if (c.cars.mesh.visible && fdt) c.cars.tick(fdt); }
         if (c.detail) c.detail.visible = SOTO_U.uWin.value > 0.05;
         if (c.wave && t - (this.wt2 || 0) > 150) {
           this.wt2 = t; const A = c.water.instanceColor.array, wv = c.wave, T = this.reduce ? 0 : t / 1000;
+          const sp = this.sun.position, sl = Math.hypot(sp.x, sp.z) || 1, gx = sp.x / sl, gz = sp.z / sl, GL = this.lightName === 'giorno' ? WFOAM : this.lightName === 'notte' ? WMOON : WSUN;
           for (let n = 0; n < wv.length; n++) {
             const q = wv[n], x = q[0], z = q[1], dp = q[3];
             const ph = (x * 0.5 + z * 0.85) * 0.42 - T * 0.11 + Math.sin(x * 0.7 - z * 0.4) * 0.12, crest = ph - Math.floor(ph) < 0.07 && Math.sin(x * 1.7 + z * 2.9) > -0.3;
-            const col = dp === 1 && Math.sin(x * 3.1 + z * 2.3 + T * 1.6) > 0.8 ? WFOAM : crest ? (dp <= 3 ? WHI : WDEP[dp - 2]) : WDEP[dp];
+            const perp = Math.abs(x * gz - z * gx), glit = dp >= 2 && perp < 1.4 && Math.sin(x * 9.1 + z * 6.7 + T * 2.6) > 0.5 + perp * 0.32;
+            const col = dp === 1 && Math.sin(x * 3.1 + z * 2.3 + T * 1.6) > 0.8 ? WFOAM : glit ? GL : crest ? (dp <= 3 ? WHI : WDEP[dp - 2]) : WDEP[dp];
             A[n * 3] = col.r; A[n * 3 + 1] = col.g; A[n * 3 + 2] = col.b;
           }
           c.water.instanceColor.needsUpdate = true;
         }
         if (c.clouds) {
           const dt = this.reduce ? 0 : Math.min(0.1, (t - (this.ct || t)) / 1000), far = cl01((cd - 20) / 10); this.ct = t;
-          c.clouds.forEach((k) => { const P = k.g.position; P.x += k.v * dt; if (P.x > 15) P.x = -15; k.m.opacity = 0.82 * far * cl01((15 - Math.abs(P.x)) / 4); k.g.visible = k.m.opacity > 0.03; });
+          c.clouds.forEach((k) => { const P = k.g.position; P.x += k.v * dt; if (P.x > 15) P.x = -15; k.m.opacity = 0.82 * far * cl01((15 - Math.abs(P.x)) / 4); k.m.emissiveIntensity = 0.35 * (1 - 0.8 * SOTO_U.uNight.value); k.g.visible = k.m.opacity > 0.03; });
           if (!this.reduce) c.boats.forEach((b) => { b.g.position.y = b.y + Math.sin(t / 600 + b.ph) * 0.015; b.g.rotation.z = Math.sin(t / 800 + b.ph) * 0.07; });
         }
         if (!c.wave && this.city.nWater && ((t / 120) | 0) !== this.wt) {
@@ -1294,7 +1301,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const el = this.euroEl, w = el.clientWidth, h = el.clientHeight;
       if (!w || !h) return;
       const wide = w > 860;
-      const ext = wide ? [[Math.max(w * 0.42, 420), 110], [w - 70, h - 70]] : [[30, Math.max(h * 0.46, 300)], [w - 40, h - 50]];
+      const ext = wide ? [[Math.max(w * 0.42, 420), 110], [w - 70, h - 70]] : [[30, Math.min(Math.max(h * 0.6, 470), h - 180)], [w - 30, h - 24]];
       const R = Math.PI / 180, merc = (lon, lat) => [lon * R, Math.log(Math.tan(Math.PI / 4 + (lat * R) / 2))];
       const p0 = merc(2, 42.2), p1 = merc(12.5, 47.2);
       const k = Math.min((ext[1][0] - ext[0][0]) / (p1[0] - p0[0]), (ext[1][1] - ext[0][1]) / (p1[1] - p0[1]));
@@ -1426,6 +1433,9 @@ const SOTO_CSS = `@import url('https://fonts.googleapis.com/css2?family=Fira+San
 .soto-face{transition:transform .15s steps(3)}
 .soto-face:hover{transform:translateY(-5px)}
 .soto-mk{animation:soto-pop .45s steps(7)}
+@keyframes soto-card{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.soto-card{animation:soto-card .28s cubic-bezier(.2,.8,.2,1)}
+.soto-nav::-webkit-scrollbar{display:none}
 .soto-ring{position:relative}
 .soto-ring::after{content:'';position:absolute;inset:-3px -9px;border:2px solid currentColor;border-radius:50%;animation:soto-ring 2.4s steps(10) infinite}
 .soto-root button:focus-visible{outline:2px solid #c4a3ff;outline-offset:2px}
@@ -1466,7 +1476,7 @@ class SotoWasHere extends React.Component {
     super(p);
     this.rootRef = React.createRef(); this.cityRef = React.createRef(); this.euroRef = React.createRef();
     const ui = safeGet(UIKEY) || {};
-    this.state = { points: [], loaded: false, view: ui.view === 'city' ? 'city' : 'home', city: ui.city || 'genova', mode: 'explore', lang: ui.lang || 'it', sel: null, draft: null, filter: null, panel: true, draftLang: 'it', pop: null, cityStatus: null, user: null, login: null, dataModal: null, saving: false, tick: 0 };
+    this.state = { points: [], loaded: false, view: ui.view === 'city' ? 'city' : 'home', city: ui.city || 'genova', mode: 'explore', light: 'tramonto', lang: ui.lang || 'it', sel: null, draft: null, filter: null, panel: true, draftLang: 'it', pop: null, cityStatus: null, user: null, login: null, dataModal: null, saving: false, tick: 0 };
   }
   get api() { return this.props.api || {}; }
   componentDidMount() {
@@ -1512,7 +1522,9 @@ class SotoWasHere extends React.Component {
   }
   blank() { return { id: null, city: this.state.city, member: 'albi', titleIt: '', titleEn: '', textIt: '', textEn: '', date: new Date().toISOString().slice(0, 10), photo: '', photoFile: null, status: 'draft', x: null, z: null }; }
   enterCity(id) { this.setState({ view: 'city', city: id, sel: null, draft: null, filter: null }); }
-  select(p) { const w = this.pos(p); this.setState({ sel: p.id }); if (this.eng) this.eng.flyTo(w.x, w.z, 14); }
+  setLight(l) { this.setState({ light: l }); if (this.eng) this.eng.setOptions({ light: l }); }
+  isNarrow() { const el = this.rootRef.current; return (el ? el.clientWidth : typeof innerWidth === 'undefined' ? 1200 : innerWidth) <= 860; }
+  select(p) { const w = this.pos(p); this.setState({ sel: p.id }); if (this.eng) this.eng.flyTo(w.x, w.z, 11); }
   edit(p) { const w = this.pos(p); this.setState((s) => ({ draft: { id: p.id, city: p.city, member: p.member, titleIt: p.title.it || '', titleEn: p.title.en || '', textIt: p.text.it || '', textEn: p.text.en || '', date: p.date, photo: p.photo, photoFile: null, status: p.status, x: w.x, z: w.z, lat: p.lat, lon: p.lon }, pop: null, draftLang: s.lang })); if (this.eng) this.eng.flyTo(w.x, w.z, 16); }
   setDraft(patch) { this.setState((s) => ({ draft: { ...s.draft, ...patch } })); }
   toEditor() { if (this.canEdit()) this.setState({ mode: 'editor', sel: null }); else this.setState({ login: { email: '', password: '', err: '' } }); }
@@ -1576,6 +1588,7 @@ class SotoWasHere extends React.Component {
     const pp = this.popPos();
     const touch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
     const dKey = s.draftLang === 'it' ? 'It' : 'En';
+    const narrow = this.isNarrow(), panelOn = s.panel && !(narrow && !s.panelTouched);
     const hasAuth = !!this.api.auth;
     const loading = isCity && ['osm', 'build', 'terrain'].includes(s.cityStatus);
     const tabBtn = (on) => `border:0;padding:9px 14px;font-size:14px;cursor:pointer;background:${on ? ACC : 'transparent'};color:#f1eff5`;
@@ -1594,7 +1607,8 @@ class SotoWasHere extends React.Component {
               {CITIES.map((c, i) => (
                 <div key={c.id} data-lon={c.lon} data-lat={c.lat} onMouseEnter={() => this.setState({ hov: c.id })} onMouseLeave={() => this.setState({ hov: null })} style={st('position:absolute;left:0;top:0;pointer-events:auto')}>
                   <button className={'soto-pin' + (s.hov === c.id ? ' soto-on' : '')} onClick={() => this.enterCity(c.id)} aria-label={c.name[L]} style={st('position:absolute;left:-9px;top:-9px;width:18px;height:18px;padding:0;background:#a374f0;border:3px solid #0b0a0f;outline:2px solid #a374f0;cursor:pointer')}></button>
-                  <button className={'soto-h1' + (s.hov === c.id ? ' soto-on' : '')} onClick={() => this.enterCity(c.id)} style={st(`position:absolute;left:${c.lx}px;top:${c.ly}px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;white-space:nowrap;background:#0b0a0f;border:1px solid #5b3fb0;border-radius:10px;padding:7px 11px;cursor:pointer;color:#f1eff5;text-align:left`)}>
+                  {narrow && <span style={st('position:absolute;left:14px;top:-10px;font-family:Silkscreen,monospace;font-size:12px;color:#f1eff5;background:#0b0a0f;border:1px solid #5b3fb0;border-radius:5px;padding:1px 5px;pointer-events:none')}>{i + 1}</span>}
+                  <button className={'soto-h1' + (s.hov === c.id ? ' soto-on' : '')} onClick={() => this.enterCity(c.id)} style={st(`position:absolute;left:${c.lx}px;top:${c.ly}px;display:${narrow ? 'none' : 'flex'};flex-direction:column;align-items:flex-start;gap:3px;white-space:nowrap;background:#0b0a0f;border:1px solid #5b3fb0;border-radius:10px;padding:7px 11px;cursor:pointer;color:#f1eff5;text-align:left`)}>
                     <span style={st('font-family:Silkscreen,monospace;font-size:11px;color:#a374f0;letter-spacing:0.04em')}>STAGE {i + 1}</span>
                     <span style={st("font-family:'Titan One',sans-serif;font-size:19px;line-height:1")}>{c.name[L]}</span>
                     <span style={st('font-size:12px;color:#9a96a6')}>{cnt(pubIn(c.id).length)}</span>
@@ -1602,16 +1616,16 @@ class SotoWasHere extends React.Component {
                 </div>
               ))}
             </div>
-            <section style={st('position:absolute;left:clamp(16px,4vw,56px);top:96px;width:min(420px, calc(100% - 32px));display:flex;flex-direction:column;gap:24px;pointer-events:none')}>
+            <section style={st(`position:absolute;left:clamp(16px,4vw,56px);top:${narrow ? 66 : 96}px;width:min(420px, calc(100% - 32px));display:flex;flex-direction:column;gap:${narrow ? 14 : 24}px;pointer-events:none`)}>
               <div className="soto-in" style={st('display:flex;flex-direction:column;align-items:flex-start')}>
-                <div style={st("font-family:'Titan One',sans-serif;font-size:clamp(64px,9vw,112px);line-height:0.9;color:#f1eff5;-webkit-text-stroke:12px #6d36e0;paint-order:stroke fill;filter:drop-shadow(5px 6px 0 #000);letter-spacing:-0.01em")}>SOTO</div>
+                <div style={st(`font-family:'Titan One',sans-serif;font-size:${narrow ? '54px' : 'clamp(64px,9vw,112px)'};line-height:0.9;color:#f1eff5;-webkit-text-stroke:${narrow ? 9 : 12}px #6d36e0;paint-order:stroke fill;filter:drop-shadow(5px 6px 0 #000);letter-spacing:-0.01em`)}>SOTO</div>
                 <div style={st('margin:-6px 0 0 clamp(40px,8vw,110px);background:#f1eff5;color:#0b0a0f;border-radius:999px;padding:6px 18px;font-weight:700;font-size:clamp(16px,2vw,22px);letter-spacing:0.04em;box-shadow:3px 3px 0 #000')}>WAS HERE</div>
               </div>
-              <p className="soto-in" style={st('margin:0;font-size:clamp(18px,2vw,24px);font-weight:500;line-height:1.3;text-wrap:pretty;max-width:340px;animation-delay:.1s')}>{S.tagline}</p>
+              <p className="soto-in" style={st(`margin:0;font-size:${narrow ? '16px' : 'clamp(18px,2vw,24px)'};font-weight:500;line-height:1.3;text-wrap:pretty;max-width:340px;animation-delay:.1s`)}>{S.tagline}</p>
               <div className="soto-in" style={st('display:flex;flex-direction:column;gap:8px;pointer-events:auto;animation-delay:.2s')}>
                 <div style={st('font-family:Silkscreen,monospace;font-size:12px;color:#a374f0;letter-spacing:0.06em')}>{S.choose}</div>
                 {CITIES.map((c, i) => (
-                  <button key={c.id} className={'soto-h1 soto-row' + (s.hov === c.id ? ' soto-on' : '')} onMouseEnter={() => this.setState({ hov: c.id })} onMouseLeave={() => this.setState({ hov: null })} onClick={() => this.enterCity(c.id)} style={st('display:grid;grid-template-columns:72px minmax(0,1fr) auto 12px;align-items:center;gap:12px;padding:10px 14px;background:rgba(17,14,25,0.85);border:1px solid #2e2347;border-radius:12px;color:#f1eff5;cursor:pointer;text-align:left')}>
+                  <button key={c.id} className={'soto-h1 soto-row' + (s.hov === c.id ? ' soto-on' : '')} onMouseEnter={() => this.setState({ hov: c.id })} onMouseLeave={() => this.setState({ hov: null })} onClick={() => this.enterCity(c.id)} style={st(`display:grid;grid-template-columns:72px minmax(0,1fr) auto 12px;align-items:center;gap:12px;padding:${narrow ? '7px 12px' : '10px 14px'};background:rgba(17,14,25,0.85);border:1px solid #2e2347;border-radius:12px;color:#f1eff5;cursor:pointer;text-align:left`)}>
                     <span style={st('font-family:Silkscreen,monospace;font-size:12px;color:#a374f0')}>STAGE {i + 1}</span>
                     <span style={st("font-family:'Titan One',sans-serif;font-size:20px;line-height:1")}>{c.name[L]}</span>
                     <span style={st('font-size:13px;color:#9a96a6')}>{cnt(pubIn(c.id).length)}</span>
@@ -1624,7 +1638,7 @@ class SotoWasHere extends React.Component {
                 <div style={st('display:flex;gap:14px;flex-wrap:wrap')}>
                   {CREW.map((m) => (
                     <div key={m.id} className="soto-face" style={st('display:flex;flex-direction:column;align-items:center;gap:6px')}>
-                      {faceImg(m.face, 52, 10, `3px solid ${m.color}`, 'box-shadow:3px 3px 0 #000')}
+                      {faceImg(m.face, narrow ? 40 : 52, 10, `3px solid ${m.color}`, 'box-shadow:3px 3px 0 #000')}
                       <span style={st('font-size:13px;font-weight:700')}>{m.name}</span>
                     </div>
                   ))}
@@ -1673,10 +1687,10 @@ class SotoWasHere extends React.Component {
         <header style={st('position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px clamp(12px,2vw,24px);background:linear-gradient(#0b0a0f 30%, rgba(11,10,15,0));pointer-events:none')}>
           <button onClick={() => this.setState({ view: 'home', sel: null, draft: null })} style={st('display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;cursor:pointer;color:#f1eff5;pointer-events:auto')}>
             <span style={st("font-family:'Titan One',sans-serif;font-size:28px;line-height:1;-webkit-text-stroke:6px #6d36e0;paint-order:stroke fill;filter:drop-shadow(2px 3px 0 #000)")}>SOTO</span>
-            <span style={st('background:#f1eff5;color:#0b0a0f;border-radius:999px;padding:3px 10px;font-weight:700;font-size:12px;letter-spacing:0.05em;white-space:nowrap')}>WAS HERE</span>
+            {!(narrow && isCity) && <span style={st('background:#f1eff5;color:#0b0a0f;border-radius:999px;padding:3px 10px;font-weight:700;font-size:12px;letter-spacing:0.05em;white-space:nowrap')}>WAS HERE</span>}
           </button>
           {isCity && (
-            <nav style={st('display:flex;gap:4px;flex-wrap:wrap;pointer-events:auto')}>
+            <nav className="soto-nav" style={st(`display:flex;gap:4px;pointer-events:auto;${narrow ? 'order:3;flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none' : 'flex-wrap:wrap'}`)}>
               <button className="soto-h2" onClick={() => this.setState({ view: 'home', sel: null, draft: null })} style={st('background:none;border:1px solid transparent;border-radius:8px;padding:8px 10px;color:#9a96a6;font-size:14px;cursor:pointer')}>{S.europe}</button>
               {CITIES.map((c) => (
                 <button key={c.id} className="soto-h2" onClick={() => this.enterCity(c.id)} style={st(`background:none;border:1px solid ${c.id === s.city ? ACC : 'transparent'};border-radius:8px;padding:8px 12px;color:${c.id === s.city ? '#f1eff5' : '#9a96a6'};font-size:14px;font-weight:500;cursor:pointer`)}>{c.name[L]}</button>
@@ -1701,16 +1715,16 @@ class SotoWasHere extends React.Component {
 
         {isCity && (
           <>
-            <aside style={st('position:absolute;top:72px;left:clamp(12px,2vw,24px);width:min(360px, calc(100% - 24px));max-height:calc(100% - 96px);display:flex;flex-direction:column;background:rgba(17,14,25,0.94);border:1px solid #2e2347;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.4)')}>
+            <aside style={st(`position:absolute;top:${narrow ? 108 : 72}px;left:clamp(12px,2vw,24px);width:min(360px, calc(100% - ${narrow && !panelOn ? 92 : 24}px));max-height:calc(100% - ${narrow ? 290 : 96}px);display:flex;flex-direction:column;background:rgba(17,14,25,0.94);border:1px solid #2e2347;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.4)`)}>
               <div style={st('padding:16px 18px 14px;display:flex;flex-direction:column;gap:4px;border-bottom:1px solid #2e2347')}>
                 <div style={st('display:flex;align-items:center;justify-content:space-between;gap:8px')}>
                   <span style={st('font-family:Silkscreen,monospace;font-size:12px;color:#a374f0;letter-spacing:0.05em')}>STAGE {cN} · {city.country[L].toUpperCase()}</span>
-                  <button onClick={() => this.setState((x) => ({ panel: !x.panel }))} style={st('background:none;border:1px solid #2e2347;border-radius:8px;color:#9a96a6;font-size:12px;padding:4px 8px;cursor:pointer')}>{s.panel ? S.hide : S.show}</button>
+                  <button onClick={() => this.setState((x) => ({ panel: narrow && !x.panelTouched ? true : !x.panel, panelTouched: true }))} style={st('background:none;border:1px solid #2e2347;border-radius:8px;color:#9a96a6;font-size:12px;padding:4px 8px;cursor:pointer')}>{panelOn ? S.hide : S.show}</button>
                 </div>
                 <div style={st("font-family:'Titan One',sans-serif;font-size:40px;line-height:1;-webkit-text-stroke:5px #6d36e0;paint-order:stroke fill;filter:drop-shadow(2px 3px 0 #000)")}>{city.name[L]}</div>
                 <div style={st('font-size:14px;color:#9a96a6')}>{s.loaded ? cnt(isEditor ? inCity.length : pubIn(s.city).length) : S.loadingPts}</div>
               </div>
-              {s.panel && !isEditor && (
+              {panelOn && !isEditor && (
                 <>
                   <div style={st('display:flex;gap:8px;align-items:center;padding:12px 18px;border-bottom:1px solid #2e2347;flex-wrap:wrap')}>
                     <button onClick={() => this.setState({ filter: null })} style={st(`height:36px;padding:0 12px;border-radius:9px;border:1px solid ${s.filter ? '#2e2347' : '#a374f0'};background:${s.filter ? 'transparent' : '#2e2347'};color:#f1eff5;font-size:13px;cursor:pointer`)}>{S.all}</button>
@@ -1734,7 +1748,7 @@ class SotoWasHere extends React.Component {
                   </div>
                 </>
               )}
-              {s.panel && isEditor && (
+              {panelOn && isEditor && (
                 <div style={st('overflow:auto;flex:1')}>
                   <div style={st('margin:14px 18px;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:center;padding:12px;border-radius:12px;border:1px dashed #a374f0;background:#161126')}>
                     <span style={st('width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#5b3fb0;color:#fff;font-size:18px;font-weight:700')}>+</span>
@@ -1761,23 +1775,36 @@ class SotoWasHere extends React.Component {
               )}
             </aside>
 
-            {selP && (
-              <article style={st('position:absolute;top:72px;right:clamp(12px,2vw,24px);width:min(380px, calc(100% - 24px));max-height:calc(100% - 96px);overflow:auto;background:rgba(17,14,25,0.96);border:1px solid #2e2347;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.45)')}>
-                {selP.photo && <img src={selP.photo} alt="" style={st('display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-bottom:1px solid #2e2347')} />}
-                <div style={st('padding:16px 18px 20px;display:flex;flex-direction:column;gap:10px')}>
-                  <div style={st('display:flex;align-items:center;gap:10px')}>
-                    {faceImg(mem(selP.member).face, 40, 8, `2px solid ${mem(selP.member).color}`)}
-                    <div style={st('display:flex;flex-direction:column;gap:2px;flex:1')}>
-                      <span style={st('font-weight:700;font-size:14px')}>{mem(selP.member).name}</span>
-                      <span style={st('font-size:12px;color:#9a96a6')}>{fmt(selP.date)}</span>
+            {selP && (() => {
+              const m = mem(selP.member), idx = visible.findIndex((q) => q.id === selP.id), go = (dl) => { const q = visible[(idx + dl + visible.length) % visible.length]; if (q) this.select(q); };
+              const nb = 'width:36px;height:36px;border-radius:9px;border:1px solid #2e2347;background:none;color:#f1eff5;font-size:18px;cursor:pointer';
+              return (
+                <article key={selP.id} className="soto-card" style={st((narrow ? 'position:absolute;left:12px;right:12px;bottom:12px;max-height:56%;z-index:3;' : 'position:absolute;top:72px;right:clamp(72px,7vw,96px);width:min(380px, calc(100% - 24px));max-height:calc(100% - 96px);') + 'overflow:auto;background:rgba(17,14,25,0.96);border:1px solid #2e2347;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.45)')}>
+                  {selP.photo ? (
+                    <div style={st(`margin:12px 12px 0;padding:5px;background:#0b0a0f;border:3px solid ${m.color};box-shadow:4px 4px 0 #000`)}>
+                      <img src={selP.photo} alt="" style={st('display:block;width:100%;aspect-ratio:4/3;object-fit:cover')} />
                     </div>
-                    <button onClick={() => this.setState({ sel: null })} aria-label={S.close} style={st('width:36px;height:36px;border-radius:9px;border:1px solid #2e2347;background:none;color:#f1eff5;font-size:18px;cursor:pointer')}>×</button>
+                  ) : (
+                    <div style={st(`height:12px;background:repeating-linear-gradient(90deg, ${m.color} 0 8px, #0b0a0f 8px 16px);opacity:0.7`)}></div>
+                  )}
+                  <div style={st('padding:14px 18px 20px;display:flex;flex-direction:column;gap:10px')}>
+                    <div style={st('font-family:Silkscreen,monospace;font-size:11px;color:#a374f0;letter-spacing:0.04em;line-height:1.5')}>STAGE {cN} · {city.name[L].toUpperCase()}{selP.lat != null && selP.lon != null ? ` · ${Math.abs(selP.lat).toFixed(4)}°${selP.lat >= 0 ? 'N' : 'S'} ${Math.abs(selP.lon).toFixed(4)}°${selP.lon >= 0 ? 'E' : 'W'}` : ''}</div>
+                    <div style={st('display:flex;align-items:center;gap:10px')}>
+                      {faceImg(m.face, 40, 8, `2px solid ${m.color}`)}
+                      <div style={st('display:flex;flex-direction:column;gap:2px;flex:1;min-width:0')}>
+                        <span style={st('font-weight:700;font-size:14px')}>{m.name}</span>
+                        <span style={st('font-size:12px;color:#9a96a6')}>{fmt(selP.date)}</span>
+                      </div>
+                      {visible.length > 1 && <button onClick={() => go(-1)} aria-label={L === 'it' ? 'Punto precedente' : 'Previous point'} style={st(nb)}>‹</button>}
+                      {visible.length > 1 && <button onClick={() => go(1)} aria-label={L === 'it' ? 'Punto successivo' : 'Next point'} style={st(nb)}>›</button>}
+                      <button onClick={() => this.setState({ sel: null })} aria-label={S.close} style={st(nb)}>×</button>
+                    </div>
+                    <h2 style={st("margin:4px 0 0;font-family:'Titan One',sans-serif;font-weight:400;font-size:26px;line-height:1.1;text-wrap:pretty")}>{tx(selP.title)}</h2>
+                    <p style={st('margin:0;font-size:15px;line-height:1.55;color:#d6d2de;white-space:pre-wrap;text-wrap:pretty')}>{(selP.text && (selP.text[L] || selP.text.it || selP.text.en)) || ''}</p>
                   </div>
-                  <h2 style={st("margin:4px 0 0;font-family:'Titan One',sans-serif;font-weight:400;font-size:26px;line-height:1.1;text-wrap:pretty")}>{tx(selP.title)}</h2>
-                  <p style={st('margin:0;font-size:15px;line-height:1.55;color:#d6d2de;white-space:pre-wrap;text-wrap:pretty')}>{(selP.text && (selP.text[L] || selP.text.it || selP.text.en)) || ''}</p>
-                </div>
-              </article>
-            )}
+                </article>
+              );
+            })()}
 
             {isEditor && d && (
               <article style={st(`position:absolute;left:${pp.left}px;top:${pp.top}px;width:min(340px, calc(100% - 24px));max-height:${pp.maxH};overflow-y:auto;overflow-x:hidden;z-index:2;background:rgba(17,14,25,0.97);border:1px solid #5b3fb0;border-radius:16px;box-shadow:0 24px 48px rgba(0,0,0,0.55);display:flex;flex-direction:column`)}>
@@ -1840,9 +1867,14 @@ class SotoWasHere extends React.Component {
               </div>
             )}
             {s.cityStatus === 'fallback' && <div style={st('position:absolute;left:50%;top:76px;transform:translateX(-50%);background:#0b0a0f;border:1px solid #ef6b4a;border-radius:10px;padding:8px 12px;font-size:13px;color:#f1eff5;pointer-events:none')}>{LD.fb}</div>}
-            <div style={st(`position:absolute;left:50%;bottom:${isEditor && !d && C ? '86px' : '24px'};transform:translateX(-50%);font-family:Silkscreen,monospace;font-size:11px;color:#9a96a6;background:rgba(11,10,15,0.8);border:1px solid #2e2347;border-radius:8px;padding:6px 10px;pointer-events:none;text-align:center;text-wrap:balance;line-height:1.5;max-width:calc(100% - 140px)`)}>{touch ? S.zoomHintTouch : S.zoomHint}</div>
+            <div style={st(`position:absolute;left:50%;bottom:${isEditor && !d && C ? '86px' : '24px'};transform:translateX(-50%);display:${narrow ? 'none' : 'block'};font-family:Silkscreen,monospace;font-size:11px;color:#9a96a6;background:rgba(11,10,15,0.8);border:1px solid #2e2347;border-radius:8px;padding:6px 10px;pointer-events:none;text-align:center;text-wrap:balance;line-height:1.5;max-width:calc(100% - 140px)`)}>{touch ? S.zoomHintTouch : S.zoomHint}</div>
             <div style={st('position:absolute;left:clamp(12px,2vw,24px);bottom:8px;font-size:11px;color:#6f6a7c')}>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" style={st('color:#9a96a6')}>OpenStreetMap</a> · Terrain: Mapzen/AWS</div>
             {isEditor && !d && C && <div style={st('position:absolute;left:50%;bottom:24px;transform:translateX(-50%);max-width:calc(100% - 140px);text-align:center;background:#0b0a0f;border:1px solid #a374f0;border-radius:10px;padding:10px 14px;font-family:Silkscreen,monospace;font-size:12px;color:#f1eff5;pointer-events:none')}>{S.clickToAdd}</div>}
+            <div style={st('position:absolute;right:clamp(12px,2vw,24px);bottom:168px;display:flex;flex-direction:column;border:1px solid #2e2347;border-radius:12px;overflow:hidden;background:rgba(17,14,25,0.94)')}>
+              {[['giorno', '\u2600', 'Giorno', 'Day'], ['tramonto', '\u25D0', 'Tramonto', 'Sunset'], ['notte', '\u263E', 'Notte', 'Night'], ['auto', '\u21BB', 'Ciclo automatico', 'Auto cycle']].map(([id, ic, it, en]) => (
+                <button key={id} onClick={() => this.setLight(id)} title={L === 'it' ? it : en} aria-label={L === 'it' ? it : en} aria-pressed={s.light === id} style={st(`width:44px;height:38px;border:0;border-bottom:1px solid #2e2347;background:${s.light === id ? '#2e2347' : 'none'};color:${s.light === id ? '#ffd98a' : '#9a96a6'};font-size:16px;cursor:pointer`)}>{ic}</button>
+              ))}
+            </div>
             <div style={st('position:absolute;right:clamp(12px,2vw,24px);bottom:24px;display:flex;flex-direction:column;border:1px solid #2e2347;border-radius:12px;overflow:hidden;background:rgba(17,14,25,0.94)')}>
               <button onClick={() => this.eng && this.eng.zoom(0.75)} aria-label="Zoom +" style={st('width:44px;height:44px;border:0;border-bottom:1px solid #2e2347;background:none;color:#f1eff5;font-size:20px;cursor:pointer')}>+</button>
               <button onClick={() => this.eng && this.eng.zoom(1.33)} aria-label="Zoom −" style={st('width:44px;height:44px;border:0;border-bottom:1px solid #2e2347;background:none;color:#f1eff5;font-size:20px;cursor:pointer')}>−</button>
