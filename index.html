@@ -31,7 +31,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   const PAL = {
     genova: { seed: 7, face: ['#e9c46a', '#f2a65a', '#e7b3a3', '#f3e2c4', '#d99a5b', '#cf7f62'], roof: ['#b5523b', '#9e4630', '#c46542', '#6f6a73'] },
     lione: { seed: 21, face: ['#e7b26b', '#e8a48f', '#f0d9b0', '#d58f5e', '#e9c79a'], roof: ['#b5523b', '#c46542', '#a54c35'] },
-    mantova: { seed: 33, face: ['#d9895b', '#e3b16f', '#c86f4d', '#ecd2a8', '#d7a17b'], roof: ['#a64630', '#b85a3c', '#93402c'] },
+    mantova: { seed: 33, tall: '#b86a48', face: ['#d9895b', '#e3b16f', '#c86f4d', '#ecd2a8', '#d7a17b'], roof: ['#a64630', '#b85a3c', '#93402c'] },
     marsiglia: { seed: 45, face: ['#efe3cc', '#e9d2a6', '#f2c98f', '#e6b98f', '#f5ecdc'], roof: ['#c46542', '#b5523b', '#d07a52'] }
   };
   const DEF = {
@@ -143,7 +143,86 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   }
   const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
   const C = (a, b, h, s) => new THREE.CylinderGeometry(a, b, h, s || 8);
+  // Dettagli riusabili per i monumenti: file di finestre, rosoni, bandiere.
+  const DK = '#2a2630';
+  const winX = (g, cx, cy, cz, n, span, w, h, c) => { for (let k = 0; k < n; k++) add(g, B(w, h, 0.06), c || DK, cx - span / 2 + (span * (k + 0.5)) / n, cy, cz, { noShadow: true }); };
+  const winZ = (g, cx, cy, cz, n, span, w, h, c) => { for (let k = 0; k < n; k++) add(g, B(0.06, h, w), c || DK, cx, cy, cz - span / 2 + (span * (k + 0.5)) / n, { noShadow: true }); };
+  const rose = (g, x, y, z, r, c) => { add(g, C(r, r, 0.06, 12), c || '#3a4a7a', x, y, z, { e: 0.35, noShadow: true }).rotation.x = Math.PI / 2; };
+  const flag = (g, x, y, z, c) => { add(g, C(0.03, 0.03, 0.9, 5), '#d9d4c8', x, y + 0.45, z, { noShadow: true }); add(g, B(0.42, 0.26, 0.03), c, x + 0.23, y + 0.74, z, { noShadow: true }); };
+  const LMX = {
+    lanterna(g, x, y, z) {
+      const bm = new THREE.Group(); bm.position.set(x, y + 5.65, z); bm.userData.spin = 0.7;
+      [-1, 1].forEach((k) => { const m = new THREE.Mesh(B(4.6, 0.14, 0.34), mat('#ffe9a8', 1, { transparent: true, opacity: 0.32, depthWrite: false })); m.position.x = k * 2.55; bm.add(m); });
+      g.add(bm);
+      add(g, B(1.12, 0.06, 1.12), DK, x, y + 3.46, z, { noShadow: true }); add(g, B(0.9, 0.06, 0.9), DK, x, y + 5.43, z, { noShadow: true });
+      winX(g, x, y + 1.4, z - 0.41, 1, 0.3, 0.16, 0.34); winX(g, x, y + 2.5, z - 0.41, 1, 0.3, 0.16, 0.34); winX(g, x, y + 4.3, z - 0.31, 1, 0.3, 0.14, 0.3);
+    },
+    sanlorenzo(g, x, y, z) {
+      rose(g, x, y + 1.3, z - 1.42, 0.2); add(g, B(2.2, 0.1, 0.6), '#cfc8bb', x, y + 0.05, z - 2.1);
+      winX(g, x + 0.62, y + 2.35, z - 1.87, 1, 0.3, 0.2, 0.42); winX(g, x - 0.62, y + 1.55, z - 1.83, 1, 0.3, 0.2, 0.42);
+      winZ(g, x + 0.86, y + 1.1, z + 0.3, 4, 2.6, 0.2, 0.55, '#3a4a7a'); winZ(g, x - 0.86, y + 1.1, z + 0.3, 4, 2.6, 0.2, 0.55, '#3a4a7a');
+    },
+    ndg(g, x, y, z) {
+      add(g, B(1.2, 0.3, 0.7), '#c9bda5', x - 1.7, y + 0.15, z);
+      winX(g, x - 0.2, y + 1.5, z - 0.56, 4, 1.8, 0.16, 0.42); winX(g, x - 0.2, y + 1.5, z + 0.56, 4, 1.8, 0.16, 0.42);
+      winX(g, x, y + 0.5, z - 1.11, 5, 2.4, 0.2, 0.3); add(g, B(0.74, 0.12, 0.74), '#7d6a55', x + 0.8, y + 1.3, z);
+    },
+    fourviere(g, x, y, z) { winX(g, x, y + 0.9, z - 0.86, 6, 3, 0.22, 0.62, '#3a4a7a'); winX(g, x, y + 0.9, z + 0.86, 6, 3, 0.22, 0.62, '#3a4a7a'); rose(g, x - 1.71, y + 1.1, z, 0.26); },
+    castello(g, x, y, z) {
+      winX(g, x, y + 0.75, z - 1.61, 4, 1.8, 0.18, 0.3); winX(g, x, y + 0.75, z + 1.61, 4, 1.8, 0.18, 0.3);
+      add(g, B(0.6, 0.08, 1.1), '#6b4a35', x, y + 0.3, z + 2.1); add(g, B(0.5, 0.7, 0.08), DK, x, y + 0.45, z + 1.61, { noShadow: true });
+      flag(g, x + 1.4, y + 2.75, z + 1.4, '#d24b3a');
+    },
+    fort(g, x, y, z) {
+      [[-0.85, -0.85], [0.85, -0.85], [-0.85, 0.85]].forEach(([dx, dz]) => add(g, B(0.5, 0.25, 0.5), '#bea57c', x + dx, y + 1.12, z + dz));
+      add(g, B(1.5, 0.9, 1.5), '#3a3448', x - 2.5, y + 0.45, z); add(g, B(1.6, 0.06, 1.6), '#56506a', x - 2.5, y + 0.93, z);
+      add(g, B(1.3, 0.06, 0.14), '#2a2436', x - 1.4, y + 0.97, z); flag(g, x + 0.8, y + 1.92, z + 0.8, '#3f78c4');
+    },
+    palazzoducale(g, x, y, z) { winX(g, x - 0.3, y + 0.95, z - 0.61, 8, 3.2, 0.16, 0.26); },
+    major(g, x, y, z) { add(g, B(0.5, 0.9, 0.08), DK, x, y + 0.45, z - 1.52, { noShadow: true }); rose(g, x, y + 1.25, z - 1.52, 0.22); },
+    carignano(g, x, y, z) { winX(g, x, y + 1, z - 1.31, 2, 2.1, 0.25, 0.45); winZ(g, x + 1.31, y + 0.9, z, 3, 2, 0.25, 0.5); winZ(g, x - 1.31, y + 0.9, z, 3, 2, 0.25, 0.5); },
+    saintjean(g, x, y, z) { winZ(g, x + 0.71, y + 1, z + 0.2, 5, 2.8, 0.22, 0.7, '#3a4a7a'); winZ(g, x - 0.71, y + 1, z + 0.2, 5, 2.8, 0.22, 0.7, '#3a4a7a'); },
+    hoteldieu(g, x, y, z) { winZ(g, x + 0.61, y + 0.6, z, 8, 3.5, 0.2, 0.45); winZ(g, x - 0.61, y + 0.6, z, 8, 3.5, 0.2, 0.45); },
+    pharo(g, x, y, z) { winX(g, x, y + 0.6, z - 0.91, 7, 2.8, 0.16, 0.4); },
+    palazzote(g, x, y, z) { add(g, B(0.5, 0.6, 0.08), DK, x, y + 0.3, z - 1.51, { noShadow: true }); winX(g, x, y + 0.5, z - 1.51, 6, 2.8, 0.2, 0.3); },
+    chateaudif(g, x, y, z) { flag(g, x, y + 1.4, z, '#3f78c4'); },
+    rotonda(g, x, y, z) { add(g, B(0.3, 0.5, 0.08), DK, x, y + 0.25, z - 1, { noShadow: true }); },
+    saintvictor(g, x, y, z) { add(g, B(0.4, 0.7, 0.08), DK, x + 0.2, y + 0.35, z - 1.31, { noShadow: true }); },
+    portasoprana(g, x, y, z) { flag(g, x + 0.95, y + 3.9, z, '#f1eff5'); flag(g, x - 0.95, y + 3.9, z, '#d24b3a'); }
+  };
   const LM = {
+    stazione(g, x, y, z) {
+      const w = '#e9dcc0';
+      add(g, B(3.6, 1.2, 1), w, x, y + 0.6, z - 0.6); add(g, B(1.2, 1.7, 1.1), w, x, y + 0.85, z - 0.6); add(g, B(1.3, 0.16, 1.2), '#b9a98a', x, y + 1.78, z - 0.6);
+      rose(g, x, y + 1.35, z - 1.16, 0.2, '#f6f1e4'); add(g, B(0.5, 0.75, 0.08), DK, x, y + 0.38, z - 1.16, { noShadow: true });
+      winX(g, x - 1.2, y + 0.65, z - 1.11, 3, 1.1, 0.2, 0.5); winX(g, x + 1.2, y + 0.65, z - 1.11, 3, 1.1, 0.2, 0.5);
+      add(g, B(3.6, 0.06, 1.9), '#473d50', x, y + 0.03, z + 0.85, { noShadow: true });
+      add(g, B(3.4, 0.7, 1.8), '#a9d3e6', x, y + 0.5, z + 0.85, { m: { transparent: true, opacity: 0.55 } }); add(g, B(3.4, 0.2, 1), '#6f6a73', x, y + 0.95, z + 0.85);
+      return 2;
+    },
+    bigo(g, x, y, z) {
+      add(g, C(0.3, 0.42, 0.3, 8), '#cfc8bb', x, y + 0.15, z);
+      [[0.3, 0.45, 3.2], [1.6, 0.6, 2.6], [2.9, 0.75, 2.8], [4.3, 0.5, 3], [5.4, 0.9, 2.2]].forEach(([ph, a, len]) => {
+        const m = add(g, C(0.05, 0.08, len, 6), '#f6f3ec', x - Math.sin(a) * Math.cos(ph) * len / 2, y + 0.2 + Math.cos(a) * len / 2, z + Math.sin(a) * Math.sin(ph) * len / 2, { noShadow: true });
+        m.rotation.order = 'YXZ'; m.rotation.y = ph; m.rotation.z = a;
+      });
+      add(g, new THREE.SphereGeometry(0.3, 8, 6), '#f1eff5', x - Math.sin(0.45) * Math.cos(0.3) * 3.2, y + 0.2 + Math.cos(0.45) * 3.2 - 0.4, z + Math.sin(0.45) * Math.sin(0.3) * 3.2);
+      add(g, C(0, 1.1, 0.7, 8), '#f6f3ec', x - 1.3, y + 0.5, z + 0.9);
+      add(g, B(1, 0.6, 3.4), '#7fa3b8', x + 1.7, y + 0.3, z); add(g, B(1.06, 0.1, 3.46), '#56506a', x + 1.7, y + 0.65, z); winZ(g, x + 1.19, y + 0.32, z, 6, 3.1, 0.3, 0.26);
+      return 3.2;
+    },
+    teatroromano(g, x, y, z) {
+      const pts = [[0.6, 0.05], [0.9, 0.05], [0.9, 0.25], [1.2, 0.25], [1.2, 0.45], [1.5, 0.45], [1.5, 0.65], [1.8, 0.65], [1.8, 0]].map(([a, b]) => new THREE.Vector2(a, b));
+      const cav = (sc, dx, dz) => { const m = new THREE.Mesh(new THREE.LatheGeometry(pts, 14, 0, Math.PI), mat('#cbbf9f', 0, { side: THREE.DoubleSide })); m.position.set(x + dx, y, z + dz); m.scale.setScalar(sc); m.castShadow = m.receiveShadow = true; g.add(m); add(g, B(0.5 * sc, 0.1, 2.8 * sc), '#b9ad8d', x + dx - 0.3 * sc, y + 0.05, z + dz); };
+      cav(1, 0, 0); cav(0.55, 0.3, 2.9);
+      return 0.9;
+    },
+    bibiena(g, x, y, z) {
+      add(g, B(1.6, 1.3, 2.2), '#e9d9b8', x, y + 0.65, z); add(g, B(1.7, 1.5, 0.2), '#f0e2c8', x, y + 0.75, z - 1.1); add(g, B(1.8, 0.12, 0.3), '#cdbf9f', x, y + 1.56, z - 1.1);
+      winX(g, x, y + 1, z - 1.21, 3, 1.4, 0.22, 0.4); add(g, B(0.4, 0.6, 0.06), DK, x, y + 0.3, z - 1.21, { noShadow: true });
+      add(g, new THREE.SphereGeometry(0.7, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), '#b5603f', x, y + 1.3, z + 0.3);
+      return 2;
+    },
     lanterna(g, x, y, z) {
       add(g, B(1.4, 0.6, 1.4), '#cfc8bb', x, y + 0.3, z);
       add(g, B(0.8, 2.6, 0.8), '#efe9df', x, y + 1.9, z);
@@ -485,32 +564,32 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     mantova: { b: [45.1455, 10.7820, 45.1685, 10.8100], cell: 16 },
     marsiglia: { b: [43.2050, 5.3180, 43.3020, 5.4050], cell: 38 }
   };
-  const P_ = (lat, lon, it, en, model, sc) => ({ lat, lon, it, en: en || it, model, sc: sc || 1 });
+  const P_ = (lat, lon, it, en, model, sc, ry) => ({ lat, lon, it, en: en || it, model, sc: sc || 1, ry: ry || 0 });
   const LMK = {
     genova: [
-      P_(44.40755, 8.93155, 'Cattedrale di San Lorenzo', 'San Lorenzo Cathedral', 'sanlorenzo'),
+      P_(44.40755, 8.93155, 'Cattedrale di San Lorenzo', 'San Lorenzo Cathedral', 'sanlorenzo', 1, Math.PI / 2),
       P_(44.3918, 8.9600, 'Corso Italia', 'Corso Italia seafront'),
       P_(44.3906, 8.9737, 'Boccadasse'),
       P_(44.4044, 8.9050, 'Lanterna', 'Lanterna lighthouse', 'lanterna', 0.85),
-      P_(44.4102, 8.9268, 'Porto Antico · Acquario', 'Old Port · Aquarium'),
+      P_(44.4102, 8.9268, 'Porto Antico · Acquario', 'Old Port · Aquarium', 'bigo', 0.8),
       P_(44.4142, 8.9235, 'Galata Museo del Mare', 'Galata Maritime Museum'),
       P_(44.4115, 8.9285, 'Via del Campo'),
       P_(44.4114, 8.9330, 'Via Garibaldi · Strada Nuova'),
       P_(44.4130, 8.9352, 'Spianata Castelletto', 'Castelletto viewpoint'),
       P_(44.4072, 8.9339, 'Piazza De Ferrari', '', 'deferrari', 0.5),
-      P_(44.4057, 8.9346, 'Porta Soprana', '', 'portasoprana', 0.6),
+      P_(44.4057, 8.9346, 'Porta Soprana', '', 'portasoprana', 0.6, Math.PI / 2),
       P_(44.4024, 8.9345, 'Basilica di Carignano', 'Carignano Basilica', 'carignano'),
       P_(44.4105, 8.9395, 'Villetta Di Negro'),
-      P_(44.4170, 8.9210, 'Stazione Principe', 'Principe station'),
-      P_(44.4065, 8.9465, 'Stazione Brignole', 'Brignole station'),
+      P_(44.4170, 8.9210, 'Stazione Principe', 'Principe station', 'stazione', 0.8, Math.PI),
+      P_(44.4065, 8.9465, 'Stazione Brignole', 'Brignole station', 'stazione', 0.9, Math.PI),
       P_(44.4025, 8.9465, 'Piazza della Vittoria'),
       P_(44.3955, 8.9480, 'Fiera · Piazzale Kennedy', 'Fair · Piazzale Kennedy'),
       P_(44.3935, 8.9545, 'Punta Vagno')
     ],
     lione: [
       P_(45.7623, 4.8227, 'Basilica di Fourvière', 'Fourvière Basilica', 'fourviere'),
-      P_(45.7598, 4.8197, 'Teatri romani', 'Roman theatres'),
-      P_(45.7608, 4.8274, 'Cattedrale Saint-Jean', 'Saint-Jean Cathedral', 'saintjean', 0.9),
+      P_(45.7598, 4.8197, 'Teatri romani', 'Roman theatres', 'teatroromano', 0.9),
+      P_(45.7608, 4.8274, 'Cattedrale Saint-Jean', 'Saint-Jean Cathedral', 'saintjean', 0.9, Math.PI / 2),
       P_(45.7660, 4.8270, 'Vieux Lyon · Saint-Paul'),
       P_(45.7676, 4.8274, 'Fresque des Lyonnais'),
       P_(45.7578, 4.8320, 'Place Bellecour', '', 'bellecour', 0.8),
@@ -522,16 +601,16 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       P_(45.7770, 4.8540, 'Parc de la Tête d\'Or'),
       P_(45.7855, 4.8540, 'Cité Internationale', '', 'congres', 0.8),
       P_(45.7612, 4.8530, 'Tour Part-Dieu', '', 'partdieu', 0.9),
-      P_(45.7605, 4.8595, 'Gare Part-Dieu', 'Part-Dieu station')
+      P_(45.7605, 4.8595, 'Gare Part-Dieu', 'Part-Dieu station', 'stazione', 1, Math.PI / 2)
     ],
     mantova: [
       P_(45.1612, 10.7998, 'Castello di San Giorgio', 'San Giorgio Castle', 'castello'),
-      P_(45.1597, 10.7978, 'Palazzo Ducale', 'Ducal Palace', 'palazzoducale'),
+      P_(45.1597, 10.7978, 'Palazzo Ducale', 'Ducal Palace', 'palazzoducale', 1, Math.PI / 2),
       P_(45.1590, 10.7962, 'Piazza Sordello'),
       P_(45.1572, 10.7943, 'Basilica di Sant\'Andrea', 'Sant\'Andrea Basilica', 'santandrea'),
       P_(45.1580, 10.7953, 'Rotonda di San Lorenzo', '', 'rotonda', 0.65),
       P_(45.1585, 10.7935, 'Torre della Gabbia', '', 'gabbia', 0.8),
-      P_(45.1594, 10.7922, 'Teatro Bibiena', 'Bibiena Theatre'),
+      P_(45.1594, 10.7922, 'Teatro Bibiena', 'Bibiena Theatre', 'bibiena', 0.55),
       P_(45.1565, 10.7935, 'Rio · Pescherie'),
       P_(45.1625, 10.7955, 'Piazza Virgiliana'),
       P_(45.1622, 10.8035, 'Ponte di San Giorgio', 'San Giorgio bridge'),
@@ -545,7 +624,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       P_(43.28395, 5.37125, 'Notre-Dame de la Garde', '', 'ndg'),
       P_(43.2950, 5.3740, 'Vieux-Port', 'Old Port'),
       P_(43.2965, 5.3610, 'Fort Saint-Jean · MuCEM', '', 'fort', 0.8),
-      P_(43.2995, 5.3650, 'Cattedrale La Major', 'La Major Cathedral', 'major', 0.9),
+      P_(43.2995, 5.3650, 'Cattedrale La Major', 'La Major Cathedral', 'major', 0.9, Math.PI),
       P_(43.2990, 5.3695, 'Le Panier'),
       P_(43.2975, 5.3800, 'La Canebière'),
       P_(43.2945, 5.3835, 'Cours Julien'),
@@ -558,7 +637,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       P_(43.2798, 5.3250, 'Château d\'If', '', 'chateaudif', 0.8),
       P_(43.2610, 5.3740, 'Plages du Prado', 'Prado beaches'),
       P_(43.2590, 5.3815, 'Parc Borély'),
-      P_(43.2698, 5.3959, 'Stade Vélodrome', '', 'velodrome'),
+      P_(43.2698, 5.3959, 'Stade Vélodrome', '', 'velodrome', 1, Math.PI / 2),
       P_(43.2614, 5.3963, 'Cité Radieuse', '', 'citeradieuse', 0.8),
       P_(43.2440, 5.3720, 'Pointe Rouge'),
       P_(43.2158, 5.3482, 'Les Goudes'),
@@ -787,7 +866,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const nx = i1 - i0 + 1, nz = j1 - j0 + 1, x = ox + ((i0 + i1 + 1) / 2) * cs, z = oz + ((j0 + j1 + 1) / 2) * cs;
       const bh = Math.max(0.22 * k31 * 0.6, hm * wpm * BEX) + (y1 - y0), tall = hm >= 40, w = (nx - 0.1) * cs, d = (nz - 0.1) * cs;
       const fk = r() < 0.3 ? r() : hash(id + ':' + (i0 >> 1) + ':' + (j0 >> 1));
-      bld.push([x, z, y0, bh, tall ? '#e4dfd6' : p.face[(fk * p.face.length) | 0], w, d]);
+      bld.push([x, z, y0, bh, tall ? p.tall || '#e4dfd6' : p.face[(fk * p.face.length) | 0], w, d]);
       let tp = y0 + bh; const rcol = p.roof[(r() * p.roof.length) | 0];
       if (!tall && hm < 30 && r() < rc) {
         if (nx !== nz) { const rh = cs * 0.55; gab.push([x, z, tp, rcol, Math.max(w, d) * 1.04, Math.min(w, d) * 1.04, nz > nx ? Math.PI / 2 : 0, rh]); tp += rh; }
@@ -894,10 +973,18 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       cg.position.set(-15 + r() * 30, 7 + r() * 2.5, (r() - 0.5) * NZ * cs * 0.8); g.add(cg);
       clouds.push({ g: cg, m: cm, v: 0.12 + r() * 0.1 });
     }
+    const wc = document.createElement('canvas'); wc.width = wc.height = 64;
+    const wx = wc.getContext('2d'), wg = wx.createRadialGradient(32, 32, 4, 32, 32, 32);
+    wg.addColorStop(0, 'rgba(255,205,130,0.5)'); wg.addColorStop(0.6, 'rgba(255,170,90,0.16)'); wg.addColorStop(1, 'rgba(255,170,90,0)');
+    wx.fillStyle = wg; wx.fillRect(0, 0, 64, 64);
+    const warmTex = new THREE.CanvasTexture(wc);
     const cellOf = (x, z) => { const i = Math.max(0, Math.min(NX - 1, Math.floor((x - ox) / cs))), j = Math.max(0, Math.min(NZ - 1, Math.floor((z - oz) / cs))); return j * NX + i; };
     models.forEach((l) => {
       const y = gy(cellOf(l.x, l.z)), lg = new THREE.Group();
       const ht = LM[l.model](lg, 0, 0, 0) * LM_SCALE * l.sc;
+      if (LMX[l.model]) LMX[l.model](lg, 0, 0, 0);
+      const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: warmTex, transparent: true, depthWrite: false }));
+      halo.rotation.x = -Math.PI / 2; halo.position.set(l.x, y + 0.012, l.z); halo.scale.setScalar(clearR * l.sc * 2.6); g.add(halo);
       lg.scale.setScalar(LM_SCALE * l.sc); lg.position.set(l.x, y, l.z); if (l.ry) lg.rotation.y = l.ry; g.add(lg);
       for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const x = ox + (i + 0.5) * cs, z = oz + (j + 0.5) * cs; if (hyp(l.x - x, l.z - z) < clearR * 0.8 * l.sc) top[j * NX + i] = Math.max(top[j * NX + i], y + ht); }
     });
@@ -907,7 +994,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       g.add(b); boats.push({ g: b, y: wy, ph: r() * 6 });
     }
     const labels = lms.map((l) => ({ it: l.it, en: l.en || l.it, x: l.x, z: l.z }));
-    return { group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: [terrM, watM, brM, bldM, roofM, gabM], water: watM, nWater: wat.length, wave: wat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars } };
+    const spins = []; g.traverse((o) => { if (o.userData.spin) spins.push(o); });
+    return { spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: [terrM, watM, brM, bldM, roofM, gabM], water: watM, nWater: wat.length, wave: wat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars } };
   }
 
   const LIGHT = {
@@ -1075,6 +1163,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         // finestre: compaiono solo quando un edificio occupa abbastanza pixel
         const ppb = (c.cs * this.renderer.domElement.height) / (2 * cd * 0.2493), fdt = this.reduce ? 0 : Math.min(0.1, (t - (this.pt || t)) / 1000); this.pt = t;
         SOTO_U.uWin.value = cl01((ppb - 4) / 3);
+        if (c.spins && fdt) c.spins.forEach((o) => { o.rotation.y += o.userData.spin * fdt; });
         if (c.cars) { c.cars.mesh.visible = ppb > 2.4; if (c.cars.mesh.visible && fdt) c.cars.tick(fdt); }
         if (c.detail) c.detail.visible = SOTO_U.uWin.value > 0.05;
         if (c.wave && t - (this.wt2 || 0) > 150) {
