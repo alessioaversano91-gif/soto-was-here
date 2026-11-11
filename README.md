@@ -9,6 +9,7 @@ Il sito della crew SOTO (Albi, Seba, Lollo, Alecio): mappa pixel dell'Europa e d
 - `src/SOTO-Was-Here.jsx`: il codice del sito (un unico componente React, motore 3D con Three.js). È il file da modificare.
 - `index.html`: la pagina pubblicata. Si rigenera dal `.jsx` con `python3 build.py`.
 - `build.py`: script che crea `index.html` dal `.jsx`.
+- `CHECKLIST.md`: cosa è stato fatto e cosa manca.
 
 ## Note
 

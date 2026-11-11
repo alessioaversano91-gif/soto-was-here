@@ -1371,6 +1371,39 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         } else if (at(x - 1, y - 1)) { ctx.fillStyle = '#08070c'; ctx.fillRect(x * cs, y * cs, cs - 1, cs - 1); }
         else { ctx.fillStyle = '#18151f'; ctx.fillRect(x * cs + 2, y * cs + 2, 2, 2); }
       }
+      // Rilievi e fiumi: tracciati approssimativi, disegnati sulle celle di terraferma.
+      const MNT = [
+        [[7.6, 44.1], [7.0, 44.7], [7.0, 45.4], [6.9, 45.9], [7.7, 46.0], [8.5, 46.5], [10.0, 46.5], [11.0, 46.8], [12.5, 46.7], [13.5, 46.5]],
+        [[8.6, 44.45], [9.5, 44.5], [10.3, 44.2], [11.3, 44.0], [12.5, 43.5], [13.2, 42.8], [13.7, 42.2], [14.5, 41.5], [15.5, 40.8], [16.1, 40.0], [16.4, 39.2]],
+        [[-1.5, 43.1], [0.5, 42.7], [2.0, 42.5], [3.0, 42.45]],
+        [[2.9, 45.5], [3.3, 44.8], [3.6, 44.3]]
+      ];
+      const RIV = [
+        [[7.09, 44.7], [7.69, 45.07], [8.45, 45.14], [9.7, 45.05], [10.02, 45.13], [10.9, 45.05], [11.6, 44.95], [12.45, 44.96]],
+        [[6.15, 46.2], [5.82, 45.9], [5.4, 45.75], [4.84, 45.76], [4.83, 45.2], [4.89, 44.93], [4.81, 43.95], [4.63, 43.68], [4.84, 43.33]],
+        [[5.39, 47.19], [4.85, 46.78], [4.83, 46.31], [4.84, 45.76]],
+        [[10.69, 45.44], [10.8, 45.16], [10.98, 45.07]],
+        [[11.35, 46.5], [11.12, 46.07], [10.99, 45.44], [11.6, 45.15], [12.3, 45.15]],
+        [[4.7, 47.5], [4.07, 48.3], [2.35, 48.86], [1.1, 49.44], [0.11, 49.49]],
+        [[4.22, 44.83], [4.07, 46.04], [3.16, 46.99], [1.91, 47.9], [0.69, 47.39], [-1.55, 47.22], [-2.2, 47.27]],
+        [[0.7, 42.7], [1.44, 43.6], [0.62, 44.2], [-0.58, 44.84], [-1.05, 45.6]],
+        [[12.08, 43.77], [12.4, 43.1], [12.48, 41.9], [12.23, 41.74]],
+        [[11.82, 43.87], [11.25, 43.77], [10.28, 43.68]]
+      ];
+      const segD = (px, py, a, b) => { const vx = b[0] - a[0], vy = b[1] - a[1], q = Math.max(0, Math.min(1, ((px - a[0]) * vx + (py - a[1]) * vy) / (vx * vx + vy * vy || 1))); return Math.hypot(px - a[0] - vx * q, py - a[1] - vy * q); };
+      const mp = MNT.map((l) => l.map((q) => this.proj(q))), mw = k * R * 0.5;
+      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+        if (!at(x, y) || !at(x - 1, y) || !at(x + 1, y) || !at(x, y - 1) || !at(x, y + 1)) continue;
+        const px = x * cs + 3, py = y * cs + 3; let dm = 1e9;
+        for (const l of mp) for (let q = 0; q < l.length - 1; q++) { const d = segD(px, py, l[q], l[q + 1]); if (d < dm) dm = d; }
+        if (dm > mw) continue;
+        const near = 1 - dm / mw, n = hs(x * 3 + 1, y * 5 + 2);
+        ctx.fillStyle = 'rgba(196,163,255,' + (0.05 + near * 0.11).toFixed(3) + ')'; ctx.fillRect(x * cs, y * cs, cs - 1, cs - 1);
+        if (n < 0.16 + near * 0.3) { ctx.fillStyle = near > 0.55 ? '#efe9fb' : '#b39ce6'; ctx.fillRect(x * cs + 2, y * cs + 1, 2, 1); ctx.fillStyle = 'rgba(179,156,230,0.75)'; ctx.fillRect(x * cs + 1, y * cs + 2, 4, 2); }
+      }
+      ctx.fillStyle = '#5f86e6';
+      const seen = new Set();
+      RIV.forEach((l) => { const pts = l.map((q) => this.proj(q)); for (let q = 0; q < pts.length - 1; q++) { const a = pts[q], b = pts[q + 1], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / (cs / 2))); for (let u = 0; u <= n; u++) { const gx = Math.floor((a[0] + ((b[0] - a[0]) * u) / n) / cs), gy2 = Math.floor((a[1] + ((b[1] - a[1]) * u) / n) / cs), key = gy2 * cols + gx; if (seen.has(key) || !at(gx, gy2)) continue; seen.add(key); ctx.fillRect(gx * cs + 2, gy2 * cs + 2, 3, 3); } } });
       const vg = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.42, cx, cy, Math.max(w, h) * 0.9);
       vg.addColorStop(0, 'rgba(11,10,15,0)'); vg.addColorStop(1, 'rgba(11,10,15,0.5)');
       ctx.fillStyle = vg; ctx.fillRect(0, 0, w, h);
@@ -1414,6 +1447,14 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     dispose() { cancelAnimationFrame(this.raf); clearInterval(this.wd); window.removeEventListener('keydown', this.onKD); window.removeEventListener('keyup', this.onKU); window.removeEventListener('blur', this.onBlur); this.ro.disconnect(); this.controls.dispose(); this.renderer.dispose(); }
   }
   SotoEngine.computeGrid = computeGrid;
+  SotoEngine.miniMap = (id) => embeddedGrids().then((all) => {
+    const G = all[id]; if (!G) throw new Error('no grid');
+    const st = Math.max(1, Math.ceil(Math.max(G.NX, G.NZ) / 110)), W = Math.floor(G.NX / st), H = Math.floor(G.NZ / st), cv = document.createElement('canvas');
+    cv.width = W; cv.height = H; const x = cv.getContext('2d'), fc = (PAL[id] || PAL.genova).face;
+    const COL = { w: '#3f78c4', x: '#4d4463', r: '#3a3247', R: '#4d4463', t: '#473d50', p: '#5e8a45', o: '#8a7d68', q: '#9c8f7a', s: '#e6d39c', k: '#cfc6b0' };
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) { const c = G.t[j * st * G.NX + i * st]; x.fillStyle = c === 'b' ? fc[(i * 7 + j * 3) % fc.length] : COL[c] || COL.o; x.fillRect(i, j, 1, 1); }
+    return cv.toDataURL();
+  });
   window.SotoEngine = SotoEngine;
 })();
 
@@ -1525,10 +1566,12 @@ class SotoWasHere extends React.Component {
       Promise.resolve(A.getUser()).then((user) => this.setState({ user })).catch(() => {});
       if (A.onChange) this.unsub = A.onChange((user) => this.setState({ user }));
     }
+    const minis = () => { const E = window.SotoEngine; if (!(E && E.miniMap)) { this.mt = setTimeout(minis, 400); return; } CITIES.forEach((c) => E.miniMap(c.id).then((u) => this.setState((s) => ({ minis: Object.assign({}, s.minis, { [c.id]: u }) })), () => {})); };
+    minis();
     this.onResize = () => this.setState((s) => ({ tick: s.tick + 1 }));
     window.addEventListener('resize', this.onResize);
   }
-  componentWillUnmount() { clearTimeout(this.bt); if (this.eng) this.eng.dispose(); if (typeof this.unsub === 'function') this.unsub(); window.removeEventListener('resize', this.onResize); }
+  componentWillUnmount() { clearTimeout(this.bt); clearTimeout(this.mt); if (this.eng) this.eng.dispose(); if (typeof this.unsub === 'function') this.unsub(); window.removeEventListener('resize', this.onResize); }
   engOpts() { const o = this.props.options || {}; return { pixel: o.pixelSize ?? 2, light: o.light ?? 'tramonto', autoRotate: o.autoRotate ?? true }; }
   boot() {
     if (!(window.THREE && window.SotoEngine && this.cityRef.current)) { this.bt = setTimeout(() => this.boot(), 100); return; }
@@ -1650,6 +1693,7 @@ class SotoWasHere extends React.Component {
                     <span style={st('font-family:Silkscreen,monospace;font-size:11px;color:#a374f0;letter-spacing:0.04em')}>STAGE {i + 1}</span>
                     <span style={st("font-family:'Titan One',sans-serif;font-size:19px;line-height:1")}>{c.name[L]}</span>
                     <span style={st('font-size:12px;color:#9a96a6')}>{cnt(pubIn(c.id).length)}</span>
+                    {s.hov === c.id && s.minis && s.minis[c.id] && <img src={s.minis[c.id]} alt="" style={st('display:block;margin-top:5px;width:132px;height:auto;image-rendering:pixelated;border:2px solid #5b3fb0;background:#0b0a0f')} />}
                   </button>
                 </div>
               ))}
