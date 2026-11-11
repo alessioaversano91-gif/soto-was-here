@@ -620,7 +620,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const data = await Promise.all(tiles);
     onStep && onStep('build');
     const mk = () => { const c = document.createElement('canvas'); c.width = SX; c.height = SZ; const x = c.getContext('2d', { willReadFrequently: true }); x.lineCap = x.lineJoin = 'round'; return x; };
-    const L = { water: mk(), park: mk(), rock: mk(), sand: mk(), road: mk(), bridge: mk(), pier: mk(), bld: mk(), tall: mk() };
+    const L = { water: mk(), park: mk(), rock: mk(), sand: mk(), road: mk(), major: mk(), rail: mk(), bridge: mk(), pier: mk(), bld: mk(), tall: mk() };
     L.bld.globalCompositeOperation = 'lighten'; L.tall.globalCompositeOperation = 'lighten';
     const RW = { motorway: 3.4, trunk: 3.4, primary: 3.2, secondary: 2.8, tertiary: 2.6, minor: 2, service: 1.2, rail: 1.4, transit: 1.2 };
     for (const T of data) {
@@ -649,7 +649,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const c = tg.class || '';
         if (c === 'pier') { if (F.type === 3) fill(L.pier, R, '#fff'); else stroke(L.pier, R, 2.2); return; }
         if (F.type !== 2 || !(c in RW)) return;
+        if (c === 'rail' || c === 'transit') { if (c === 'rail' && tg.brunnel !== 'tunnel') stroke(L.rail, R, 2.2); if (tg.brunnel === 'bridge') stroke(L.bridge, R, RW[c] + 0.6); return; }
         stroke(L.road, R, RW[c]);
+        if (c === 'motorway' || c === 'trunk' || c === 'primary' || c === 'secondary') stroke(L.major, R, RW[c]);
         if (tg.brunnel === 'bridge') stroke(L.bridge, R, RW[c] + 0.6);
       });
     }
@@ -657,20 +659,21 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const t = new Array(NX * NZ), h = new Array(NX * NZ).fill(0), cellLL = [];
     const A = (arr, p) => arr[p * 4 + 3] > 60;
     for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
-      let w = 0, b = 0, tl = 0, r = 0, br = 0, pk = 0, pr = 0, rk = 0, sd = 0, mh = 0, mt = 0;
+      let w = 0, b = 0, tl = 0, r = 0, br = 0, pk = 0, pr = 0, rk = 0, sd = 0, mh = 0, mt = 0, mj = 0, rl = 0;
       for (let y = j * SS; y < (j + 1) * SS; y++) for (let x = i * SS; x < (i + 1) * SS; x++) {
         const p = y * SX + x;
         if (A(D.water, p)) w++;
         if (A(D.bld, p)) { b++; mh = Math.max(mh, D.bld[p * 4]); }
         if (D.tall[p * 4 + 3] > 40) { tl++; mt = Math.max(mt, D.tall[p * 4]); }
-        if (A(D.road, p)) r++; if (A(D.bridge, p)) br++; if (A(D.park, p)) pk++; if (A(D.pier, p)) pr++; if (A(D.rock, p)) rk++; if (A(D.sand, p)) sd++;
+        if (A(D.road, p)) r++; if (A(D.major, p)) mj++; if (A(D.rail, p)) rl++; if (A(D.bridge, p)) br++; if (A(D.park, p)) pk++; if (A(D.pier, p)) pr++; if (A(D.rock, p)) rk++; if (A(D.sand, p)) sd++;
       }
       const n = SS * SS, k = j * NX + i;
       let c = 'o';
       if (tl >= 2) { c = 'b'; h[k] = mt; }
       else if (w / n > 0.5) c = pr / n > 0.3 ? 'q' : br / n > 0.25 ? 'x' : 'w';
       else if (b / n >= 0.38) { c = 'b'; h[k] = mh; }
-      else if (r / n > 0.3) c = 'r';
+      else if (r / n > 0.3) c = mj / n > 0.25 ? 'R' : 'r';
+        else if (rl / n > 0.3) c = 't';
       else if (sd / n > 0.4) c = 's';
       else if (rk / n > 0.4) c = 'k';
       else if (pk / n > 0.4) c = 'p';
@@ -678,7 +681,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       cellLL.push([n0 - ((j + 0.5) / NZ) * (n0 - s0), w0 + ((i + 0.5) / NX) * (e0 - w0)]);
     }
     for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
-      const k = j * NX + i; if (t[k] === 'w' || t[k] === 'x' || t[k] === 'b' || t[k] === 's' || t[k] === 'k') continue;
+      const k = j * NX + i; if (t[k] === 'w' || t[k] === 'x' || t[k] === 'b' || t[k] === 's' || t[k] === 'k' || t[k] === 'R' || t[k] === 't') continue;
       const nb = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].some(([a, b2]) => a >= 0 && b2 >= 0 && a < NX && b2 < NZ && t[b2 * NX + a] === 'w');
       if (nb && t[k] !== 'p') t[k] = 'q';
     }
@@ -1135,6 +1138,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
     dispose() { cancelAnimationFrame(this.raf); clearInterval(this.wd); window.removeEventListener('keydown', this.onKD); window.removeEventListener('keyup', this.onKU); window.removeEventListener('blur', this.onBlur); this.ro.disconnect(); this.controls.dispose(); this.renderer.dispose(); }
   }
+  SotoEngine.computeGrid = computeGrid;
   window.SotoEngine = SotoEngine;
 })();
 
