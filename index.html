@@ -188,7 +188,19 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     chateaudif(g, x, y, z) { flag(g, x, y + 1.4, z, '#3f78c4'); },
     rotonda(g, x, y, z) { add(g, B(0.3, 0.5, 0.08), DK, x, y + 0.25, z - 1, { noShadow: true }); },
     saintvictor(g, x, y, z) { add(g, B(0.4, 0.7, 0.08), DK, x + 0.2, y + 0.35, z - 1.31, { noShadow: true }); },
-    portasoprana(g, x, y, z) { flag(g, x + 0.95, y + 3.9, z, '#f1eff5'); flag(g, x - 0.95, y + 3.9, z, '#d24b3a'); }
+    portasoprana(g, x, y, z) { flag(g, x + 0.95, y + 3.9, z, '#f1eff5'); flag(g, x - 0.95, y + 3.9, z, '#d24b3a'); },
+    santandrea(g, x, y, z) {
+      add(g, B(0.6, 0.95, 0.08), DK, x, y + 0.48, z + 1.51, { noShadow: true }); add(g, B(1.5, 0.12, 0.2), '#c9ad84', x, y + 1.05, z + 1.52);
+      winZ(g, x + 0.71, y + 0.8, z, 4, 2.6, 0.22, 0.5); winZ(g, x - 0.71, y + 0.8, z, 4, 2.6, 0.22, 0.5); winX(g, x + 1.1, y + 2.2, z + 1.39, 1, 0.3, 0.2, 0.4);
+    },
+    partdieu(g, x, y, z) { add(g, C(0.03, 0.03, 0.9, 5), '#d9d4c8', x, y + 6.8, z, { noShadow: true }); add(g, B(0.8, 0.5, 0.08), DK, x, y + 0.65, z - 1.11, { noShadow: true }); winX(g, x, y + 0.2, z - 1.11, 5, 2, 0.2, 0.2); },
+    citeradieuse(g, x, y, z) { [0.75, 1.3, 1.85, 2.4].forEach((h) => { winZ(g, x + 0.48, y + h, z, 7, 3.4, 0.3, 0.2); winZ(g, x - 0.48, y + h, z, 7, 3.4, 0.3, 0.2); }); },
+    velodrome(g, x, y, z) { add(g, B(0.04, 0.02, 1.5), '#f1eff5', x, y + 0.21, z, { noShadow: true }); add(g, B(2.1, 0.02, 0.04), '#f1eff5', x, y + 0.21, z - 0.76, { noShadow: true }); add(g, B(2.1, 0.02, 0.04), '#f1eff5', x, y + 0.21, z + 0.76, { noShadow: true }); },
+    congres(g, x, y, z) { winZ(g, x - 0.81, y + 0.8, z, 9, 5.6, 0.3, 0.5); },
+    deferrari(g, x, y, z) { [[-1.9, 0], [1.9, 0], [0, -1.9], [0, 1.9]].forEach(([dx, dz]) => { add(g, C(0.04, 0.05, 0.9, 5), DK, x + dx, y + 0.45, z + dz, { noShadow: true }); add(g, B(0.16, 0.16, 0.16), '#ffd98a', x + dx, y + 0.95, z + dz, { e: 1, noShadow: true }); }); },
+    bellecour(g, x, y, z) { [[-1.4, -0.8], [1.4, -0.8], [-1.4, 0.8], [1.4, 0.8]].forEach(([dx, dz]) => add(g, new THREE.IcosahedronGeometry(0.3, 0), '#4f7f3a', x + dx, y + 0.35, z + dz)); },
+    gabbia(g, x, y, z) { winX(g, x, y + 1.2, z - 0.36, 1, 0.3, 0.14, 0.4); winX(g, x, y + 2.4, z - 0.36, 1, 0.3, 0.14, 0.4); rose(g, x, y + 3.6, z - 0.36, 0.16, '#f6f1e4'); },
+    stazione(g, x, y, z) { flag(g, x, y + 1.86, z - 0.6, '#3f9a6c'); }
   };
   const LM = {
     stazione(g, x, y, z) {
@@ -567,33 +579,33 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   const P_ = (lat, lon, it, en, model, sc, ry) => ({ lat, lon, it, en: en || it, model, sc: sc || 1, ry: ry || 0 });
   const LMK = {
     genova: [
-      P_(44.40755, 8.93155, 'Cattedrale di San Lorenzo', 'San Lorenzo Cathedral', 'sanlorenzo', 1, Math.PI / 2),
+      P_(44.40755, 8.93155, 'Cattedrale di San Lorenzo', 'San Lorenzo Cathedral', 'sanlorenzo', 1, 1.117),
       P_(44.3918, 8.9600, 'Corso Italia', 'Corso Italia seafront'),
       P_(44.3906, 8.9737, 'Boccadasse'),
       P_(44.4044, 8.9050, 'Lanterna', 'Lanterna lighthouse', 'lanterna', 0.85),
-      P_(44.4102, 8.9268, 'Porto Antico · Acquario', 'Old Port · Aquarium', 'bigo', 0.8),
+      P_(44.4102, 8.9268, 'Porto Antico · Acquario', 'Old Port · Aquarium', 'bigo', 0.8, 1.536),
       P_(44.4142, 8.9235, 'Galata Museo del Mare', 'Galata Maritime Museum'),
       P_(44.4115, 8.9285, 'Via del Campo'),
       P_(44.4114, 8.9330, 'Via Garibaldi · Strada Nuova'),
       P_(44.4130, 8.9352, 'Spianata Castelletto', 'Castelletto viewpoint'),
       P_(44.4072, 8.9339, 'Piazza De Ferrari', '', 'deferrari', 0.5),
       P_(44.4057, 8.9346, 'Porta Soprana', '', 'portasoprana', 0.6, Math.PI / 2),
-      P_(44.4024, 8.9345, 'Basilica di Carignano', 'Carignano Basilica', 'carignano'),
+      P_(44.4024, 8.9345, 'Basilica di Carignano', 'Carignano Basilica', 'carignano', 1, 1.134),
       P_(44.4105, 8.9395, 'Villetta Di Negro'),
-      P_(44.4170, 8.9210, 'Stazione Principe', 'Principe station', 'stazione', 0.8, Math.PI),
-      P_(44.4065, 8.9465, 'Stazione Brignole', 'Brignole station', 'stazione', 0.9, Math.PI),
+      P_(44.4170, 8.9210, 'Stazione Principe', 'Principe station', 'stazione', 0.8, 2.88),
+      P_(44.4065, 8.9465, 'Stazione Brignole', 'Brignole station', 'stazione', 0.9, 2.443),
       P_(44.4025, 8.9465, 'Piazza della Vittoria'),
       P_(44.3955, 8.9480, 'Fiera · Piazzale Kennedy', 'Fair · Piazzale Kennedy'),
       P_(44.3935, 8.9545, 'Punta Vagno')
     ],
     lione: [
-      P_(45.7623, 4.8227, 'Basilica di Fourvière', 'Fourvière Basilica', 'fourviere'),
-      P_(45.7598, 4.8197, 'Teatri romani', 'Roman theatres', 'teatroromano', 0.9),
-      P_(45.7608, 4.8274, 'Cattedrale Saint-Jean', 'Saint-Jean Cathedral', 'saintjean', 0.9, Math.PI / 2),
+      P_(45.7623, 4.8227, 'Basilica di Fourvière', 'Fourvière Basilica', 'fourviere', 1, -0.087),
+      P_(45.7598, 4.8197, 'Teatri romani', 'Roman theatres', 'teatroromano', 0.9, Math.PI),
+      P_(45.7608, 4.8274, 'Cattedrale Saint-Jean', 'Saint-Jean Cathedral', 'saintjean', 0.9, 1.117),
       P_(45.7660, 4.8270, 'Vieux Lyon · Saint-Paul'),
       P_(45.7676, 4.8274, 'Fresque des Lyonnais'),
       P_(45.7578, 4.8320, 'Place Bellecour', '', 'bellecour', 0.8),
-      P_(45.7590, 4.8365, 'Hôtel-Dieu', '', 'hoteldieu', 0.9),
+      P_(45.7590, 4.8365, 'Hôtel-Dieu', '', 'hoteldieu', 0.9, -0.209),
       P_(45.7675, 4.8336, 'Place des Terreaux'),
       P_(45.7712, 4.8325, 'Montée de la Grande Côte'),
       P_(45.7760, 4.8320, 'Croix-Rousse'),
@@ -604,10 +616,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       P_(45.7605, 4.8595, 'Gare Part-Dieu', 'Part-Dieu station', 'stazione', 1, Math.PI / 2)
     ],
     mantova: [
-      P_(45.1612, 10.7998, 'Castello di San Giorgio', 'San Giorgio Castle', 'castello'),
-      P_(45.1597, 10.7978, 'Palazzo Ducale', 'Ducal Palace', 'palazzoducale', 1, Math.PI / 2),
+      P_(45.1612, 10.7998, 'Castello di San Giorgio', 'San Giorgio Castle', 'castello', 1, 0.454),
+      P_(45.1597, 10.7978, 'Palazzo Ducale', 'Ducal Palace', 'palazzoducale', 1, 2.025),
       P_(45.1590, 10.7962, 'Piazza Sordello'),
-      P_(45.1572, 10.7943, 'Basilica di Sant\'Andrea', 'Sant\'Andrea Basilica', 'santandrea'),
+      P_(45.1572, 10.7943, 'Basilica di Sant\'Andrea', 'Sant\'Andrea Basilica', 'santandrea', 1, -1.134),
       P_(45.1580, 10.7953, 'Rotonda di San Lorenzo', '', 'rotonda', 0.65),
       P_(45.1585, 10.7935, 'Torre della Gabbia', '', 'gabbia', 0.8),
       P_(45.1594, 10.7922, 'Teatro Bibiena', 'Bibiena Theatre', 'bibiena', 0.55),
@@ -618,17 +630,17 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       P_(45.1660, 10.8045, 'Lago di Mezzo', 'Middle Lake'),
       P_(45.1555, 10.8070, 'Lago Inferiore', 'Lower Lake'),
       P_(45.1505, 10.7910, 'Casa del Mantegna', 'Mantegna\'s House'),
-      P_(45.1478, 10.7875, 'Palazzo Te', '', 'palazzote', 1.2)
+      P_(45.1478, 10.7875, 'Palazzo Te', '', 'palazzote', 1.2, -0.349)
     ],
     marsiglia: [
-      P_(43.28395, 5.37125, 'Notre-Dame de la Garde', '', 'ndg'),
+      P_(43.28395, 5.37125, 'Notre-Dame de la Garde', '', 'ndg', 1, 2.443),
       P_(43.2950, 5.3740, 'Vieux-Port', 'Old Port'),
       P_(43.2965, 5.3610, 'Fort Saint-Jean · MuCEM', '', 'fort', 0.8),
-      P_(43.2995, 5.3650, 'Cattedrale La Major', 'La Major Cathedral', 'major', 0.9, Math.PI),
+      P_(43.2995, 5.3650, 'Cattedrale La Major', 'La Major Cathedral', 'major', 0.9, 2.915),
       P_(43.2990, 5.3695, 'Le Panier'),
       P_(43.2975, 5.3800, 'La Canebière'),
       P_(43.2945, 5.3835, 'Cours Julien'),
-      P_(43.2905, 5.3655, 'Abbazia di Saint-Victor', 'Saint-Victor Abbey', 'saintvictor', 0.8),
+      P_(43.2905, 5.3655, 'Abbazia di Saint-Victor', 'Saint-Victor Abbey', 'saintvictor', 0.8, 1.606),
       P_(43.2925, 5.3590, 'Palais du Pharo', '', 'pharo', 0.8),
       P_(43.2905, 5.3555, 'Plage des Catalans'),
       P_(43.2785, 5.3540, 'Lungomare · Corniche Kennedy', 'Seafront · Corniche Kennedy'),
@@ -826,7 +838,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     initCol();
     const p = PAL[id], r = rng(p.seed + 99), g = new THREE.Group(), NX = G.NX, NZ = G.NZ;
     const cs = (HALF * 2) / Math.max(NX, NZ), wpm = cs / G.cell, k31 = (G.cell * 1.6) / 31;
-    const TEX = 1.0 * k31, BEX = 2.4 * k31, STEP = 0.04;
+    const TEX = 1.0 * k31, BEX = 2.4 * k31, STEP = 0.025;
     const M = mapper(G.b, NX, NZ, cs), ox = M.ox, oz = M.oz;
     const lms = (LMK[id] || []).map((l) => Object.assign({}, l, M.toWorld(l.lat, l.lon)));
     const models = lms.filter((l) => l.model && LM[l.model]), clearR = LM_SCALE * 1.9;
@@ -849,7 +861,12 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         continue;
       }
       if (models.some((l) => hyp(l.x - x, l.z - z) < clearR * l.sc)) c = 'q';
-      ct[k] = c; terr.push([x, z, y, c, (i + j) & 1]); top[k] = y;
+      if (c === 'o' || c === 'p') {
+        // pendii ripidi: roccia a vista al posto di prato e terra
+        const sl = Math.max(i > 0 ? Math.abs(gy(k - 1) - y) : 0, i < NX - 1 ? Math.abs(gy(k + 1) - y) : 0, j > 0 ? Math.abs(gy(k - NX) - y) : 0, j < NZ - 1 ? Math.abs(gy(k + NX) - y) : 0);
+        if (sl > 0.15) c = 'k';
+      }
+      ct[k] = c; terr.push([x, z, y, c, c === 'p' ? (y > 0.3 && j % 2 ? 2 : 0) : (i + j) & 1]); top[k] = y;
       if (c === 'b') {
         isB[k] = 1;
       } else if (c === 'p' && r() < 0.6) (r() < 0.3 ? cones : trees).push([x + (r() - 0.5) * cs * 0.3, z + (r() - 0.5) * cs * 0.3, y, cs * (0.85 + r() * 0.5)]);
@@ -884,7 +901,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       Q.forEach((cell, m) => { if (on[m] && !used[m]) mk([cell]); });
     }
     const white = () => mat('#ffffff');
-    const terrM = inst(B(1, 1, 1), shade(white(), 'terr'), terr, (o, [x, z, y, c, pk], col) => { o.position.set(x, (y + BOT) / 2, z); o.scale.set(cs, y - BOT, cs); col.set(RCOL[c] || RCOL.o).offsetHSL(0, 0, (r() - 0.5) * (c === 'p' ? 0.1 : c === 'o' || c === 'q' ? 0.025 : 0.05) + ((c === 'o' || c === 'q') && pk ? 0.04 : 0)); });
+    const terrM = inst(B(1, 1, 1), shade(white(), 'terr'), terr, (o, [x, z, y, c, pk], col) => { o.position.set(x, (y + BOT) / 2, z); o.scale.set(cs, y - BOT, cs); col.set(c === 'k' && id !== 'marsiglia' ? '#a99d8d' : RCOL[c] || RCOL.o).offsetHSL(c === 'p' && pk === 2 ? 0.03 : 0, 0, (r() - 0.5) * (c === 'p' ? 0.1 : c === 'o' || c === 'q' ? 0.025 : 0.05) + ((c === 'o' || c === 'q') && pk ? 0.04 : 0) - (c === 'p' && pk === 2 ? 0.05 : 0)); });
     const watM = inst(B(1, 1, 1), shade(mat('#ffffff', 0, { transparent: true, opacity: 0.92 }), 'water'), wat, (o, [x, z, wy, dp], col) => { o.position.set(x, (wy + BOT) / 2, z); o.scale.set(cs, wy - BOT, cs); col.copy(WDEP[dp]); });
     watM.castShadow = false;
     const brM = inst(B(1, 1, 1), white(), bridges, (o, [x, z, y], col) => { o.position.set(x, y, z); o.scale.set(cs, 0.12, cs); col.set('#4a4058'); });
@@ -960,13 +977,15 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const CONT = ['#d24b3a', '#3f78c4', '#e8b93a', '#3f9a6c', '#e8792e', '#9aa0a8'];
     const PORT = { genova: [44.396, 8.9, 44.4125, 8.924], marsiglia: [43.2975, 5.352, 43.302, 5.366] }[id], cranes = [];
     const inPort = (i, j) => { if (!PORT) return false; const la = G.b[2] - ((j + 0.5) / NZ) * (G.b[2] - G.b[0]), lo = G.b[1] + ((i + 0.5) / NX) * (G.b[3] - G.b[1]); return la > PORT[0] && la < PORT[2] && lo > PORT[1] && lo < PORT[3]; };
-    let moored = 0;
+    let moored = 0; const reeds = [];
     for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
       const k = j * NX + i, c = ct[k], x = ox + (i + 0.5) * cs, z = oz + (j + 0.5) * cs, y = top[k];
       if ((c === 'q' || c === 'o') && inPort(i, j)) {
         const w = wat4(i, j);
         if (w && cranes.length < 9 && !cranes.some((q) => Math.abs(q.i - i) + Math.abs(q.j - j) < 7)) cranes.push({ i, j, x, y, z, w });
         else if (!w && r() < 0.07) { const n = 1 + ((r() * 3) | 0), ax = r() < 0.5; for (let q = 0; q < n; q++) box(x, y + q * cs * 0.3, z, cs * (ax ? 0.85 : 0.36), cs * 0.3, cs * (ax ? 0.36 : 0.85), CONT[(r() * CONT.length) | 0]); }
+      } else if (c === 'w' && wdp[k] === 1 && id === 'mantova' && r() < 0.45 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => T(i + a, j + b) === 'p' || T(i + a, j + b) === 'o')) {
+        for (let q = 0; q < 2; q++) reeds.push([x + (r() - 0.5) * cs * 0.7, z + (r() - 0.5) * cs * 0.7, y, cs * (0.5 + r() * 0.4)]);
       } else if (c === 'w' && wdp[k] === 1 && moored < 160 && r() < 0.12) {
         const q = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([a, b]) => T(i + a, j + b) === 'q');
         if (q) { moored++; const ax = q[0] === 0; box(x, y - 0.01, z, cs * (ax ? 0.7 : 0.26), cs * 0.16, cs * (ax ? 0.26 : 0.7), r() < 0.7 ? '#f2efe8' : CONT[(r() * 3) | 0]); }
@@ -996,8 +1015,27 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const ax = T(i - 2, j) === 'w' && T(i + 2, j) === 'w', x = ox + (i + 0.5) * cs, z = oz + (j + 0.5) * cs;
       box(x, top[k] - 0.01, z, cs * (ax ? 2.4 : 0.6), cs * 0.22, cs * (ax ? 0.6 : 2.4), '#3a3448'); box(x + (ax ? cs * 0.8 : 0), top[k] + cs * 0.2, z + (ax ? 0 : cs * 0.8), cs * 0.5, cs * 0.35, cs * 0.5, '#f1eff5'); n++;
     }
+    g.add(inst(new THREE.ConeGeometry(0.12, 1, 5), white(), reeds, (o, [x, z, y, q], col) => { o.position.set(x, y + q * 0.5, z); o.scale.set(q, q, q); col.set(r() < 0.5 ? '#a9a65c' : '#8f9a4e'); }));
+    const o4 = new THREE.Object3D();
+    // Barche in movimento con la scia, lungo i tratti d'acqua aperta.
+    const wruns = [];
+    [0, 1].forEach((ax) => { const A = ax ? NZ : NX, F = ax ? NX : NZ; for (let f = 2; f < F - 2; f += 3) { let st = -1; for (let a = 0; a <= A; a++) { const k = ax ? a * NX + f : f * NX + a, on = a < A && ct[k] === 'w' && wdp[k] >= 2; if (on && st < 0) st = a; if (!on && st >= 0) { if (a - st >= 14) wruns.push({ ax, a: st, n: a - st, f }); st = -1; } } } });
+    const nMb = Math.min(coarse ? 3 : 6, wruns.length), mbs = [];
+    for (let n = 0; n < nMb; n++) { const R = wruns[(r() * wruns.length) | 0]; mbs.push({ R, v: 0.5 + r() * 0.5, ph: r() * 10, col: ['#f2efe8', '#d24b3a', '#3f78c4', '#f2efe8'][(r() * 4) | 0] }); }
+    const mbM = quiet(new THREE.InstancedMesh(B(1, 1, 1), white(), Math.max(1, nMb * 5))); mbM.count = nMb * 5; g.add(mbM);
+    mbs.forEach((q, n) => { const cc = new THREE.Color(); mbM.setColorAt(n * 5, cc.set(q.col)); mbM.setColorAt(n * 5 + 1, cc.set('#56506a')); for (let w = 2; w < 5; w++) mbM.setColorAt(n * 5 + w, cc.set('#d6f0fa')); });
+    const tickBoats = (T2) => {
+      mbs.forEach((q, n) => {
+        const R = q.R, span = R.n - 2, u = (T2 * q.v + q.ph) % (span * 2), pos = 1 + (u < span ? u : span * 2 - u), dir = u < span ? 1 : -1;
+        const k = R.ax ? (R.a + Math.floor(pos)) * NX + R.f : R.f * NX + R.a + Math.floor(pos), wy = top[k], fx = (R.f + 0.5) * cs;
+        const put = (idx, off, len, hgt, wid, dy) => { const al = (R.a + pos - dir * off) * cs; if (R.ax) o4.position.set(ox + fx, wy + dy, oz + al); else o4.position.set(ox + al, wy + dy, oz + fx); o4.rotation.set(0, R.ax ? Math.PI / 2 : 0, 0); o4.scale.set(len, hgt, wid); o4.updateMatrix(); mbM.setMatrixAt(n * 5 + idx, o4.matrix); };
+        put(0, 0, cs * 1.1, cs * 0.3, cs * 0.42, cs * 0.1); put(1, 0.15, cs * 0.4, cs * 0.25, cs * 0.3, cs * 0.36);
+        put(2, 0.95, cs * 0.5, 0.012, cs * 0.5, 0.008); put(3, 1.6, cs * 0.5, 0.012, cs * 0.34, 0.008); put(4, 2.25, cs * 0.5, 0.012, cs * 0.2, 0.008);
+      });
+      o4.rotation.set(0, 0, 0); mbM.instanceMatrix.needsUpdate = true;
+    };
     // Vita: gabbiani sul mare e fumo dai camini.
-    const gulls = [], smoke = [], o4 = new THREE.Object3D();
+    const gulls = [], smoke = [];
     if (seaCells.length > 150) for (let n = 0; n < 9; n++) {
       const [x, z, wy] = seaCells[(r() * seaCells.length) | 0], gg = new THREE.Group(), gm = mat('#f6f3ec', 0.5);
       const wings = [-1, 1].map((k) => { const pv = new THREE.Group(), m = new THREE.Mesh(B(0.1, 0.012, 0.035), gm); m.position.x = k * 0.05; pv.add(m); gg.add(pv); return pv; });
@@ -1007,7 +1045,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     chim.forEach(([x, z, y]) => { for (let q = 0; q < 4; q++) smoke.push({ x, y: y + cs * 0.3, z, o: q / 4 + r() * 0.1 }); });
     const smokeM = quiet(new THREE.InstancedMesh(B(1, 1, 1), mat('#e2dcea', 0.35, { transparent: true, opacity: 0.5, depthWrite: false }), Math.max(1, smoke.length))); smokeM.count = smoke.length; det.add(smokeM);
     const life = (t) => {
-      const T2 = t / 1000;
+      const T2 = t / 1000; tickBoats(T2);
       gulls.forEach((q) => { const a = q.ph + T2 * q.sp; q.g.position.set(q.x + Math.cos(a) * q.rad, q.y + Math.sin(T2 * 0.7 + q.ph) * 0.15, q.z + Math.sin(a) * q.rad); q.g.rotation.y = -a + (q.sp > 0 ? 0 : Math.PI); const f = Math.sin(T2 * 9 + q.ph) * 0.5; q.wings[0].rotation.z = -f; q.wings[1].rotation.z = f; });
       if (!det.visible) return;
       smoke.forEach((q, n) => { const k = (T2 * 0.22 + q.o) % 1, sc = cs * 0.38 * Math.sin(Math.PI * k); o4.position.set(q.x + Math.sin(k * 5 + q.o * 9) * cs * 0.2 + k * cs * 0.6, q.y + k * cs * 3, q.z); o4.scale.setScalar(Math.max(0.0001, sc)); o4.updateMatrix(); smokeM.setMatrixAt(n, o4.matrix); });
