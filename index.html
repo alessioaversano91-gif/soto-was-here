@@ -81,7 +81,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     return m;
   }
   /* Rifinitura grafica: piccoli innesti negli shader Lambert (finestre sugli edifici, strati di terra, profondità dell'acqua). */
-  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 } };
+  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 } };
   const SHADE = {
     build: `if (abs(vSN.y) < 0.5) {
         bool fx = abs(vSN.x) > 0.5;
@@ -113,9 +113,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   function shade(m, kind) {
     m.customProgramCacheKey = () => 'soto-' + kind;
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uRow = SOTO_U.uRow; sh.uniforms.uNight = SOTO_U.uNight;
+      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uRow = SOTO_U.uRow; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uT = SOTO_U.uT;
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nuniform float uRow;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
+        .replace('#include <common>', '#include <common>\nuniform float uT;\nuniform float uRow;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
         vSN = normal; vSP = position + 0.5;
         #ifdef USE_INSTANCING
@@ -124,7 +124,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         #else
           float sSy = 1.0; vec3 sC = vec3(0.0); vSC = vec2(2.0);
         #endif
-        vSI = vec3(max(1.0, floor(sSy / uRow + 0.5)), fract(sin(dot(sC.xz, vec2(12.9898, 78.233))) * 43758.5453), sSy);`);
+        vSI = vec3(max(1.0, floor(sSy / uRow + 0.5)), fract(sin(dot(sC.xz, vec2(12.9898, 78.233))) * 43758.5453), sSy);` + (kind === 'water' ? `
+        #ifdef USE_INSTANCING
+          vec4 sW = instanceMatrix * vec4(position, 1.0);
+          transformed.y += step(0.0, position.y) * (sin(sW.x * 2.6 + uT * 1.3) * cos(sW.z * 2.1 - uT * 0.9) + 0.5 * sin((sW.x + sW.z) * 5.3 + uT * 2.1)) * 0.011 / sSy;
+        #endif` : ''));
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      ' + SHADE[kind]);
@@ -551,10 +555,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   }
 
   const TCOL = { road: '#3a3247', quay: '#9c8f7a', plaza: '#b3a58b', park: '#5e8a45', build: '#6f6559' };
-  let WCOL, WHI, WDEP, WFOAM, WLOW, WSUN, WMOON, WLAMP;
+  let WCOL, WHI, WDEP, WFOAM, WLOW, WSUN, WMOON, WLAMP, WREF;
   const initCol = () => {
     if (WCOL) return;
-    WCOL = new THREE.Color('#3f86c4'); WHI = new THREE.Color('#8cc4ec'); WFOAM = new THREE.Color('#d6f0fa'); WLOW = new THREE.Color('#2f66a3'); WSUN = new THREE.Color('#ffdca6'); WMOON = new THREE.Color('#cdd6ff'); WLAMP = new THREE.Color('#f0a850');
+    WCOL = new THREE.Color('#3f86c4'); WHI = new THREE.Color('#8cc4ec'); WFOAM = new THREE.Color('#d6f0fa'); WLOW = new THREE.Color('#2f66a3'); WSUN = new THREE.Color('#ffdca6'); WMOON = new THREE.Color('#cdd6ff'); WLAMP = new THREE.Color('#f0a850'); WREF = new THREE.Color('#6f9bd0');
     WDEP = ['#6cc0e0', '#6cc0e0', '#57a6d6', '#4793cb', '#3f86c4', '#3879b9', '#326dad'].map((c) => new THREE.Color(c));
   };
 
@@ -923,7 +927,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   /* Contorni reali degli edifici (OpenStreetMap via OpenFreeMap), in metri dal vertice nord-ovest dell'area.
      Formato: per ogni edificio [altezza, n. anelli, poi per ogni anello: n. punti, x, y, ...]; il primo anello e il perimetro, gli altri i cortili. */
   // Tracciati reali delle strade, in metri dall'angolo nord-ovest: [classe + 4 se ponte, nPunti, x, y, ...]
-  async function roads(b) {
+  async function roads(b, rail) {
     const [s0, w0, n0, e0] = b, lat0 = (s0 + n0) / 2, kx = 111320 * Math.cos((lat0 * Math.PI) / 180), ky = 110540, W = (e0 - w0) * kx, H = (n0 - s0) * ky;
     const Z = 14, n2 = 1 << Z, tX = (lon) => ((lon + 180) / 360) * n2, tY = (lat) => { const q = (lat * Math.PI) / 180; return ((1 - Math.log(Math.tan(q) + 1 / Math.cos(q)) / Math.PI) / 2) * n2; };
     const x0 = Math.floor(tX(w0)), x1 = Math.floor(tX(e0)), y0 = Math.floor(tY(n0)), y1 = Math.floor(tY(s0)), tpl = await tileTemplate(), jobs = [];
@@ -936,7 +940,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       Ly.feats.forEach((F) => {
         if (F.type !== 2) return;
         const tg = {}; for (let k = 0; k < F.tags.length; k += 2) tg[Ly.keys[F.tags[k]]] = Ly.values[F.tags[k + 1]];
-        let cl = CL[tg.class]; if (cl === undefined) { if (tg.class === 'path' && tg.subclass === 'pedestrian') cl = 0; else return; }
+        let cl = CL[tg.class]; if (rail) { cl = tg.class === 'rail' && (!tg.subclass || tg.subclass === 'rail') && !tg.service ? 1 : tg.subclass === 'tram' || tg.subclass === 'light_rail' ? 2 : tg.subclass === 'funicular' ? 3 : undefined; if (cl === undefined) return; } else if (cl === undefined) { if (tg.class === 'path' && tg.subclass === 'pedestrian') cl = 0; else return; }
         if (tg.brunnel === 'tunnel') return;
         const head = cl + (tg.brunnel === 'bridge' ? 4 : 0);
         mvtGeom(F.geom).forEach((L0) => {
@@ -1179,7 +1183,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         for (let a = 0; a < nr; a++) { const n = D[q++], R = []; for (let b = 0; b < n; b++) { R.push([ox + D[q] * sxm, oz + D[q + 1] * szm]); q += 2; } rings.push(R); }
         rings.forEach((R, rn) => { let a2 = 0; for (let a = 0; a < R.length; a++) { const A = R[a], Bp = R[(a + 1) % R.length]; a2 += A[0] * Bp[1] - Bp[0] * A[1]; } if (a2 > 0 === (rn === 0)) R.reverse(); });
         const O = rings[0]; let cx = 0, cz = 0; O.forEach((pt) => { cx += pt[0]; cz += pt[1]; }); cx /= O.length; cz /= O.length;
-        if (models.some((l) => hyp(l.x - cx, l.z - cz) < clearR * l.sc)) continue;
+        if (models.some((l) => hyp(l.x - cx, l.z - cz) < clearR * l.sc || (hyp(l.x - cx, l.z - cz) < clearR * l.sc * 3 && pip(l.x, l.z, O)))) continue;
         let g0 = gy(cellK(cx, cz)), g1 = g0, wet = isWk(cellK(cx, cz)) ? 1 : 0; O.forEach((pt) => { const k = cellK(pt[0], pt[1]), y = gy(k); if (y < g0) g0 = y; if (y > g1) g1 = y; });
         if (wet) { g0 = Math.max(g0, 0); g1 = Math.max(g1, 0.02); }
         const rows = Math.max(1, Math.round(hm / 3.5)), bh = Math.max(0.02, hm * hU), yB = g0 - 0.015, yR = g1 + bh, sd = r(), tall = hm >= 40;
@@ -1228,33 +1232,50 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const fpM = FP ? fpMesh() : null;
     // Strade con il tracciato reale: nastri continui appoggiati al terreno.
     const routes = [], rLamps = [];
+    const peop = [];
     const roadMesh = () => {
       const D = G.rd, sxm = (NX * cs) / G.fpW, szm = (NZ * cs) / G.fpH, CW = NX + 1, step = cs * 0.5;
+      const cellT = (x, z) => G.t[Math.max(0, Math.min(NZ - 1, Math.floor((z - oz) / cs))) * NX + Math.max(0, Math.min(NX - 1, Math.floor((x - ox) / cs)))];
       const hAt = (x, z) => {
         const fi = (x - ox) / cs, fj = (z - oz) / cs, i = Math.max(0, Math.min(NX - 1, Math.floor(fi))), j = Math.max(0, Math.min(NZ - 1, Math.floor(fj))), k = j * NX + i, c = G.t[k];
         if (c === 'w' || c === 'x') return gy(k) + 0.185;
         const u = Math.max(0, Math.min(1, fi - i)), v = Math.max(0, Math.min(1, fj - j)), a = corA[j * CW + i], b = corA[(j + 1) * CW + i], c2 = corA[(j + 1) * CW + i + 1], d = corA[j * CW + i + 1];
         return v >= u ? a + (b - a) * v + (c2 - b) * u : a + (d - a) * u + (c2 - d) * v;
       };
-      const WID = [3.6, 5.5, 9, 12], COL = ['#a2959f', '#4b4259', '#443b54', '#3c344e'].map((q) => new THREE.Color(q));
+      const WID = [3.6, 5.5, 9, 12], COL = ['#a2959f', '#4b4259', '#443b54', '#3c344e'].map((q) => new THREE.Color(q)), SIDE = new THREE.Color('#a096a6'), LINE = new THREE.Color('#e9e2f0');
       const lines = []; let np = 0;
       for (let q = 0; q < D.length;) {
         const head = D[q], n = D[q + 1]; q += 2; const cl = head & 3, pts = []; let px = 0, pz = 0;
         for (let a = 0; a < n; a++) { const x = ox + D[q] * sxm, z = oz + D[q + 1] * szm; q += 2; if (a) { const L = hyp(x - px, z - pz), m = Math.max(1, Math.ceil(L / step)); for (let b = 1; b <= m; b++) pts.push([px + ((x - px) * b) / m, pz + ((z - pz) * b) / m]); } else pts.push([x, z]); px = x; pz = z; }
         if (pts.length < 2 || models.some((l) => hyp(l.x - pts[0][0], l.z - pts[0][1]) < clearR * l.sc * 0.6)) continue;
-        lines.push([cl, pts]); np += pts.length;
+        lines.push([cl, pts, head & 4]); np += pts.length * (cl >= 2 ? 2.6 : 1);
       }
+      np = Math.ceil(np) + 16;
       const P = new Float32Array(np * 6), Cc = new Uint8Array(np * 6), IX = new Uint32Array(np * 6); let nv = 0, ni = 0;
-      lines.forEach(([cl, pts]) => {
-        const hw = (WID[cl] * wpm) / 2, c = COL[cl], lift = 0.012 + cl * 0.003, R3 = [];
-        for (let a = 0; a < pts.length; a++) {
+      // un nastro: coppie di vertici ai lati del tracciato, appoggiate al terreno
+      const emit = (pts, a0, a1, hw, c, lift, vl) => {
+        for (let a = a0; a <= a1; a++) {
           const A = pts[Math.max(0, a - 1)], Bp = pts[Math.min(pts.length - 1, a + 1)]; let dx = Bp[0] - A[0], dz = Bp[1] - A[1]; const L = hyp(dx, dz) || 1; dx /= L; dz /= L;
-          const x = pts[a][0], z = pts[a][1], lx = x - dz * hw, lz = z + dx * hw, rx = x + dz * hw, rz = z - dx * hw, o = nv * 3;
-          P[o] = lx; P[o + 1] = hAt(lx, lz) + lift; P[o + 2] = lz; P[o + 3] = rx; P[o + 4] = hAt(rx, rz) + lift; P[o + 5] = rz;
+          const x = pts[a][0], z = pts[a][1], lx = x - dz * hw, lz = z + dx * hw, rx = x + dz * hw, rz = z - dx * hw, o = nv * 3, up = lift + (vl ? vl[a] : 0);
+          P[o] = lx; P[o + 1] = hAt(lx, lz) + up; P[o + 2] = lz; P[o + 3] = rx; P[o + 4] = hAt(rx, rz) + up; P[o + 5] = rz;
           for (let e = 0; e < 2; e++) { Cc[o + e * 3] = c.r * 255; Cc[o + e * 3 + 1] = c.g * 255; Cc[o + e * 3 + 2] = c.b * 255; }
-          if (a) { IX[ni++] = nv - 2; IX[ni++] = nv; IX[ni++] = nv - 1; IX[ni++] = nv - 1; IX[ni++] = nv; IX[ni++] = nv + 1; }
+          if (a > a0) { IX[ni++] = nv - 2; IX[ni++] = nv; IX[ni++] = nv - 1; IX[ni++] = nv - 1; IX[ni++] = nv; IX[ni++] = nv + 1; }
           nv += 2;
-          if (cl >= 2) { const y = hAt(x, z); R3.push([x, y, z, dx, dz]); if (a % 6 === 3) { const sd = (a / 6) % 2 < 1 ? 1 : -1, off = hw + 1.6 * wpm; if (a % 12 === 3) rLamps.push([x - dz * off * sd, hAt(x - dz * off * sd, z + dx * off * sd), z + dx * off * sd]); else if (r() < 0.5) av.push([x + dz * off * sd * 1.3, z - dx * off * sd * 1.3, hAt(x + dz * off * sd * 1.3, z - dx * off * sd * 1.3), cs * 0.45]); } }
+        }
+      };
+      lines.forEach(([cl, pts, br]) => {
+        const hw = (WID[cl] * wpm) / 2, lift = 0.012 + cl * 0.003, R3 = [], N = pts.length;
+        // viadotti: i tratti segnati come ponte ma su terra si alzano su piloni
+        const vl = br ? pts.map((q, a) => { const c = cellT(q[0], q[1]); return c === 'w' || c === 'x' ? 0 : 0.085 * Math.min(1, a / 4, (N - 1 - a) / 4); }) : null;
+        if (cl >= 2) emit(pts, 0, N - 1, hw + 1.7 * wpm, SIDE, lift - 0.005, vl);
+        emit(pts, 0, N - 1, hw, COL[cl], lift, vl);
+        if (cl === 3) for (let a = 1; a + 2 < N; a += 5) emit(pts, a, a + 2, Math.max(0.3 * wpm, cs * 0.012), LINE, lift + 0.004, vl);
+        for (let a = 0; a < N; a++) {
+          const A = pts[Math.max(0, a - 1)], Bp = pts[Math.min(N - 1, a + 1)]; let dx = Bp[0] - A[0], dz = Bp[1] - A[1]; const L = hyp(dx, dz) || 1; dx /= L; dz /= L;
+          const x = pts[a][0], z = pts[a][1], up = vl ? vl[a] : 0;
+          if (up > 0.05 && a % 6 === 0) dbox.push([x, hAt(x, z) + up / 2, z, cs * 0.14, up, cs * 0.14, '#8d8794']);
+          if (cl === 0 && a % 4 === 2 && r() < 0.45) peop.push([x + (r() - 0.5) * hw, hAt(x, z), z + (r() - 0.5) * hw]);
+          if (cl >= 2) { const y = hAt(x, z) + up; R3.push([x, y, z, dx, dz]); if (a % 6 === 3 && !up) { const sd = (a / 6) % 2 < 1 ? 1 : -1, off = hw + 1.6 * wpm; if (a % 12 === 3) rLamps.push([x - dz * off * sd, hAt(x - dz * off * sd, z + dx * off * sd), z + dx * off * sd]); else if (r() < 0.5) av.push([x + dz * off * sd * 1.3, z - dx * off * sd * 1.3, hAt(x + dz * off * sd * 1.3, z - dx * off * sd * 1.3), cs * 0.45]); } }
         }
         if (R3.length >= 12) routes.push({ P: R3, hw });
       });
@@ -1336,6 +1357,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       } else if (c === 'x' && (i + j) % 2 === 0 && !RD) lamps.push([x + 0.42 * cs, y, z]);
     }
     rLamps.forEach((q) => lamps.push(q));
+    if (peop.length) { const PC = ['#e9dcc0', '#d24b3a', '#3f78c4', '#2a2630', '#e0b23a', '#7b6cf6', '#f1eff5']; det.add(quiet(inst(B(1, 1, 1), white(), coarse ? peop.filter((q, n) => n % 2 === 0) : peop, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.1, z); o.scale.set(cs * 0.055, cs * 0.17, cs * 0.055); col.set(PC[(r() * PC.length) | 0]); }))); }
     det.add(quiet(inst(B(1, 1, 1), white(), marks, (o, [x, y, z, sx, sz, c], col) => { o.position.set(x, y + 0.004, z); o.scale.set(sx, 0.008, sz); col.set(c); })));
     det.add(quiet(inst(B(1, 1, 1), white(), lamps, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.3, z); o.scale.set(cs * 0.06, cs * 0.6, cs * 0.06); col.set('#2a2436'); })));
     const lampMat = new THREE.MeshLambertMaterial({ color: '#cfc8d6', emissive: '#ffc35e', emissiveIntensity: 0.3, flatShading: true });
@@ -1690,6 +1712,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         SOTO_U.uWin.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 2) / 1.5) : cl01((ppb - 4) / 3);
         if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'alba', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
         if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; this.scene.fog.color.lerp(G2.fog, q); }
+        SOTO_U.uT.value = this.reduce ? 0 : (t / 1000) % 1000;
         this.scene.fog.near = cd; this.scene.fog.far = cd + (c.half || 20) * 4;
         if (c.lampMat) { const nv = SOTO_U.uNight.value; c.lampMat.emissiveIntensity = Math.max(0, 0.3 + 0.9 * nv); c.poolMat.opacity = 0.3 * cl01(0.12 + nv); }
         if (c.life && !this.reduce) c.life(t);
@@ -1704,7 +1727,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
             const ph = (x * 0.5 + z * 0.85) * 0.42 - T * 0.11 + Math.sin(x * 0.7 - z * 0.4) * 0.12, crest = ph - Math.floor(ph) < 0.07 && Math.sin(x * 1.7 + z * 2.9) > -0.3;
             const perp = Math.abs(x * gz - z * gx), glit = dp >= 2 && perp < 1.4 && Math.sin(x * 9.1 + z * 6.7 + T * 2.6) > 0.5 + perp * 0.32;
             const lampR = nite && q[4] && dp <= 4 && Math.sin(x * 23.7 + z * 17.3) > 0.25 && Math.sin(x * 5.3 - z * 3.1 + T * 1.4) > -0.5;
-            const col = dp === 1 && Math.sin(x * 3.1 + z * 2.3 + T * 1.6) > 0.8 ? WFOAM : lampR ? WLAMP : glit ? GL : crest ? (dp <= 3 ? WHI : WDEP[dp - 2]) : WDEP[dp];
+            const col = dp === 1 && Math.sin(x * 3.1 + z * 2.3 + T * 1.6) > 0.8 ? WFOAM : lampR ? WLAMP : !nite && q[4] && dp <= 2 && Math.sin(x * 31.0 + z * 3.0) > 0.1 && Math.sin(z * 9.0 + T * 0.8) > -0.6 ? WREF : glit ? GL : crest ? (dp <= 3 ? WHI : WDEP[dp - 2]) : WDEP[dp];
             A[n * 3] = col.r; A[n * 3 + 1] = col.g; A[n * 3 + 2] = col.b;
           }
           c.water.instanceColor.needsUpdate = true;
