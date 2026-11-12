@@ -131,16 +131,24 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     };
     return m;
   }
-  function shadeFp(m) {
+  function shadeFp(m, shut) {
     m.customProgramCacheKey = () => 'soto-fp';
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uNight = SOTO_U.uNight;
+      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uShut = { value: new THREE.Color(shut || '#4f5d52') };
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aW;\nvarying vec4 vW;').replace('#include <begin_vertex>', '#include <begin_vertex>\n        vW = aW;');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nvarying vec4 vW;').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform vec3 uShut;\nvarying vec4 vW;').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
       if (vW.w < 0.5) {
         vec2 sg = vW.xy, sf = fract(sg), sid = floor(sg);
         float gf = step(sg.y, 1.0), win = step(0.24, sf.x) * step(sf.x, 0.76) * step(0.3, sf.y) * step(sf.y, 0.8);
         win = mix(win, step(0.16, sf.x) * step(sf.x, 0.84) * step(sf.y, 0.66), gf) * step(0.0, sg.y);
+        float fl = step(1.0, sg.y), wy = step(0.3, sf.y) * step(sf.y, 0.8);
+        float shut = (step(0.12, sf.x) * step(sf.x, 0.24) + step(0.76, sf.x) * step(sf.x, 0.88)) * wy * fl;
+        diffuseColor.rgb = mix(diffuseColor.rgb, uShut, shut * uWin * 0.85);
+        float hb = fract(sin(dot(vec2(sid.y, vW.z * 91.0), vec2(12.9, 78.2))) * 4375.5);
+        diffuseColor.rgb *= 1.0 - 0.45 * uWin * fl * step(0.62, hb) * step(0.08, sf.x) * step(sf.x, 0.92) * step(0.2, sf.y) * step(sf.y, 0.3);
+        float hs = fract(sin(dot(vec2(floor(sg.x / 2.0), vW.z * 53.0), vec2(27.1, 61.7))) * 2531.7);
+        vec3 ac = hs > 0.85 ? vec3(0.78, 0.25, 0.2) : hs > 0.7 ? vec3(0.2, 0.45, 0.35) : vec3(0.92, 0.88, 0.78);
+        diffuseColor.rgb = mix(diffuseColor.rgb, ac, (1.0 - fl) * step(0.0, sg.y) * step(0.66, sf.y) * step(sf.y, 0.9) * step(0.55, hs) * uWin);
         float lit = step(mix(0.5, 0.3, uNight), fract(sin(dot(sid + vW.z * 37.0, vec2(41.3, 289.1))) * 9173.3));
         diffuseColor.rgb *= 0.84 + 0.16 * step(0.25, sg.y);
         diffuseColor.rgb *= 1.0 - 0.42 * win * uWin * (1.0 - lit);
@@ -901,6 +909,12 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     };
   }
   const LM_SCALE = 0.34;
+  // Colori delle facciate per quartiere: [sud, ovest, nord, est, tavolozza]
+  const TINT = {
+    genova: [[44.3895, 8.97, 44.3925, 8.977, ['#f0b890', '#f3d27c', '#e88f7a', '#f6e2b8', '#d98a6a']], [44.4055, 8.927, 44.4125, 8.936, ['#d9b48a', '#c9966e', '#e6cfa6', '#b8866a', '#d4a482']]],
+    lione: [[45.757, 4.824, 45.768, 4.829, ['#e2a070', '#d98866', '#ecc08a', '#c97a5a', '#e8b47e']], [45.768, 4.826, 45.78, 4.838, ['#e9cf9a', '#e3bd7e', '#f0dcb2', '#d9b072']], [45.757, 4.85, 45.765, 4.863, ['#cfd0d6', '#b9bcc6', '#e2e0de', '#a9b0bc']]],
+    marsiglia: [[43.2975, 5.364, 43.301, 5.371, ['#f2c27a', '#e89a6e', '#f5dca0', '#e6b4a0', '#cfe0d8']]]
+  };
   function buildReal(id, G) {
     initCol();
     const p = PAL[id], r = rng(p.seed + 99), g = new THREE.Group(), NX = G.NX, NZ = G.NZ;
@@ -950,9 +964,12 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       if (tc === 'v') { ct[k] = 'v'; if (r() < 0.05) trees.push([x, z, y, cs * 0.6]); continue; }
       if (c === 'b') {
         isB[k] = 1;
-      } else if (c === 'p' && r() < 0.6) (r() < 0.3 ? cones : trees).push([x + (r() - 0.5) * cs * 0.3, z + (r() - 0.5) * cs * 0.3, y, cs * (0.85 + r() * 0.5)]);
+      } else if (c === 'p' && r() < (FP && y > 0.25 ? 0.92 : 0.6)) {
+        (r() < 0.3 ? cones : trees).push([x + (r() - 0.5) * cs * 0.3, z + (r() - 0.5) * cs * 0.3, y, cs * (0.85 + r() * 0.5)]);
+        if (FP && y > 0.25 && !coarse && r() < 0.5) (r() < 0.3 ? cones : trees).push([x + (r() - 0.5) * cs * 0.8, z + (r() - 0.5) * cs * 0.8, y, cs * (0.6 + r() * 0.4)]);
+      }
       else if (c === 'o' && r() < 0.08) trees.push([x, z, y, cs * 0.8]);
-      else if (c === 'k' && r() < 0.05) trees.push([x, z, y, cs * 0.6]);
+      else if (c === 'k' && r() < (id === 'marsiglia' ? 0.3 : 0.05)) trees.push([x + (r() - 0.5) * cs * 0.6, z + (r() - 0.5) * cs * 0.6, y, id === 'marsiglia' ? cs * (0.28 + r() * 0.25) : cs * 0.6]);
     }
     // Edifici: le celle vicine e simili si fondono in isolati 2x2, stecche 2x1 o case singole, ognuno con il suo tetto.
     const sim = (cells) => { let h0 = Infinity, h1 = 0, y0 = Infinity, y1 = -Infinity; cells.forEach(([i, j]) => { const k = j * NX + i, h = G.h[k] || 12, y = gy(k); h0 = Math.min(h0, h); h1 = Math.max(h1, h); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }); return h1 / h0 < 1.6 && y1 - y0 < 0.13; };
@@ -1029,12 +1046,17 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const fpMesh = () => {
       const D = G.fp, sxm = (NX * cs) / G.fpW, szm = (NZ * cs) / G.fpH, hU = wpm * 2, pitch = 5 * wpm, col = new THREE.Color();
       let PT = 0; for (let q = 0; q < D.length;) { const nr = D[q + 1]; q += 2; for (let a = 0; a < nr; a++) { PT += D[q]; q += 1 + D[q] * 2; } }
-      const P = new Float32Array(PT * 30), Cc = new Uint8Array(PT * 30), AW = new Float32Array(PT * 40), IX = new Uint32Array(PT * 18); let nv = 0, ni = 0;
+      const P = new Float32Array(PT * 30), Cc = new Uint8Array(PT * 30), AW = new Float32Array(PT * 40), IX = new Uint32Array(PT * 21); let nv = 0, ni = 0;
       const V = (x, y, z, u, w2, sd, kind) => { const a = nv * 3, b = nv * 4; P[a] = x; P[a + 1] = y; P[a + 2] = z; Cc[a] = col.r * 255; Cc[a + 1] = col.g * 255; Cc[a + 2] = col.b * 255; AW[b] = u; AW[b + 1] = w2; AW[b + 2] = sd; AW[b + 3] = kind; return nv++; };
       const tri = (a, b, c2) => { IX[ni++] = a; IX[ni++] = b; IX[ni++] = c2; };
       const cellK = (x, z) => Math.max(0, Math.min(NZ - 1, Math.floor((z - oz) / cs))) * NX + Math.max(0, Math.min(NX - 1, Math.floor((x - ox) / cs)));
       const pip = (px, pz, R) => { let ins = false; for (let a = 0, b = R.length - 1; a < R.length; b = a++) { if (R[a][1] > pz !== R[b][1] > pz && px < ((R[b][0] - R[a][0]) * (pz - R[a][1])) / (R[b][1] - R[a][1]) + R[a][0]) ins = !ins; } return ins; };
       const RF = p.roofFp || p.roof, tallC = p.tall || '#e4dfd6', smokeAt = [];
+      const tints = (TINT[id] || []).map(([s0, w0, n0, e0, pal]) => { const a = M.toWorld(n0, w0), b = M.toWorld(s0, e0); return [a.x, a.z, b.x, b.z, pal]; });
+      const sA = (R) => { let a2 = 0; for (let a = 0; a < R.length; a++) { const A = R[a], Bp = R[(a + 1) % R.length]; a2 += A[0] * Bp[1] - Bp[0] * A[1]; } return a2 / 2; };
+      const inset = (R, d) => R.map((pt, a) => { const A = R[(a + R.length - 1) % R.length], Bp = R[(a + 1) % R.length]; let x1 = pt[0] - A[0], z1 = pt[1] - A[1], x2 = Bp[0] - pt[0], z2 = Bp[1] - pt[1]; const l1 = hyp(x1, z1) || 1, l2 = hyp(x2, z2) || 1; x1 /= l1; z1 /= l1; x2 /= l2; z2 /= l2; const k = d / Math.max(0.35, 1 + x1 * x2 + z1 * z2); return [pt[0] + (z1 + z2) * k, pt[1] - (x1 + x2) * k]; });
+      const flatTop = (RS, y, kind) => { const base = nv, cont = RS[0].map((pt) => new THREE.Vector2(pt[0], pt[1])), holes = RS.slice(1).map((R) => R.map((pt) => new THREE.Vector2(pt[0], pt[1]))); RS.forEach((R) => R.forEach((pt) => V(pt[0], y, pt[1], 0, 0, 0, kind))); THREE.ShapeUtils.triangulateShape(cont, holes).forEach((f) => { const a = base + f[0], b = base + f[1], c2 = base + f[2], up = (P[b * 3 + 2] - P[a * 3 + 2]) * (P[c2 * 3] - P[a * 3]) - (P[b * 3] - P[a * 3]) * (P[c2 * 3 + 2] - P[a * 3 + 2]); if (up >= 0) tri(a, b, c2); else tri(a, c2, b); }); };
+      const chP = coarse ? 0.12 : 0.3;
       for (let q = 0; q < D.length;) {
         const hm = D[q], nr = D[q + 1]; q += 2; const rings = [];
         for (let a = 0; a < nr; a++) { const n = D[q++], R = []; for (let b = 0; b < n; b++) { R.push([ox + D[q] * sxm, oz + D[q + 1] * szm]); q += 2; } rings.push(R); }
@@ -1045,7 +1067,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         if (wet) { g0 = Math.max(g0, 0); g1 = Math.max(g1, 0.02); }
         const rows = Math.max(1, Math.round(hm / 3.5)), bh = Math.max(0.02, hm * hU), yB = g0 - 0.015, yR = g1 + bh, sd = r(), tall = hm >= 40;
         const fk = r() < 0.3 ? r() : hash(id + ':' + ((cx / (cs * 2.4)) | 0) + ':' + ((cz / (cs * 2.4)) | 0));
-        col.set(tall ? tallC : p.face[(fk * p.face.length) | 0]).offsetHSL(0, 0, (r() - 0.5) * 0.07);
+        const tn = tints.find((q) => cx > q[0] && cx < q[2] && cz > q[1] && cz < q[3]), FACE = tn ? tn[4] : p.face;
+        col.set(tall ? tallC : FACE[(fk * FACE.length) | 0]).offsetHSL(0, 0, (r() - 0.5) * 0.07);
         const vB = ((yB - g1) / bh) * rows;
         rings.forEach((R, rn) => { for (let a = 0; a < R.length; a++) { const A = R[a], Bp = R[(a + 1) % R.length], len = hyp(Bp[0] - A[0], Bp[1] - A[1]); if (len < 1e-5) continue; const nw = Math.max(1, Math.round(len / pitch)), u0 = (a + rn * 7) * 16; const v0 = V(A[0], yB, A[1], u0, vB, sd, 0), v1 = V(Bp[0], yB, Bp[1], u0 + nw, vB, sd, 0), v2 = V(Bp[0], yR, Bp[1], u0 + nw, rows, sd, 0), v3 = V(A[0], yR, A[1], u0, rows, sd, 0); tri(v0, v1, v2); tri(v0, v2, v3); } });
         let ar = 0, convex = nr === 1 && O.length <= 8, sg = 0;
@@ -1059,11 +1082,21 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
           for (let a = 0; a < O.length; a++) { const b = (a + 1) % O.length, v0 = V(O[a][0], yR, O[a][1], 0, 0, sd, 2), v1 = V(O[b][0], yR, O[b][1], 1, 0, sd, 2), v2 = V(I[b][0], yR + rh, I[b][1], 1, 1, sd, 2), v3 = V(I[a][0], yR + rh, I[a][1], 0, 1, sd, 2); tri(v0, v1, v2); tri(v0, v2, v3); }
           const base = nv; I.forEach((pt) => V(pt[0], yR + rh, pt[1], 0, 1, sd, 2)); for (let a = 1; a < I.length - 1; a++) tri(base, base + a, base + a + 1);
           tp = yR + rh; if (r() < 0.03) smokeAt.push([cx, cz, tp]);
+          if (r() < chP) { const q = I[(r() * I.length) | 0], px = cx + (q[0] - cx) * 0.5, pz = cz + (q[1] - cz) * 0.5, cw = 0.9 * wpm, ch = 1.5 * hU; dbox.push([px, tp + ch / 2, pz, cw, ch, cw, '#8d5f4c']); }
         } else {
-          col.set(tall ? '#8f8a98' : RF[(r() * RF.length) | 0]).lerp(new THREE.Color('#8f8a98'), 0.35).offsetHSL(0, 0, (r() - 0.5) * 0.05);
-          const base = nv, cont = O.map((pt) => new THREE.Vector2(pt[0], pt[1])), holes = rings.slice(1).map((R) => R.map((pt) => new THREE.Vector2(pt[0], pt[1])));
-          O.forEach((pt) => V(pt[0], yR, pt[1], 0, 0, sd, 1)); rings.slice(1).forEach((R) => R.forEach((pt) => V(pt[0], yR, pt[1], 0, 0, sd, 1)));
-          THREE.ShapeUtils.triangulateShape(cont, holes).forEach((f) => { const a = base + f[0], b = base + f[1], c2 = base + f[2], up = (P[b * 3 + 2] - P[a * 3 + 2]) * (P[c2 * 3] - P[a * 3]) - (P[b * 3] - P[a * 3]) * (P[c2 * 3 + 2] - P[a * 3 + 2]); if (up >= 0) tri(a, b, c2); else tri(a, c2, b); });
+          const d = Math.min(2.6 * wpm, 0.2 * Math.sqrt(ar)), IN = !tall && hm < 40 && ar > 60 * wpm * wpm && ar < 6000 * wpm * wpm && r() < 0.85 ? rings.map((R) => inset(R, d)) : null;
+          const ok = IN && sA(IN[0]) < 0 && -sA(IN[0]) > 0.3 * ar && IN.every((R) => R.every((pt) => pip(pt[0], pt[1], O)));
+          if (ok) {
+            const rh = d * 0.85 * (hU / wpm) * 0.5;
+            col.set(RF[(r() * RF.length) | 0]).offsetHSL(0, 0, (r() - 0.5) * 0.06);
+            rings.forEach((R, rn) => { const I = IN[rn]; for (let a = 0; a < R.length; a++) { const b = (a + 1) % R.length, v0 = V(R[a][0], yR, R[a][1], 0, 0, sd, 2), v1 = V(R[b][0], yR, R[b][1], 1, 0, sd, 2), v2 = V(I[b][0], yR + rh, I[b][1], 1, 1, sd, 2), v3 = V(I[a][0], yR + rh, I[a][1], 0, 1, sd, 2); tri(v0, v1, v2); tri(v0, v2, v3); } });
+            col.offsetHSL(0, -0.05, -0.05); flatTop(IN, yR + rh, 1); tp = yR + rh;
+            if (r() < chP) { const I = IN[0], q = I[(r() * I.length) | 0], q2 = I[(I.indexOf(q) + 2) % I.length], px = q[0] + (q2[0] - q[0]) * 0.25, pz = q[1] + (q2[1] - q[1]) * 0.25, cw = 0.9 * wpm, ch = 1.5 * hU; if (pip(px, pz, I)) dbox.push([px, tp + ch / 2, pz, cw, ch, cw, '#8d5f4c']); }
+          } else {
+            col.set(tall ? '#8f8a98' : RF[(r() * RF.length) | 0]).lerp(new THREE.Color('#8f8a98'), 0.35).offsetHSL(0, 0, (r() - 0.5) * 0.05);
+            flatTop(rings, yR, 1);
+            if (r() < (tall ? 0.8 : 0.2) && pip(cx, cz, O) && !rings.slice(1).some((R) => pip(cx, cz, R))) { const w2 = Math.min(Math.sqrt(ar) * 0.28, 9 * wpm), ch = 2.6 * hU; dbox.push([cx, yR + ch / 2, cz, w2, ch, w2 * 0.7, '#a9a4b2']); }
+          }
         }
         let i0 = NX, i1 = 0, j0 = NZ, j1 = 0; O.forEach((pt) => { const i = Math.floor((pt[0] - ox) / cs), j = Math.floor((pt[1] - oz) / cs); i0 = Math.min(i0, i); i1 = Math.max(i1, i); j0 = Math.min(j0, j); j1 = Math.max(j1, j); });
         for (let j = Math.max(0, j0); j <= Math.min(NZ - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(NX - 1, i1); i++) if (pip(ox + (i + 0.5) * cs, oz + (j + 0.5) * cs, O)) { const k = j * NX + i; if (tp > top[k]) top[k] = tp; }
@@ -1071,7 +1104,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(P.slice(0, nv * 3), 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc.slice(0, nv * 3), 3, true)); geo.setAttribute('aW', new THREE.BufferAttribute(AW.slice(0, nv * 4), 4));
       geo.setIndex(new THREE.BufferAttribute(IX.slice(0, ni), 1)); geo.computeVertexNormals();
-      const m = new THREE.Mesh(geo, shadeFp(new THREE.MeshLambertMaterial({ vertexColors: true }))); m.castShadow = m.receiveShadow = true; m.userData.smokeAt = smokeAt; m.userData.pitch = pitch; return m;
+      const m = new THREE.Mesh(geo, shadeFp(new THREE.MeshLambertMaterial({ vertexColors: true }), { genova: '#3d6b50', lione: '#8a8f98', mantova: '#56604a', marsiglia: '#5f8fa8' }[id])); m.castShadow = m.receiveShadow = true; m.userData.smokeAt = smokeAt; m.userData.pitch = pitch; return m;
     };
     const isWk = (k) => G.t[k] === 'w' || G.t[k] === 'x';
     const terrM = FP ? landMesh() : inst(B(1, 1, 1), shade(white(), 'terr'), terr, (o, [x, z, y, c, pk], col) => { o.position.set(x, (y + BOT) / 2, z); o.scale.set(cs, y - BOT, cs); tcol(col, c, pk); });
@@ -1172,8 +1205,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const w = wat4(i, j);
         if (w && cranes.length < 9 && !cranes.some((q) => Math.abs(q.i - i) + Math.abs(q.j - j) < 7)) cranes.push({ i, j, x, y, z, w });
         else if (!w && r() < 0.07) { const n = 1 + ((r() * 3) | 0), ax = r() < 0.5; for (let q = 0; q < n; q++) box(x, y + q * cs * 0.3, z, cs * (ax ? 0.85 : 0.36), cs * 0.3, cs * (ax ? 0.36 : 0.85), CONT[(r() * CONT.length) | 0]); }
-      } else if (c === 'w' && wdp[k] === 1 && id === 'mantova' && r() < 0.45 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => T(i + a, j + b) === 'p' || T(i + a, j + b) === 'o')) {
-        for (let q = 0; q < 2; q++) reeds.push([x + (r() - 0.5) * cs * 0.7, z + (r() - 0.5) * cs * 0.7, y, cs * (0.5 + r() * 0.4)]);
+      } else if (c === 'w' && wdp[k] === 1 && id === 'mantova' && r() < 0.85 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => T(i + a, j + b) === 'p' || T(i + a, j + b) === 'o')) {
+        for (let q = 0; q < 3; q++) reeds.push([x + (r() - 0.5) * cs * 0.7, z + (r() - 0.5) * cs * 0.7, y, cs * (0.5 + r() * 0.4)]);
       } else if (c === 'w' && wdp[k] === 1 && moored < 160 && r() < 0.12) {
         const q = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([a, b]) => T(i + a, j + b) === 'q');
         if (q) { moored++; const ax = q[0] === 0; box(x, y - 0.01, z, cs * (ax ? 0.7 : 0.26), cs * 0.16, cs * (ax ? 0.26 : 0.7), r() < 0.7 ? '#f2efe8' : CONT[(r() * 3) | 0]); }

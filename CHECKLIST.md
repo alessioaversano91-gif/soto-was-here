@@ -26,6 +26,10 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Foschia in lontananza, con colore diverso per giorno, tramonto e notte
 - [x] Lampioni spenti di giorno, tenui al tramonto, accesi di notte con alone a terra
 - [x] Riflessi delle luci sull'acqua di notte, vicino alle zone abitate
+- [x] Tetti: falde anche sulle piante a L e a corte (bordo inclinato e colmo piano), comignoli, volumi tecnici sui tetti piani e sulle torri
+- [x] Facciate: persiane (colore diverso per città), balconi, tende dei negozi al piano terra
+- [x] Colori per quartiere: Boccadasse e centro storico a Genova; Vieux Lyon, Croix-Rousse e Part-Dieu a Lione; Le Panier a Marsiglia
+- [x] Verde: boschi più fitti sulle alture, macchia bassa sulle Calanche, canneti più fitti sui laghi di Mantova
 
 ## Da verificare
 
@@ -35,6 +39,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Peso della pagina: 4,1 MB (era 0,5 prima delle piante reali)
 - [ ] Sponde, ponti, foschia e luci notturne: visti solo nel browser di prova (Lione e Mantova di giorno, Genova e Marsiglia di notte)
 - [ ] Foschia: appena percettibile nella vista d'insieme; da giudicare dal vivo se rinforzarla
+- [ ] Tetti, facciate e verde nuovi: visti solo nel browser di prova, di giorno (Lione, Genova, Calanche); Mantova non riaperta
 - [ ] Layout da telefono riprovato solo su Genova
 - [ ] Ultimi aggiornamenti sul sito pubblicato: luce, scheda del punto, mappa Europa non riaperti dal vivo dopo il caricamento
 - [ ] Orientamento dei monumenti scelto a stima: Notre-Dame de la Garde (lato della torre), Carignano, Sant'Andrea, Vélodrome, Porta Soprana
@@ -46,12 +51,15 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Lione: scartati gli edifici sotto i 70 m² (garage, capanni) e semplificati i contorni per alleggerire; niente vigneti o orti sulle colline
 - [ ] Sponde: ammorbidite a partire dalla griglia, non tracciate sul contorno reale dell'acqua; i canali larghi una cella restano a scalini
 - [ ] Ponti: niente arcate curve vere; i ponti in diagonale restano a gradini
-- [ ] Mantova: canneti più fitti sui laghi non ancora aggiunti
 - [ ] Marsiglia: scartati gli edifici sotto i 60 m² e semplificati i contorni; le isole del Frioul restano fuori dal bordo
 - [ ] Marsiglia: Vieux-Port corretto a mano (i pontili coprivano l'acqua); altri porticcioli da controllare
 - [ ] Portici: i contorni reali non li distinguono, andrebbero disegnati a mano dove servono (es. Sottoripa, via XX Settembre)
 - [ ] Genova: le fasce coltivate sono messe a stima sui pendii verdi esposti a sud, non sui terreni agricoli veri
-- [ ] Genova: i tetti a falde sono semplificati (a padiglione) e solo sugli edifici dalla pianta semplice; gli altri hanno il tetto piano
+- [ ] Tetti: sulle piante complesse la falda è solo un bordo inclinato attorno a un colmo piano, non un tetto a capanna vero; niente abbaini né terrazze
+- [ ] Strade ancora a celle: tracciarle come nastri continui richiede una nuova raccolta dati e appesantisce la pagina
+- [ ] Monumenti da rifare con più dettaglio: San Lorenzo, Fourvière, Notre-Dame de la Garde, Palazzo Ducale
+- [ ] Colori per quartiere: zone scelte a stima con riquadri approssimativi; Mantova non ne ha
+- [ ] Filari di alberi lungo i viali: sono quelli di prima, non rifatti
 - [ ] Tram su binari propri, arcate dei ponti, fontane nelle piazze
 - [ ] Monumenti senza modello: Galata Museo del Mare, Casa del Mantegna, Palais Longchamp
 - [ ] Fiumi e rilievi della mappa Europa: tracciati approssimativi, da rifinire
