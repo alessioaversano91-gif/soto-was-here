@@ -839,6 +839,37 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   let embeddedP = null;
   /* Contorni reali degli edifici (OpenStreetMap via OpenFreeMap), in metri dal vertice nord-ovest dell'area.
      Formato: per ogni edificio [altezza, n. anelli, poi per ogni anello: n. punti, x, y, ...]; il primo anello e il perimetro, gli altri i cortili. */
+  // Tracciati reali delle strade, in metri dall'angolo nord-ovest: [classe + 4 se ponte, nPunti, x, y, ...]
+  async function roads(b) {
+    const [s0, w0, n0, e0] = b, lat0 = (s0 + n0) / 2, kx = 111320 * Math.cos((lat0 * Math.PI) / 180), ky = 110540, W = (e0 - w0) * kx, H = (n0 - s0) * ky;
+    const Z = 14, n2 = 1 << Z, tX = (lon) => ((lon + 180) / 360) * n2, tY = (lat) => { const q = (lat * Math.PI) / 180; return ((1 - Math.log(Math.tan(q) + 1 / Math.cos(q)) / Math.PI) / 2) * n2; };
+    const x0 = Math.floor(tX(w0)), x1 = Math.floor(tX(e0)), y0 = Math.floor(tY(n0)), y1 = Math.floor(tY(s0)), tpl = await tileTemplate(), jobs = [];
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) jobs.push(fetch(tpl.replace('{z}', Z).replace('{x}', x).replace('{y}', y)).then((q) => { if (!q.ok) throw new Error('tile ' + q.status); return q.arrayBuffer(); }).then((ab) => ({ x, y, layers: pbfRead(new Uint8Array(ab)) })));
+    const data = await Promise.all(jobs), out = []; let nr = 0;
+    const CL = { motorway: 3, trunk: 3, primary: 3, secondary: 2, tertiary: 2, minor: 1 };
+    for (const T of data) {
+      const Ly = T.layers.transportation; if (!Ly) continue;
+      const E = Ly.extent, toM = ([u, v]) => { const lon = ((T.x + u / E) / n2) * 360 - 180, lat = (Math.atan(Math.sinh(Math.PI * (1 - (2 * (T.y + v / E)) / n2))) * 180) / Math.PI; return [(lon - w0) * kx, (n0 - lat) * ky]; };
+      Ly.feats.forEach((F) => {
+        if (F.type !== 2) return;
+        const tg = {}; for (let k = 0; k < F.tags.length; k += 2) tg[Ly.keys[F.tags[k]]] = Ly.values[F.tags[k + 1]];
+        let cl = CL[tg.class]; if (cl === undefined) { if (tg.class === 'path' && tg.subclass === 'pedestrian') cl = 0; else return; }
+        if (tg.brunnel === 'tunnel') return;
+        const head = cl + (tg.brunnel === 'bridge' ? 4 : 0);
+        mvtGeom(F.geom).forEach((L0) => {
+          let cur = [];
+          const flush = () => { if (cur.length > 1) { out.push(head, cur.length); cur.forEach((q) => out.push(q[0], q[1])); nr++; } cur = []; };
+          L0.forEach((q) => {
+            if (q[0] < 0 || q[1] < 0 || q[0] > E || q[1] > E) { flush(); return; }
+            const m = toM(q); if (m[0] < 0 || m[1] < 0 || m[0] > W || m[1] > H) { flush(); return; }
+            const r2 = [Math.round(m[0]), Math.round(m[1])], l = cur[cur.length - 1]; if (!l || l[0] !== r2[0] || l[1] !== r2[1]) cur.push(r2);
+          });
+          flush();
+        });
+      });
+    }
+    return { n: nr, W: Math.round(W), H: Math.round(H), data: Uint16Array.from(out) };
+  }
   async function footprints(b) {
     const [s0, w0, n0, e0] = b, lat0 = (s0 + n0) / 2, kx = 111320 * Math.cos((lat0 * Math.PI) / 180), ky = 110540, W = (e0 - w0) * kx, H = (n0 - s0) * ky;
     const Z = 14, n2 = 1 << Z, tX = (lon) => ((lon + 180) / 360) * n2, tY = (lat) => { const q = (lat * Math.PI) / 180; return ((1 - Math.log(Math.tan(q) + 1 / Math.cos(q)) / Math.PI) / 2) * n2; };
@@ -1673,7 +1704,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
     dispose() { cancelAnimationFrame(this.raf); clearInterval(this.wd); window.removeEventListener('keydown', this.onKD); window.removeEventListener('keyup', this.onKU); window.removeEventListener('blur', this.onBlur); this.ro.disconnect(); this.controls.dispose(); this.renderer.dispose(); }
   }
-  SotoEngine.computeGrid = computeGrid; SotoEngine.footprints = footprints;
+  SotoEngine.computeGrid = computeGrid; SotoEngine.footprints = footprints; SotoEngine.roads = roads;
   SotoEngine.miniMap = (id) => embeddedGrids().then((all) => {
     const G = all[id]; if (!G) throw new Error('no grid');
     const st = Math.max(1, Math.ceil(Math.max(G.NX, G.NZ) / 110)), W = Math.floor(G.NX / st), H = Math.floor(G.NZ / st), cv = document.createElement('canvas');
