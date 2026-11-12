@@ -18,13 +18,17 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Pubblicazione su GitHub Pages, con aggiornamenti dalla chat
 - [x] **Genova rifatta**: area più ampia (circa 9,9 × 6,2 km, da Sampierdarena a Sturla e fino a Righi e Staglieno), 22.000 edifici con il contorno reale e i cortili, pendii lisci, fasce coltivate sulle alture, tetti in ardesia, monumenti in proporzione
 - [x] **Lione rifatta**: area più ampia (circa 7 × 7,4 km, da Vaise a Confluence e da Fourvière a Villeurbanne), 33.000 edifici con il contorno reale, pendii lisci, nuove etichette (Perrache, Confluence, Guillotière, Gratte-Ciel, Vaise, Monplaisir)
+- [x] **Mantova rifatta**: area più ampia (circa 4,7 × 4,4 km, con i tre laghi interi, Cittadella, Lunetta, Belfiore e Te), 6.500 edifici con il contorno reale
+- [x] **Marsiglia rifatta**: area più ampia (circa 7,5 × 11,8 km, fino a Saint-Charles, Longchamp e la Joliette), griglia più fine (30 m invece di 38), 40.000 edifici con il contorno reale, roccia a vista sulle Calanche, Gare Saint-Charles con il suo modello
+- [x] La visuale ora arriva fino ai bordi delle città allargate (prima si fermava alla vecchia misura)
 
 ## Da verificare
 
 - [ ] Fluidità sul telefono: misurata solo sul computer (60 fotogrammi al secondo nel pannello dell'app)
 - [ ] Layout su telefono vero: provato solo in un browser di prova a 400 px di larghezza
-- [ ] Nuove Genova e Lione: provate solo nel browser di prova, non sul sito pubblicato né sul telefono (Lione è la più pesante: circa una volta e mezza Genova)
-- [ ] Peso della pagina: ora 2,7 MB (era 0,5); con Mantova e Marsiglia arriverà intorno a 4 MB
+- [ ] Le quattro città nuove: provate solo nel browser di prova, non sul sito pubblicato né sul telefono (le più pesanti sono Lione e Marsiglia)
+- [ ] Peso della pagina: 4,1 MB (era 0,5 prima delle piante reali)
+- [ ] Luce di notte e layout da telefono riprovati solo su Genova
 - [ ] Ultimi aggiornamenti sul sito pubblicato: luce, scheda del punto, mappa Europa non riaperti dal vivo dopo il caricamento
 - [ ] Orientamento dei monumenti scelto a stima: Notre-Dame de la Garde (lato della torre), Carignano, Sant'Andrea, Vélodrome, Porta Soprana
 - [ ] Monumenti non orientati: Palais du Pharo, Cité Internationale, Teatro Bibiena, Fort Saint-Jean, Castello e Palazzo Te (solo allineati ai muri)
@@ -34,15 +38,15 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 ### Grafica
 - [ ] Lione: scartati gli edifici sotto i 70 m² (garage, capanni) e semplificati i contorni per alleggerire; niente vigneti o orti sulle colline
 - [ ] Lione: ponti e sponde dei fiumi ancora a blocchi
-- [ ] Idem per **Mantova** (con canneti più fitti sui laghi)
-- [ ] Idem per **Marsiglia** (con roccia a vista sulle Calanche; allargando entra anche la Gare Saint-Charles)
-- [ ] Per ogni città: una raccolta dati dal computer (circa 5 minuti con l'app desktop aperta), poi palette dei tetti, scala dei monumenti e nuove etichette
+- [ ] Mantova: canneti più fitti sui laghi non ancora aggiunti
+- [ ] Marsiglia: scartati gli edifici sotto i 60 m² e semplificati i contorni; le isole del Frioul restano fuori dal bordo
+- [ ] Marsiglia: Vieux-Port corretto a mano (i pontili coprivano l'acqua); altri porticcioli da controllare
 - [ ] Portici: i contorni reali non li distinguono, andrebbero disegnati a mano dove servono (es. Sottoripa, via XX Settembre)
 - [ ] Genova: le fasce coltivate sono messe a stima sui pendii verdi esposti a sud, non sui terreni agricoli veri
 - [ ] Genova: i tetti a falde sono semplificati (a padiglione) e solo sugli edifici dalla pianta semplice; gli altri hanno il tetto piano
 - [ ] Tram su binari propri, arcate dei ponti, fontane nelle piazze
 - [ ] Lampioni spenti di giorno
-- [ ] Monumenti senza modello: Gare Saint-Charles (fuori dal bordo della mappa), Galata Museo del Mare, Casa del Mantegna
+- [ ] Monumenti senza modello: Galata Museo del Mare, Casa del Mantegna, Palais Longchamp
 - [ ] Fiumi e rilievi della mappa Europa: tracciati approssimativi, da rifinire
 - [ ] Anteprima delle città sulla home anche da telefono (oggi solo passando col mouse)
 
