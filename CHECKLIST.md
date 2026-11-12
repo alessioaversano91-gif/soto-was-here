@@ -38,6 +38,13 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Nuova ora nel selettore: alba, con sole basso e parte delle finestre accese; entra anche nel ciclo automatico
 - [x] Cielo: sole al tramonto, all'alba e di giorno, luna di notte, sfumatura che cambia con la luce, stelle più o meno visibili
 - [x] Mare che sfuma oltre il bordo a Genova e Marsiglia
+- [x] Acqua: onde vere sulla superficie, riflesso del lungomare vicino alle banchine
+- [x] Strade: marciapiedi e mezzeria sulle strade principali; viadotti su piloni (Sopraelevata di Genova)
+- [x] Binari reali al posto delle celle, con treni, tram (Lione, Marsiglia) e funicolari (Genova, Lione) in movimento
+- [x] Passanti nelle vie pedonali quando si zooma
+- [x] Home: anteprime vere dei quattro diorami sulla mappa d'Europa
+- [x] Secondo giro di dettagli su altri sette monumenti: Lanterna, Palazzo Te, Sant'Andrea, Castello di San Giorgio, Saint-Jean, Hôtel-Dieu, La Major
+- [x] Tolto l'edificio reale che restava sotto ai modelli dei monumenti
 - [x] Verde: boschi più fitti sulle alture, macchia bassa sulle Calanche, canneti più fitti sui laghi di Mantova
 
 ## Da verificare
@@ -45,7 +52,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Fluidità sul telefono: misurata solo sul computer (60 fotogrammi al secondo nel pannello dell'app)
 - [ ] Layout su telefono vero: provato solo in un browser di prova a 400 px di larghezza
 - [ ] Le quattro città nuove: provate solo nel browser di prova, non sul sito pubblicato né sul telefono (le più pesanti sono Lione e Marsiglia)
-- [ ] Peso della pagina: 4,5 MB (era 0,5 prima delle piante reali)
+- [ ] Peso della pagina: 4,7 MB (era 0,5 prima delle piante reali)
 - [ ] Sponde, ponti, foschia e luci notturne: visti solo nel browser di prova (Lione e Mantova di giorno, Genova e Marsiglia di notte)
 - [ ] Foschia: appena percettibile nella vista d'insieme; da giudicare dal vivo se rinforzarla
 - [ ] Tetti, facciate e verde nuovi: visti solo nel browser di prova, di giorno (Lione, Genova, Calanche); Mantova non riaperta
@@ -55,6 +62,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Sole e luna sono fissi sullo sfondo: non si spostano ruotando la città e non coincidono con la direzione delle ombre
 - [ ] Ombreggiatura di contatto: leggera, non una vera occlusione nei cortili e nei vicoli
 - [ ] Il mare oltre il bordo è una fascia corta che sfuma, non un orizzonte
+- [ ] Ultimo giro (onde, viadotti, binari, passanti, monumenti): visto nel browser di prova solo in punti singoli; Sant'Andrea e i treni in movimento non li ho visti; Mantova e Marsiglia quasi non riaperte
 - [ ] Layout da telefono riprovato solo su Genova (con cinque pulsanti luce invece di quattro non l'ho ricontrollato)
 - [ ] Ultimi aggiornamenti sul sito pubblicato: luce, scheda del punto, mappa Europa non riaperti dal vivo dopo il caricamento
 - [ ] Orientamento dei monumenti scelto a stima: Notre-Dame de la Garde (lato della torre), Carignano, Sant'Andrea, Vélodrome, Porta Soprana
@@ -71,11 +79,13 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Portici: i contorni reali non li distinguono, andrebbero disegnati a mano dove servono (es. Sottoripa, via XX Settembre)
 - [ ] Genova: le fasce coltivate sono messe a stima sui pendii verdi esposti a sud, non sui terreni agricoli veri
 - [ ] Tetti: sulle piante complesse la falda è solo un bordo inclinato attorno a un colmo piano, non un tetto a capanna vero; niente abbaini né terrazze
-- [ ] Strade: niente mezzeria, strisce pedonali né marciapiedi; gallerie non disegnate; i viadotti su terra (es. la Sopraelevata di Genova) seguono il suolo
-- [ ] Strade: ferrovie e impalcati dei ponti sono ancora a celle
+- [ ] Strade: niente strisce pedonali; gallerie non disegnate; impalcati dei ponti ancora a celle e senza arcate curve
+- [ ] Vita in città non fatta: traghetti in entrata e uscita dal porto, mercati con bancarelle, panni stesi
+- [ ] Home: manca il passaggio animato dalla mappa d'Europa al diorama; le anteprime sono immagini fisse da rifare se le città cambiano
+- [ ] Acqua: le scie delle barche sono quelle di prima; i riflessi sono macchie di colore, non l'immagine dei palazzi
+- [ ] Treni e tram: a fine tratta tornano indietro; i binari in galleria (metro) non ci sono
 - [ ] Strade: le auto sono più grandi del vero e a fine strada tornano indietro
-- [ ] Altri monumenti ancora semplici: Lanterna, Palazzo Te, Sant'Andrea, La Major, Hôtel-Dieu, Castello di San Giorgio e gli altri 20
-- [ ] Accanto ad alcuni modelli resta anche l'edificio reale della mappa (si nota al Palazzo Ducale)
+- [ ] Monumenti ancora semplici (17): Bigo, Porta Soprana, Carignano, De Ferrari, stazioni, Teatro Romano, Part-Dieu, Bellecour, Palais des Congrès, Bibiena, Rotonda, Torre della Gabbia, Fort Saint-Jean, Vélodrome, Château d'If, Cité Radieuse, Pharo, Saint-Victor
 - [ ] Colori per quartiere: zone scelte a stima con riquadri approssimativi; Mantova non ne ha
 - [ ] Tram su binari propri, arcate dei ponti, fontane nelle piazze
 - [ ] Fiumi e rilievi della mappa Europa: tracciati approssimativi, da rifinire
