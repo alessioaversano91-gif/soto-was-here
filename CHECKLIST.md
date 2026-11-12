@@ -33,6 +33,11 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Monumenti rifatti: San Lorenzo (navate, portali, campanile, loggia, cupola), Fourvière (torri merlate, portico, abside, Vergine dorata), Notre-Dame de la Garde (fasce, cupola, campanile con statua), Palazzo Ducale (portico gotico, merli a coda di rondine, torre)
 - [x] Monumenti nuovi: Galata Museo del Mare con il sottomarino, Casa del Mantegna con il cortile circolare, Palais Longchamp con colonnati e fontana
 - [x] Monumenti più leggeri da disegnare: le parti fisse di ognuno sono unite in due sole forme
+- [x] Ombre morbide; ombreggiatura di contatto alla base dei palazzi e sul suolo accanto agli edifici
+- [x] Luce di giorno ribilanciata per non bruciare i bianchi
+- [x] Nuova ora nel selettore: alba, con sole basso e parte delle finestre accese; entra anche nel ciclo automatico
+- [x] Cielo: sole al tramonto, all'alba e di giorno, luna di notte, sfumatura che cambia con la luce, stelle più o meno visibili
+- [x] Mare che sfuma oltre il bordo a Genova e Marsiglia
 - [x] Verde: boschi più fitti sulle alture, macchia bassa sulle Calanche, canneti più fitti sui laghi di Mantova
 
 ## Da verificare
@@ -46,7 +51,11 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Tetti, facciate e verde nuovi: visti solo nel browser di prova, di giorno (Lione, Genova, Calanche); Mantova non riaperta
 - [ ] Strade nuove: viste solo nel browser di prova, di giorno, a Genova e Mantova; Lione, Marsiglia, notte e traffico da vicino non controllati
 - [ ] Monumenti nuovi: visti nel browser di prova da un solo lato; orientamento di Galata e Palais Longchamp scelto a stima
-- [ ] Layout da telefono riprovato solo su Genova
+- [ ] Luce e cielo nuovi: visti nel browser di prova solo a Genova (alba) e Marsiglia (giorno, tramonto); luna e notte non riguardate
+- [ ] Sole e luna sono fissi sullo sfondo: non si spostano ruotando la città e non coincidono con la direzione delle ombre
+- [ ] Ombreggiatura di contatto: leggera, non una vera occlusione nei cortili e nei vicoli
+- [ ] Il mare oltre il bordo è una fascia corta che sfuma, non un orizzonte
+- [ ] Layout da telefono riprovato solo su Genova (con cinque pulsanti luce invece di quattro non l'ho ricontrollato)
 - [ ] Ultimi aggiornamenti sul sito pubblicato: luce, scheda del punto, mappa Europa non riaperti dal vivo dopo il caricamento
 - [ ] Orientamento dei monumenti scelto a stima: Notre-Dame de la Garde (lato della torre), Carignano, Sant'Andrea, Vélodrome, Porta Soprana
 - [ ] Monumenti non orientati: Palais du Pharo, Cité Internationale, Teatro Bibiena, Fort Saint-Jean, Castello e Palazzo Te (solo allineati ai muri)

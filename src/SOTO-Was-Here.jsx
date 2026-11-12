@@ -135,7 +135,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         vec3 ac = hs > 0.85 ? vec3(0.78, 0.25, 0.2) : hs > 0.7 ? vec3(0.2, 0.45, 0.35) : vec3(0.92, 0.88, 0.78);
         diffuseColor.rgb = mix(diffuseColor.rgb, ac, (1.0 - fl) * step(0.0, sg.y) * step(0.66, sf.y) * step(sf.y, 0.9) * step(0.55, hs) * uWin);
         float lit = step(mix(0.5, 0.3, uNight), fract(sin(dot(sid + vW.z * 37.0, vec2(41.3, 289.1))) * 9173.3));
-        diffuseColor.rgb *= 0.84 + 0.16 * step(0.25, sg.y);
+        diffuseColor.rgb *= (0.9 + 0.1 * step(0.25, sg.y)) * (0.74 + 0.26 * smoothstep(-0.3, 2.4, sg.y));
         diffuseColor.rgb *= 1.0 - 0.42 * win * uWin * (1.0 - lit);
         totalEmissiveRadiance += vec3(1.0, 0.74, 0.38) * (win * lit * uWin * (0.8 + 0.9 * uNight) + step(mix(0.9, 0.62, uNight), vW.z) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5))));
       } else if (vW.w > 1.5) { diffuseColor.rgb *= 1.0 - 0.12 * uWin * mod(floor(vW.y * 4.0), 2.0); }`);
@@ -1127,7 +1127,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
         const k = j * NX + i; if (isW(k)) continue;
         const x0 = ox + i * cs, x1 = x0 + cs, z0 = oz + j * cs, z1 = z0 + cs, a = cor[j * CW + i], b = cor[(j + 1) * CW + i], c2 = cor[(j + 1) * CW + i + 1], d = cor[j * CW + i + 1];
-        const tc = RD && (ct[k] === 'r' || ct[k] === 'R') ? 'P' : ct[k]; tcol(col, tc, pkA[k]); const cr = Math.round(col.r * 255), cg = Math.round(col.g * 255), cb = Math.round(col.b * 255);
+        const tc = RD && (ct[k] === 'r' || ct[k] === 'R') ? 'P' : ct[k]; tcol(col, tc, pkA[k]);
+        if (G.t[k] !== 'b') { const nb = (i > 0 && G.t[k - 1] === 'b') + (i < NX - 1 && G.t[k + 1] === 'b') + (j > 0 && G.t[k - NX] === 'b') + (j < NZ - 1 && G.t[k + NX] === 'b'); if (nb) col.multiplyScalar(1 - 0.065 * nb); }
+        const cr = Math.round(col.r * 255), cg = Math.round(col.g * 255), cb = Math.round(col.b * 255);
         v(x0, a, z0, cr, cg, cb); v(x0, b, z1, cr, cg, cb); v(x1, c2, z1, cr, cg, cb); v(x0, a, z0, cr, cg, cb); v(x1, c2, z1, cr, cg, cb); v(x1, d, z0, cr, cg, cb);
         skirt(edge(i - 1, j), x0, z0, a, x0, z1, b); skirt(edge(i + 1, j), x1, z1, c2, x1, z0, d); skirt(edge(i, j - 1), x1, z0, d, x0, z0, a); skirt(edge(i, j + 1), x0, z1, b, x1, z1, c2);
         top[k] = (a + b + c2 + d) / 4;
@@ -1257,6 +1259,29 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const treeM = inst(new THREE.IcosahedronGeometry(0.42, 0), white(), trees, (o, [x, z, y, s], col) => { o.position.set(x, y + 0.42 * s, z); o.scale.setScalar(s); o.rotation.y = r() * 3; col.set(greens[(r() * 3) | 0]); });
     const coneM = inst(new THREE.ConeGeometry(0.32, 1, 6), white(), cones, (o, [x, z, y, q], col) => { o.position.set(x, y + 0.62 * q, z); o.scale.set(q, q * 1.25, q); col.set(['#2f5a34', '#3a6b3c', '#2a4f3a'][(r() * 3) | 0]); });
     (FP ? [terrM, watM, brM, fpM, treeM, coneM] : [terrM, watM, brM, bldM, roofM, gabM, treeM, coneM]).forEach((m) => g.add(m)); if (rdM) g.add(rdM);
+    if (FP && (id === 'genova' || id === 'marsiglia')) {
+      const D = Math.max(NX, NZ) * cs * 0.16, P = [], A = [], c = WDEP[5], sea = (i, j) => G.t[j * NX + i] === 'w' && gy(j * NX + i) < 0.05, yw = (i, j) => gy(j * NX + i) - 0.125;
+      const quad = (pts) => { [0, 1, 2, 0, 2, 3].forEach((q) => { P.push(pts[q][0], pts[q][1], pts[q][2]); A.push(c.r, c.g, c.b, pts[q][3]); }); };
+      const side = (n, cell, mk) => {
+        const f = []; for (let q = 0; q < n; q++) f.push(sea(...cell(q)) ? 1 : 0);
+        const d = new Array(n).fill(99); let run = 99; for (let q = 0; q < n; q++) { run = f[q] ? run + 1 : 0; d[q] = run; } run = 99; for (let q = n - 1; q >= 0; q--) { run = f[q] ? run + 1 : 0; d[q] = Math.min(d[q], run); }
+        const al = (q) => (q < 0 || q >= n ? 0 : 0.92 * Math.min(1, d[q] / 8));
+        for (let q = 0; q < n; q++) if (f[q]) mk(q, yw(...cell(q)), (al(q - 1) + al(q)) / 2 || al(q), (al(q) + al(q + 1)) / 2 || al(q));
+        return [f[0] ? al(0) : 0, f[n - 1] ? al(n - 1) : 0];
+      };
+      const x0 = ox, x1 = ox + NX * cs, z0 = oz, z1 = oz + NZ * cs;
+      // fascia a due bande: l'acqua sfuma subito e poi si perde
+      const strip = (xa, za, xb, zb, nx, nz, y, a, b) => { const m = 0.35; quad([[xa, y, za, a], [xa + nx * D * m, y, za + nz * D * m, a * 0.4], [xb + nx * D * m, y, zb + nz * D * m, b * 0.4], [xb, y, zb, b]]); quad([[xa + nx * D * m, y, za + nz * D * m, a * 0.4], [xa + nx * D, y, za + nz * D, 0], [xb + nx * D, y, zb + nz * D, 0], [xb + nx * D * m, y, zb + nz * D * m, b * 0.4]]); };
+      const cS = side(NX, (q) => [q, NZ - 1], (q, y, a, b) => strip(x0 + q * cs, z1, x0 + (q + 1) * cs, z1, 0, 1, y, a, b));
+      const cN = side(NX, (q) => [q, 0], (q, y, a, b) => strip(x0 + q * cs, z0, x0 + (q + 1) * cs, z0, 0, -1, y, a, b));
+      const cW = side(NZ, (q) => [0, q], (q, y, a, b) => strip(x0, z0 + q * cs, x0, z0 + (q + 1) * cs, -1, 0, y, a, b));
+      const cE = side(NZ, (q) => [NX - 1, q], (q, y, a, b) => strip(x1, z0 + q * cs, x1, z0 + (q + 1) * cs, 1, 0, y, a, b));
+      [[x0, z1, -1, 1, Math.min(cS[0], cW[1]), [0, NZ - 1]], [x1, z1, 1, 1, Math.min(cS[1], cE[1]), [NX - 1, NZ - 1]], [x0, z0, -1, -1, Math.min(cN[0], cW[0]), [0, 0]], [x1, z0, 1, -1, Math.min(cN[1], cE[0]), [NX - 1, 0]]].forEach(([cx, cz, sx, sz, a, cl]) => { if (a > 0) { const y = yw(...cl), m = D * 0.35; quad([[cx, y, cz, a], [cx + sx * m, y, cz, a * 0.4], [cx + sx * m, y, cz + sz * m, a * 0.2], [cx, y, cz + sz * m, a * 0.4]]); quad([[cx + sx * m, y, cz, a * 0.4], [cx + sx * D, y, cz, 0], [cx + sx * D, y, cz + sz * m, 0], [cx + sx * m, y, cz + sz * m, a * 0.2]]); quad([[cx, y, cz + sz * m, a * 0.4], [cx + sx * m, y, cz + sz * m, a * 0.2], [cx + sx * m, y, cz + sz * D, 0], [cx, y, cz + sz * D, 0]]); } });
+      if (P.length) {
+        const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); ge.setAttribute('color', new THREE.Float32BufferAttribute(A, 4)); ge.setAttribute('normal', new THREE.Float32BufferAttribute(new Float32Array(P.length).map((v, q) => (q % 3 === 1 ? 1 : 0)), 3));
+        const ap = new THREE.Mesh(ge, new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide })); ap.renderOrder = -1; g.add(ap);
+      }
+    }
     const brx = [];
     bridges.forEach(([x, z, yb, i, j]) => {
       const tAt = (a, b) => (a >= 0 && b >= 0 && a < NX && b < NZ ? G.t[b * NX + a] : '');
@@ -1477,9 +1502,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   }
 
   const LIGHT = {
-    tramonto: { sky: '#c7b2ff', gnd: '#2a1d40', hi: 0.9, sun: '#ffc283', si: 1.1, sp: [14, 16, 6], n: 0, fog: '#c39fce', bg: 'radial-gradient(ellipse 62% 48% at 50% 60%, rgba(124,77,219,0.30), rgba(240,130,90,0.07) 55%, rgba(11,10,15,0) 76%)' },
-    notte: { sky: '#5b4ea8', gnd: '#0e0b18', hi: 0.5, sun: '#9fb2ff', si: 0.42, sp: [-10, 18, 8], n: 1, fog: '#1b1740', bg: 'radial-gradient(ellipse 60% 46% at 50% 60%, rgba(70,60,170,0.24), rgba(11,10,15,0) 72%)' },
-    giorno: { sky: '#ffffff', gnd: '#7a7080', hi: 0.85, sun: '#fff1d6', si: 1.05, sp: [10, 20, 12], n: -0.5, fog: '#cfdaf6', bg: 'radial-gradient(ellipse 75% 60% at 50% 55%, rgba(150,175,255,0.34), rgba(120,110,210,0.14) 55%, rgba(11,10,15,0) 82%)' }
+    tramonto: { sky: '#c7b2ff', gnd: '#2a1d40', hi: 0.9, sun: '#ffc283', si: 1.1, sp: [14, 16, 6], n: 0, fog: '#c39fce', st: 0.45, bg: 'radial-gradient(circle 15vmin at 80% 22%, rgba(255,228,176,0.95) 0 13%, rgba(255,170,110,0.5) 15%, rgba(255,140,100,0.14) 55%, rgba(255,140,100,0) 100%), linear-gradient(180deg, rgba(66,44,130,0.34), rgba(240,130,90,0.10) 60%, rgba(11,10,15,0) 86%), radial-gradient(ellipse 62% 48% at 50% 60%, rgba(124,77,219,0.30), rgba(240,130,90,0.07) 55%, rgba(11,10,15,0) 76%)' },
+    notte: { sky: '#5b4ea8', gnd: '#0e0b18', hi: 0.5, sun: '#9fb2ff', si: 0.42, sp: [-10, 18, 8], n: 1, fog: '#1b1740', st: 1, bg: 'radial-gradient(circle 13vmin at 20% 18%, rgba(240,244,255,0.96) 0 11%, rgba(190,200,255,0.3) 13%, rgba(150,165,255,0.08) 55%, rgba(150,165,255,0) 100%), linear-gradient(180deg, rgba(22,26,78,0.5), rgba(11,10,15,0) 80%), radial-gradient(ellipse 60% 46% at 50% 60%, rgba(70,60,170,0.24), rgba(11,10,15,0) 72%)' },
+    alba: { sky: '#ffcfdc', gnd: '#2b2748', hi: 0.74, sun: '#ffb3a0', si: 0.82, sp: [-15, 10, 7], n: 0.45, fog: '#d8a9c2', st: 0.3, bg: 'radial-gradient(circle 15vmin at 17% 30%, rgba(255,222,206,0.95) 0 12%, rgba(255,150,150,0.42) 14%, rgba(255,150,170,0.12) 55%, rgba(255,150,170,0) 100%), linear-gradient(180deg, rgba(70,84,176,0.34), rgba(255,150,170,0.16) 60%, rgba(11,10,15,0) 88%), radial-gradient(ellipse 66% 50% at 50% 60%, rgba(150,110,220,0.26), rgba(255,150,160,0.08) 55%, rgba(11,10,15,0) 78%)' },
+    giorno: { sky: '#eaf0ff', gnd: '#7a7080', hi: 0.76, sun: '#fff1d6', si: 0.96, sp: [10, 20, 12], n: -0.5, fog: '#cfdaf6', st: 0, bg: 'radial-gradient(circle 16vmin at 72% 9%, rgba(255,255,240,0.85) 0 9%, rgba(255,250,220,0.26) 11%, rgba(255,250,220,0) 100%), linear-gradient(180deg, rgba(110,150,255,0.30), rgba(170,190,255,0.12) 60%, rgba(11,10,15,0) 90%), radial-gradient(ellipse 75% 60% at 50% 55%, rgba(150,175,255,0.34), rgba(120,110,210,0.14) 55%, rgba(11,10,15,0) 82%)' }
   };
   const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
   const back = (k) => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
@@ -1491,7 +1517,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       this.opts = Object.assign({ pixel: 2, light: 'tramonto', autoRotate: true }, opts || {});
       this.view = 'home'; this.cityId = null; this.city = null; this.lastI = 0; this.hold = false; this.v = new THREE.Vector3();
       const R = this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
-      R.shadowMap.enabled = true; R.shadowMap.type = THREE.BasicShadowMap;
+      R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap;
       R.domElement.style.cssText = 'position:relative;display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none';
       this.reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
       const bg = document.createElement('div');
@@ -1566,7 +1592,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       this.tg = { sky: new THREE.Color(L.sky), gnd: new THREE.Color(L.gnd), sun: new THREE.Color(L.sun), hi: L.hi, si: L.si, sp: new THREE.Vector3(...L.sp).multiplyScalar(this.sizeK || 1), n: L.n, fog: new THREE.Color(L.fog) };
       if (!this.lit) { this.lit = true; this.hemi.color.copy(this.tg.sky); this.hemi.groundColor.copy(this.tg.gnd); this.hemi.intensity = L.hi; this.sun.color.copy(this.tg.sun); this.sun.intensity = L.si; this.sun.position.copy(this.tg.sp); SOTO_U.uNight.value = L.n; }
       if (this.bg) this.bg.style.background = L.bg;
-      if (this.stars) this.stars.forEach((c) => { c.style.visibility = this.lightName === 'giorno' ? 'hidden' : 'inherit'; });
+      if (this.stars) this.stars.forEach((c) => { c.style.visibility = this.lightName === 'giorno' ? 'hidden' : 'inherit'; c.style.opacity = L.st; c.style.transition = 'opacity 1.2s'; });
     }
     setActive(view) { this.view = view; if (view === 'home') this.drawEuro(); }
     setCity(id) {
@@ -1647,7 +1673,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         // finestre: compaiono solo quando un edificio occupa abbastanza pixel
         const ppb = (c.cs * this.renderer.domElement.height) / (2 * cd * 0.2493), fdt = this.reduce ? 0 : Math.min(0.1, (t - (this.pt || t)) / 1000); this.pt = t;
         SOTO_U.uWin.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 2) / 1.5) : cl01((ppb - 4) / 3);
-        if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'tramonto', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
+        if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'alba', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
         if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; this.scene.fog.color.lerp(G2.fog, q); }
         this.scene.fog.near = cd; this.scene.fog.far = cd + (c.half || 20) * 4;
         if (c.lampMat) { const nv = SOTO_U.uNight.value; c.lampMat.emissiveIntensity = Math.max(0, 0.3 + 0.9 * nv); c.poolMat.opacity = 0.3 * cl01(0.12 + nv); }
@@ -2333,7 +2359,7 @@ class SotoWasHere extends React.Component {
             <div style={st('position:absolute;left:clamp(12px,2vw,24px);bottom:8px;font-size:11px;color:#6f6a7c')}>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" style={st('color:#9a96a6')}>OpenStreetMap</a> · Terrain: Mapzen/AWS</div>
             {isEditor && !d && C && <div style={st('position:absolute;left:50%;bottom:24px;transform:translateX(-50%);max-width:calc(100% - 140px);text-align:center;background:#0b0a0f;border:1px solid #a374f0;border-radius:10px;padding:10px 14px;font-family:Silkscreen,monospace;font-size:12px;color:#f1eff5;pointer-events:none')}>{S.clickToAdd}</div>}
             <div style={st('position:absolute;right:clamp(12px,2vw,24px);bottom:168px;display:flex;flex-direction:column;border:1px solid #2e2347;border-radius:12px;overflow:hidden;background:rgba(17,14,25,0.94)')}>
-              {[['giorno', '\u2600', 'Giorno', 'Day'], ['tramonto', '\u25D0', 'Tramonto', 'Sunset'], ['notte', '\u263E', 'Notte', 'Night'], ['auto', '\u21BB', 'Ciclo automatico', 'Auto cycle']].map(([id, ic, it, en]) => (
+              {[['alba', '\u263C', 'Alba', 'Dawn'], ['giorno', '\u2600', 'Giorno', 'Day'], ['tramonto', '\u25D0', 'Tramonto', 'Sunset'], ['notte', '\u263E', 'Notte', 'Night'], ['auto', '\u21BB', 'Ciclo automatico', 'Auto cycle']].map(([id, ic, it, en]) => (
                 <button key={id} onClick={() => this.setLight(id)} title={L === 'it' ? it : en} aria-label={L === 'it' ? it : en} aria-pressed={s.light === id} style={st(`width:44px;height:38px;border:0;border-bottom:1px solid #2e2347;background:${s.light === id ? '#2e2347' : 'none'};color:${s.light === id ? '#ffd98a' : '#9a96a6'};font-size:16px;cursor:pointer`)}>{ic}</button>
               ))}
             </div>
