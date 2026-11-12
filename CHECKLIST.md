@@ -29,6 +29,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Tetti: falde anche sulle piante a L e a corte (bordo inclinato e colmo piano), comignoli, volumi tecnici sui tetti piani e sulle torri
 - [x] Facciate: persiane (colore diverso per città), balconi, tende dei negozi al piano terra
 - [x] Colori per quartiere: Boccadasse e centro storico a Genova; Vieux Lyon, Croix-Rousse e Part-Dieu a Lione; Le Panier a Marsiglia
+- [x] Strade con il tracciato reale di OpenStreetMap: nastri continui appoggiati al terreno, larghezza per tipo (pedonali, vie, viali, arterie), lampioni e alberi lungo i viali, traffico che segue le curve
 - [x] Verde: boschi più fitti sulle alture, macchia bassa sulle Calanche, canneti più fitti sui laghi di Mantova
 
 ## Da verificare
@@ -36,10 +37,11 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Fluidità sul telefono: misurata solo sul computer (60 fotogrammi al secondo nel pannello dell'app)
 - [ ] Layout su telefono vero: provato solo in un browser di prova a 400 px di larghezza
 - [ ] Le quattro città nuove: provate solo nel browser di prova, non sul sito pubblicato né sul telefono (le più pesanti sono Lione e Marsiglia)
-- [ ] Peso della pagina: 4,1 MB (era 0,5 prima delle piante reali)
+- [ ] Peso della pagina: 4,5 MB (era 0,5 prima delle piante reali)
 - [ ] Sponde, ponti, foschia e luci notturne: visti solo nel browser di prova (Lione e Mantova di giorno, Genova e Marsiglia di notte)
 - [ ] Foschia: appena percettibile nella vista d'insieme; da giudicare dal vivo se rinforzarla
 - [ ] Tetti, facciate e verde nuovi: visti solo nel browser di prova, di giorno (Lione, Genova, Calanche); Mantova non riaperta
+- [ ] Strade nuove: viste solo nel browser di prova, di giorno, a Genova e Mantova; Lione, Marsiglia, notte e traffico da vicino non controllati
 - [ ] Layout da telefono riprovato solo su Genova
 - [ ] Ultimi aggiornamenti sul sito pubblicato: luce, scheda del punto, mappa Europa non riaperti dal vivo dopo il caricamento
 - [ ] Orientamento dei monumenti scelto a stima: Notre-Dame de la Garde (lato della torre), Carignano, Sant'Andrea, Vélodrome, Porta Soprana
@@ -56,10 +58,11 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Portici: i contorni reali non li distinguono, andrebbero disegnati a mano dove servono (es. Sottoripa, via XX Settembre)
 - [ ] Genova: le fasce coltivate sono messe a stima sui pendii verdi esposti a sud, non sui terreni agricoli veri
 - [ ] Tetti: sulle piante complesse la falda è solo un bordo inclinato attorno a un colmo piano, non un tetto a capanna vero; niente abbaini né terrazze
-- [ ] Strade ancora a celle: tracciarle come nastri continui richiede una nuova raccolta dati e appesantisce la pagina
+- [ ] Strade: niente mezzeria, strisce pedonali né marciapiedi; gallerie non disegnate; i viadotti su terra (es. la Sopraelevata di Genova) seguono il suolo
+- [ ] Strade: ferrovie e impalcati dei ponti sono ancora a celle
+- [ ] Strade: le auto sono più grandi del vero e a fine strada tornano indietro
 - [ ] Monumenti da rifare con più dettaglio: San Lorenzo, Fourvière, Notre-Dame de la Garde, Palazzo Ducale
 - [ ] Colori per quartiere: zone scelte a stima con riquadri approssimativi; Mantova non ne ha
-- [ ] Filari di alberi lungo i viali: sono quelli di prima, non rifatti
 - [ ] Tram su binari propri, arcate dei ponti, fontane nelle piazze
 - [ ] Monumenti senza modello: Galata Museo del Mare, Casa del Mantegna, Palais Longchamp
 - [ ] Fiumi e rilievi della mappa Europa: tracciati approssimativi, da rifinire
