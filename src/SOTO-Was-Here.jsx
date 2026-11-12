@@ -1136,26 +1136,26 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
     return { n: nb, W: Math.round(W), H: Math.round(H), data: Uint16Array.from(out) };
   }
+  // I dati incorporati si decodificano solo quando servono: una citta alla volta.
+  const u8 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  const gunz = async (s) => JSON.parse(await new Response(new Blob([u8(s)]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+  const embCache = {};
+  const once = (key, fn) => embCache[key] || (embCache[key] = fn());
   function embeddedGrids() {
-    if (!embeddedP) embeddedP = (async () => {
-      const u8 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-      const txt = await new Response(new Blob([u8(EMBED_GRIDS)]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-      const all = JSON.parse(txt), out = {};
+    return once('base', async () => {
+      const all = await gunz(EMBED_GRIDS), out = {};
       for (const k in all) { const r = all[k]; out[k] = { NX: r.NX, NZ: r.NZ, cell: r.cell, b: r.b, t: r.t, h: Array.from(u8(r.h)), e: Array.from(new Uint16Array(u8(r.e).buffer), (v) => v / 2) }; }
-      for (const k in EMBED_CITY) {
-        const r = JSON.parse(await new Response(new Blob([u8(EMBED_CITY[k])]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
-        out[k] = { NX: r.NX, NZ: r.NZ, cell: r.cell, b: r.b, size: r.size, t: r.t, h: Array.from(u8(r.h)), e: Array.from(new Uint16Array(u8(r.e).buffer), (v) => v / 2), fp: new Uint16Array(u8(r.fp).buffer), fpW: r.fpW, fpH: r.fpH, rd: r.rd ? new Uint16Array(u8(r.rd).buffer) : null };
-      }
-      const rl = JSON.parse(await new Response(new Blob([u8(EMBED_RAIL)]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
-      for (const k in rl) if (out[k]) out[k].rl = new Uint16Array(u8(rl[k]).buffer);
-      const tn = JSON.parse(await new Response(new Blob([u8(EMBED_TUN)]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
-      for (const k in tn) if (out[k]) out[k].tn = new Uint16Array(u8(tn[k]).buffer);
       return out;
-    })();
-    return embeddedP;
+    });
+  }
+  function embeddedCity(id) {
+    return once('city:' + id, async () => {
+      const [r, rl, tn] = await Promise.all([gunz(EMBED_CITY[id]), once('rail', () => gunz(EMBED_RAIL)), once('tun', () => gunz(EMBED_TUN))]);
+      return { NX: r.NX, NZ: r.NZ, cell: r.cell, b: r.b, size: r.size, t: r.t, h: Array.from(u8(r.h)), e: Array.from(new Uint16Array(u8(r.e).buffer), (v) => v / 2), fp: new Uint16Array(u8(r.fp).buffer), fpW: r.fpW, fpH: r.fpH, rd: r.rd ? new Uint16Array(u8(r.rd).buffer) : null, rl: rl[id] ? new Uint16Array(u8(rl[id]).buffer) : null, tn: tn[id] ? new Uint16Array(u8(tn[id]).buffer) : null };
+    });
   }
   function getGrid(id, onStep) {
-    return embeddedGrids().then((all) => all[id], () => null).then((g) => (g && g.t.length === g.NX * g.NZ ? g : getGridNet(id, onStep)));
+    return (EMBED_CITY[id] ? embeddedCity(id) : embeddedGrids().then((all) => all[id])).then((g) => g, () => null).then((g) => (g && g.t.length === g.NX * g.NZ ? g : getGridNet(id, onStep)));
   }
   function getGridNet(id, onStep) {
     try { const c = JSON.parse(localStorage.getItem(CKEY + id)); if (c && c.t && c.t.length === c.NX * c.NZ) return Promise.resolve(c); } catch (e) {}
@@ -1753,7 +1753,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   class SotoEngine {
     constructor(root, cityEl, euroEl, opts) {
       this.root = root; this.cityEl = cityEl; this.euroEl = euroEl;
-      this.opts = Object.assign({ pixel: 2, light: 'tramonto', autoRotate: true }, opts || {});
+      this.opts = Object.assign({ pixel: 2, light: 'tramonto', autoRotate: true }, opts || {}); window.__soto = this;
       this.view = 'home'; this.cityId = null; this.city = null; this.lastI = 0; this.hold = false; this.v = new THREE.Vector3();
       const R = this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
       R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1840,10 +1840,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       this.cityId = id; this.readyId = null;
       const st = (s) => { if (this.cityId === id && this.onStatus) this.onStatus(s); };
       st('osm');
-      getGrid(id, st).then((G) => buildReal(id, G), (e) => { console.warn('OSM failed, stylized fallback', e); this.fallback = true; return buildCity(id); }).then((c) => {
+      const tB = performance.now();
+      getGrid(id, st).then((G) => { const t1 = performance.now(), c = buildReal(id, G); this.stats = { decode: Math.round(t1 - tB), build: Math.round(performance.now() - t1) }; return c; }, (e) => { console.warn('OSM failed, stylized fallback', e); this.fallback = true; return buildCity(id); }).then((c) => {
         if (this.cityId !== id) return;
         this.mount(c); st(this.fallback ? 'fallback' : 'ready'); this.fallback = false;
-        Object.keys(REAL).forEach((k, n) => setTimeout(() => getGrid(k).catch(() => {}), 1500 + n * 4000));
       });
     }
     mount(c) {
