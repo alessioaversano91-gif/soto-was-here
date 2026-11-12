@@ -152,6 +152,22 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     m.position.set(x, y, z); if (o.ry) m.rotation.y = o.ry;
     m.castShadow = !o.noShadow; m.receiveShadow = true; g.add(m); return m;
   }
+  // Unisce le parti fisse di un monumento in due sole mesh (con e senza ombra), per poter aggiungere dettagli senza appesantire.
+  function bakeLM(lg) {
+    const bk = [[], []], col = new THREE.Color();
+    lg.children.slice().forEach((m) => {
+      if (!m.isMesh || m.children.length || m.userData.spin || m.material.transparent || m.material.emissive.getHex() !== 0) return;
+      m.updateMatrix(); const ge = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrix), P = ge.attributes.position.array; col.copy(m.material.color);
+      const b = bk[m.castShadow ? 0 : 1]; for (let k = 0; k < P.length; k += 3) b.push(P[k], P[k + 1], P[k + 2], col.r, col.g, col.b);
+      lg.remove(m);
+    });
+    bk.forEach((b, n) => {
+      if (!b.length) return; const N = b.length / 6, P = new Float32Array(N * 3), Cc = new Float32Array(N * 3);
+      for (let k = 0; k < N; k++) { P[k * 3] = b[k * 6]; P[k * 3 + 1] = b[k * 6 + 1]; P[k * 3 + 2] = b[k * 6 + 2]; Cc[k * 3] = b[k * 6 + 3]; Cc[k * 3 + 1] = b[k * 6 + 4]; Cc[k * 3 + 2] = b[k * 6 + 5]; }
+      const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.BufferAttribute(P, 3)); ge.setAttribute('color', new THREE.BufferAttribute(Cc, 3)); ge.computeVertexNormals();
+      const me = new THREE.Mesh(ge, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })); me.castShadow = !n; me.receiveShadow = true; lg.add(me);
+    });
+  }
   const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
   const C = (a, b, h, s) => new THREE.CylinderGeometry(a, b, h, s || 8);
   // Dettagli riusabili per i monumenti: file di finestre, rosoni, bandiere.
@@ -169,14 +185,14 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       winX(g, x, y + 1.4, z - 0.41, 1, 0.3, 0.16, 0.34); winX(g, x, y + 2.5, z - 0.41, 1, 0.3, 0.16, 0.34); winX(g, x, y + 4.3, z - 0.31, 1, 0.3, 0.14, 0.3);
     },
     sanlorenzo(g, x, y, z) {
-      rose(g, x, y + 1.3, z - 1.42, 0.2); add(g, B(2.2, 0.1, 0.6), '#cfc8bb', x, y + 0.05, z - 2.1);
+      rose(g, x, y + 1.5, z - 1.77, 0.2); add(g, B(2.2, 0.1, 0.6), '#cfc8bb', x, y + 0.05, z - 2.1);
       winX(g, x + 0.62, y + 2.35, z - 1.87, 1, 0.3, 0.2, 0.42); winX(g, x - 0.62, y + 1.55, z - 1.83, 1, 0.3, 0.2, 0.42);
       winZ(g, x + 0.86, y + 1.1, z + 0.3, 4, 2.6, 0.2, 0.55, '#3a4a7a'); winZ(g, x - 0.86, y + 1.1, z + 0.3, 4, 2.6, 0.2, 0.55, '#3a4a7a');
     },
     ndg(g, x, y, z) {
       add(g, B(1.2, 0.3, 0.7), '#c9bda5', x - 1.7, y + 0.15, z);
       winX(g, x - 0.2, y + 1.5, z - 0.56, 4, 1.8, 0.16, 0.42); winX(g, x - 0.2, y + 1.5, z + 0.56, 4, 1.8, 0.16, 0.42);
-      winX(g, x, y + 0.5, z - 1.11, 5, 2.4, 0.2, 0.3); add(g, B(0.74, 0.12, 0.74), '#7d6a55', x + 0.8, y + 1.3, z);
+      winX(g, x, y + 0.5, z - 1.11, 5, 2.4, 0.2, 0.3);
     },
     fourviere(g, x, y, z) { winX(g, x, y + 0.9, z - 0.86, 6, 3, 0.22, 0.62, '#3a4a7a'); winX(g, x, y + 0.9, z + 0.86, 6, 3, 0.22, 0.62, '#3a4a7a'); rose(g, x - 1.71, y + 1.1, z, 0.26); },
     castello(g, x, y, z) {
@@ -214,6 +230,39 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     stazione(g, x, y, z) { flag(g, x, y + 1.86, z - 0.6, '#3f9a6c'); }
   };
   const LM = {
+    galata(g, x, y, z) {
+      add(g, B(2.6, 1.3, 1.2), '#d9d4c8', x, y + 0.65, z); add(g, B(2.66, 0.08, 1.26), '#bfb9ad', x, y + 1.34, z);
+      add(g, B(2.7, 1.1, 0.2), '#a9d3e6', x, y + 0.6, z - 0.7, { m: { transparent: true, opacity: 0.7 }, noShadow: true });
+      for (let k = 0; k < 7; k++) add(g, B(0.04, 1.1, 0.22), '#7f8a94', x - 1.2 + k * 0.4, y + 0.6, z - 0.7, { noShadow: true });
+      add(g, B(1.2, 0.34, 0.9), '#e9e4da', x + 0.4, y + 1.55, z); add(g, B(1.26, 0.05, 0.96), '#bfb9ad', x + 0.4, y + 1.74, z);
+      winX(g, x, y + 0.85, z + 0.61, 7, 2.3, 0.16, 0.3);
+      // il sottomarino ormeggiato accanto
+      const sub = add(g, C(0.13, 0.13, 1.9, 8), '#2a2e38', x - 0.2, y + 0.06, z - 1.45); sub.rotation.z = Math.PI / 2; add(g, B(0.34, 0.24, 0.1), '#2a2e38', x - 0.1, y + 0.24, z - 1.45);
+      flag(g, x - 1.15, y + 1.38, z + 0.4, '#d24b3a');
+      return 1.8;
+    },
+    mantegna(g, x, y, z) {
+      const w = '#b86a48';
+      add(g, B(1.6, 1.1, 1.6), w, x, y + 0.55, z); add(g, B(1.66, 0.05, 1.66), '#e3d3b8', x, y + 0.55, z); add(g, B(1.7, 0.08, 1.7), '#93402c', x, y + 1.14, z);
+      // il cortile circolare al centro
+      add(g, C(0.5, 0.5, 0.04, 14), '#e3d3b8', x, y + 1.2, z, { noShadow: true }); add(g, C(0.4, 0.4, 0.05, 14), '#6b5a4c', x, y + 1.21, z, { noShadow: true });
+      add(g, B(0.26, 0.5, 0.06), DK, x, y + 0.25, z - 0.81, { noShadow: true }); winX(g, x, y + 0.82, z - 0.81, 4, 1.3, 0.16, 0.2); winX(g, x, y + 0.82, z + 0.81, 4, 1.3, 0.16, 0.2); winZ(g, x + 0.81, y + 0.82, z, 4, 1.3, 0.16, 0.2); winZ(g, x - 0.81, y + 0.82, z, 4, 1.3, 0.16, 0.2);
+      return 1.3;
+    },
+    longchamp(g, x, y, z) {
+      const w = '#e9dcc0', s = '#d3c4a4', rf = '#8f8a98';
+      // castello d'acqua al centro, con arco e cascata
+      add(g, B(0.9, 1.5, 0.8), w, x, y + 0.75, z); add(g, B(1.0, 0.14, 0.9), s, x, y + 1.57, z); add(g, B(0.6, 0.2, 0.5), w, x, y + 1.74, z);
+      add(g, B(0.4, 0.8, 0.06), DK, x, y + 0.7, z - 0.41, { noShadow: true }); add(g, C(0, 0.28, 0.24, 4), DK, x, y + 1.22, z - 0.4, { ry: Math.PI / 4, noShadow: true });
+      add(g, B(0.4, 0.5, 0.5), '#a9d3e6', x, y + 0.25, z - 0.7, { m: { transparent: true, opacity: 0.8 }, noShadow: true }); add(g, C(0.9, 0.9, 0.1, 14), '#7fb8d8', x, y + 0.05, z - 1.3); add(g, C(1.0, 1.0, 0.06, 14), s, x, y + 0.03, z - 1.3);
+      // colonnati curvi e ali dei due musei
+      [-1, 1].forEach((sx) => {
+        for (let k = 1; k <= 5; k++) { const cx = x + sx * (0.5 + k * 0.27), cz = z - k * k * 0.035; add(g, C(0.05, 0.05, 0.8, 6), w, cx, y + 0.7, cz); add(g, B(0.3, 0.1, 0.2), s, cx, y + 1.15, cz); add(g, B(0.3, 0.3, 0.26), s, cx, y + 0.15, cz); }
+        add(g, B(1.0, 1.1, 1.4), w, x + sx * 2.45, y + 0.55, z - 0.7); add(g, B(1.06, 0.14, 1.46), rf, x + sx * 2.45, y + 1.17, z - 0.7); add(g, B(0.7, 0.12, 1.1), '#7d7888', x + sx * 2.45, y + 1.3, z - 0.7);
+        winX(g, x + sx * 2.45, y + 0.6, z - 1.41, 3, 0.8, 0.14, 0.5); add(g, B(0.3, 0.3, 0.3), s, x + sx * 1.05, y + 1.9, z, { noShadow: true });
+      });
+      return 2;
+    },
     stazione(g, x, y, z) {
       const w = '#e9dcc0';
       add(g, B(3.6, 1.2, 1), w, x, y + 0.6, z - 0.6); add(g, B(1.2, 1.7, 1.1), w, x, y + 0.85, z - 0.6); add(g, B(1.3, 0.16, 1.2), '#b9a98a', x, y + 1.78, z - 0.6);
@@ -257,16 +306,28 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       return 6.4;
     },
     fourviere(g, x, y, z) {
-      add(g, B(3.4, 1.7, 1.7), '#ece5d6', x, y + 0.85, z);
-      add(g, B(3.0, 0.5, 1.3), '#d8cfbe', x, y + 1.95, z);
+      const W = '#ece5d6', L = '#f2ece0', S = '#d8cfbe', RF = '#b4bfc4';
+      add(g, B(3.4, 1.7, 1.7), W, x, y + 0.85, z); add(g, B(3.44, 0.08, 1.74), S, x, y + 1.02, z);
+      add(g, B(3.0, 0.5, 1.3), S, x, y + 1.95, z); add(g, B(3.04, 0.12, 0.92), RF, x, y + 2.26, z); add(g, B(3.04, 0.1, 0.46), '#a3afb5', x, y + 2.37, z);
+      // quattro torri ottagonali con coronamento merlato
       [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => {
-        add(g, C(0.36, 0.4, 2.8, 8), '#f2ece0', x + sx * 1.55, y + 1.4, z + sz * 0.75);
-        add(g, C(0.44, 0.44, 0.18, 8), '#d8cfbe', x + sx * 1.55, y + 2.85, z + sz * 0.75);
-        add(g, C(0.18, 0.3, 0.35, 8), '#ece5d6', x + sx * 1.55, y + 3.1, z + sz * 0.75);
+        const tx = x + sx * 1.55, tz = z + sz * 0.75;
+        add(g, C(0.36, 0.4, 2.8, 8), L, tx, y + 1.4, tz); add(g, C(0.42, 0.42, 0.08, 8), S, tx, y + 1.9, tz);
+        add(g, B(0.16, 0.42, 0.06), DK, tx, y + 2.4, tz + sz * 0.36, { noShadow: true }); add(g, B(0.06, 0.42, 0.16), DK, tx + sx * 0.36, y + 2.4, tz, { noShadow: true });
+        add(g, C(0.46, 0.4, 0.16, 8), S, tx, y + 2.86, tz);
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([a, b]) => add(g, B(0.13, 0.18, 0.13), L, tx + a * 0.33, y + 3.03, tz + b * 0.33));
+        add(g, C(0.05, 0.2, 0.3, 8), W, tx, y + 3.09, tz);
       }));
-      add(g, B(0.5, 2.6, 0.5), '#e6dfd0', x + 2.4, y + 1.3, z);
-      add(g, C(0.14, 0.2, 0.7, 6), '#d6a733', x + 2.4, y + 2.95, z, { e: 0.3 });
-      return 3.4;
+      // facciata con portico a tre arcate e frontone
+      add(g, B(0.45, 1.0, 1.1), L, x - 1.92, y + 0.5, z); add(g, B(0.5, 0.08, 1.16), S, x - 1.92, y + 1.04, z);
+      [-0.34, 0, 0.34].forEach((dz) => { add(g, B(0.06, 0.6, 0.22), DK, x - 2.15, y + 0.3, z + dz, { noShadow: true }); add(g, B(0.06, 0.12, 0.14), DK, x - 2.15, y + 0.66, z + dz, { noShadow: true }); });
+      add(g, C(0, 0.62, 0.42, 4), W, x - 1.72, y + 1.92, z, { ry: Math.PI / 4 }); add(g, C(0.03, 0.05, 0.26, 5), '#d6a733', x - 1.72, y + 2.25, z, { e: 0.3 });
+      add(g, B(0.12, 0.1, 1.5), '#cfc8bb', x - 2.4, y + 0.05, z); add(g, B(0.12, 0.05, 1.7), '#cfc8bb', x - 2.55, y + 0.025, z);
+      // abside con San Michele, cappella antica con la Vergine dorata
+      add(g, C(0.45, 0.45, 1.4, 10), W, x + 1.72, y + 0.7, z); add(g, C(0, 0.48, 0.32, 10), RF, x + 1.72, y + 1.56, z); add(g, C(0.03, 0.04, 0.22, 5), '#d6a733', x + 1.72, y + 1.83, z, { e: 0.3 });
+      add(g, B(0.5, 2.6, 0.5), '#e6dfd0', x + 2.4, y + 1.3, z); add(g, B(0.56, 0.08, 0.56), S, x + 2.4, y + 1.9, z); add(g, B(0.22, 0.36, 0.06), DK, x + 2.4, y + 2.25, z - 0.25, { noShadow: true }); add(g, B(0.22, 0.36, 0.06), DK, x + 2.4, y + 2.25, z + 0.25, { noShadow: true });
+      add(g, C(0.2, 0.27, 0.2, 8), '#cfd6d8', x + 2.4, y + 2.7, z); add(g, C(0.1, 0.16, 0.6, 6), '#d6a733', x + 2.4, y + 3.1, z, { e: 0.3 });
+      return 3.5;
     },
     congres(g, x, y, z) {
       add(g, B(1.6, 1.4, 6), '#b5573d', x, y + 0.7, z);
@@ -276,30 +337,44 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       return 1.7;
     },
     sanlorenzo(g, x, y, z) {
-      const W = '#f2efe8', K = '#2a2630';
+      const W = '#f2efe8', K = '#2a2630', R = '#6f6a73';
       const striped = (w, h, d, cx, cz, n, y0) => { for (let k = 0; k < n; k++) add(g, B(w, h / n, d), k % 2 ? K : W, cx, y0 + (h / n) * (k + 0.5), cz); };
-      striped(1.7, 1.8, 3.2, x, z + 0.2, 9, y);
-      add(g, B(1.8, 0.16, 3.3), '#6f6a73', x, y + 1.88, z + 0.2);
-      add(g, B(1.2, 0.5, 2.9), '#6f6a73', x, y + 2.2, z + 0.25);
-      striped(0.62, 2.9, 0.62, x + 0.62, z - 1.55, 13, y);
-      add(g, B(0.7, 0.14, 0.7), K, x + 0.62, y + 2.97, z - 1.55);
-      add(g, C(0, 0.4, 0.55, 4), '#5c5866', x + 0.62, y + 3.3, z - 1.55, { ry: Math.PI / 4 });
-      striped(0.55, 2.1, 0.55, x - 0.62, z - 1.55, 9, y);
-      add(g, C(0.55, 0.55, 0.5, 10), W, x, y + 2.5, z + 1.15);
+      // navata centrale, navate laterali piu basse, transetto
+      striped(1.0, 2.2, 3.2, x, z + 0.2, 11, y); add(g, B(1.08, 0.12, 3.26), R, x, y + 2.26, z + 0.2); add(g, B(0.56, 0.14, 3.22), '#5c5866', x, y + 2.38, z + 0.2);
+      [-1, 1].forEach((sx) => { striped(0.36, 1.4, 3.2, x + sx * 0.68, z + 0.2, 7, y); add(g, B(0.4, 0.08, 3.24), R, x + sx * 0.68, y + 1.44, z + 0.2); });
+      striped(2.1, 1.6, 0.7, x, z + 1.15, 8, y); add(g, B(2.16, 0.1, 0.76), R, x, y + 1.65, z + 1.15);
+      // facciata gotica con tre portali
+      striped(0.62, 2.3, 0.5, x, z - 1.5, 11, y); add(g, C(0, 0.44, 0.45, 4), W, x, y + 2.52, z - 1.5, { ry: Math.PI / 4 });
+      add(g, B(0.34, 0.72, 0.06), '#1a1620', x, y + 0.36, z - 1.77, { noShadow: true }); add(g, C(0, 0.24, 0.26, 4), '#1a1620', x, y + 0.85, z - 1.76, { ry: Math.PI / 4, noShadow: true });
+      [-1, 1].forEach((sx) => { add(g, B(0.24, 0.52, 0.06), '#1a1620', x + sx * 0.62, y + 0.26, z - 1.87, { noShadow: true }); add(g, C(0, 0.17, 0.2, 4), '#1a1620', x + sx * 0.62, y + 0.62, z - 1.86, { ry: Math.PI / 4, noShadow: true }); add(g, B(0.14, 0.14, 0.28), '#d8d2c4', x + sx * 0.42, y + 0.14, z - 2.2); });
+      // campanile a destra, torre incompiuta con loggia a sinistra
+      striped(0.62, 2.9, 0.62, x + 0.62, z - 1.55, 13, y); add(g, B(0.7, 0.1, 0.7), K, x + 0.62, y + 2.95, z - 1.55);
+      add(g, B(0.52, 0.42, 0.52), '#e9e4da', x + 0.62, y + 3.21, z - 1.55); [[0, -0.27, 0.22, 0.06], [0, 0.27, 0.22, 0.06], [-0.27, 0, 0.06, 0.22], [0.27, 0, 0.06, 0.22]].forEach(([dx, dz, w, d]) => add(g, B(w, 0.28, d), K, x + 0.62 + dx, y + 3.2, z - 1.55 + dz, { noShadow: true }));
+      add(g, B(0.6, 0.08, 0.6), K, x + 0.62, y + 3.46, z - 1.55); add(g, C(0, 0.36, 0.62, 4), '#5c5866', x + 0.62, y + 3.81, z - 1.55, { ry: Math.PI / 4 });
+      striped(0.55, 2.1, 0.55, x - 0.62, z - 1.55, 9, y); add(g, B(0.62, 0.06, 0.62), K, x - 0.62, y + 2.13, z - 1.55);
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => add(g, B(0.07, 0.32, 0.07), W, x - 0.62 + a * 0.23, y + 2.32, z - 1.55 + b * 0.23)); add(g, B(0.64, 0.08, 0.64), R, x - 0.62, y + 2.52, z - 1.55);
+      // cupola
+      add(g, C(0.55, 0.55, 0.5, 8), W, x, y + 2.5, z + 1.15); add(g, B(0.2, 0.26, 1.12), K, x, y + 2.5, z + 1.15, { noShadow: true }); add(g, B(1.12, 0.26, 0.2), K, x, y + 2.5, z + 1.15, { noShadow: true });
       add(g, new THREE.SphereGeometry(0.58, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), '#8fa0a3', x, y + 2.75, z + 1.15);
-      add(g, C(0.08, 0.1, 0.35, 6), W, x, y + 3.45, z + 1.15);
-      add(g, B(0.5, 0.75, 0.08), '#1a1620', x, y + 0.38, z - 1.42);
-      return 3.6;
+      add(g, C(0.1, 0.12, 0.3, 6), W, x, y + 3.45, z + 1.15); add(g, C(0, 0.12, 0.2, 6), '#8fa0a3', x, y + 3.7, z + 1.15);
+      return 4.1;
     },
     ndg(g, x, y, z) {
-      add(g, B(2.8, 0.9, 2.2), '#d6cab2', x, y + 0.45, z);
-      add(g, B(2.0, 1.1, 1.1), '#efe5cf', x - 0.2, y + 1.45, z);
-      add(g, B(0.7, 2.2, 0.7), '#efe5cf', x + 0.8, y + 2.0, z);
-      add(g, B(0.74, 0.12, 0.74), '#7d6a55', x + 0.8, y + 1.7, z);
-      add(g, B(0.74, 0.12, 0.74), '#7d6a55', x + 0.8, y + 2.5, z);
-      add(g, C(0.3, 0.38, 0.5, 8), '#e4d8bf', x + 0.8, y + 3.35, z);
-      add(g, C(0.08, 0.16, 0.9, 6), '#e0b23a', x + 0.8, y + 4.05, z, { e: 0.4 });
-      return 4.6;
+      const W = '#efe5cf', G = '#bfc9b4', ST = '#d6cab2';
+      const striped = (w, h, d, cx, cy, cz, n) => { for (let k = 0; k < n; k++) add(g, B(w, h / n, d), k % 2 ? G : W, cx, cy + (h / n) * (k + 0.5), cz); };
+      // basamento-fortezza con bastione e scalinata
+      add(g, B(2.8, 0.9, 2.2), ST, x, y + 0.45, z); add(g, B(2.9, 0.08, 2.3), '#c4b79e', x, y + 0.9, z);
+      add(g, C(0.75, 0.9, 0.8, 5), '#cbbfa6', x - 1.5, y + 0.4, z + 0.9); add(g, B(0.5, 0.3, 0.7), '#c9bda5', x + 1.65, y + 0.15, z); add(g, B(0.5, 0.6, 0.7), '#c9bda5', x + 1.3, y + 0.3, z);
+      // chiesa a fasce bianche e verdi, con cupola
+      striped(2.0, 1.1, 1.1, x - 0.2, y + 0.94, z, 6); add(g, B(2.04, 0.12, 0.84), '#b9ad98', x - 0.2, y + 2.1, z); add(g, B(2.04, 0.1, 0.42), '#a89c88', x - 0.2, y + 2.2, z);
+      add(g, C(0.45, 0.45, 0.42, 10), W, x - 0.85, y + 2.3, z); add(g, B(0.94, 0.2, 0.14), DK, x - 0.85, y + 2.3, z, { noShadow: true }); add(g, B(0.14, 0.2, 0.94), DK, x - 0.85, y + 2.3, z, { noShadow: true });
+      add(g, new THREE.SphereGeometry(0.47, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2), '#b3bfae', x - 0.85, y + 2.5, z); add(g, C(0.06, 0.08, 0.2, 6), W, x - 0.85, y + 3.05, z);
+      // campanile con loggia e statua dorata della Vergine
+      striped(0.7, 2.2, 0.7, x + 0.8, y + 0.94, z, 9); add(g, B(0.78, 0.08, 0.78), '#7d6a55', x + 0.8, y + 2.42, z);
+      [[0, -0.36, 0.3, 0.06], [0, 0.36, 0.3, 0.06], [-0.36, 0, 0.06, 0.3], [0.36, 0, 0.06, 0.3]].forEach(([dx, dz, w, d]) => add(g, B(w, 0.44, d), DK, x + 0.8 + dx, y + 2.78, z + dz, { noShadow: true }));
+      add(g, B(0.84, 0.1, 0.84), ST, x + 0.8, y + 3.19, z); [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => add(g, B(0.1, 0.16, 0.1), W, x + 0.8 + a * 0.36, y + 3.32, z + b * 0.36));
+      add(g, C(0.28, 0.36, 0.5, 8), '#e4d8bf', x + 0.8, y + 3.49, z); add(g, C(0.08, 0.17, 0.9, 6), '#e0b23a', x + 0.8, y + 4.19, z, { e: 0.4 }); add(g, new THREE.SphereGeometry(0.1, 6, 4), '#e0b23a', x + 0.8, y + 4.7, z, { e: 0.4 });
+      return 4.8;
     },
     fort(g, x, y, z) {
       add(g, B(2.2, 1, 2.2), '#c8b18a', x, y + 0.5, z);
@@ -367,11 +442,19 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       return 2.9;
     },
     palazzoducale(g, x, y, z) {
-      const w = '#b5603f';
-      add(g, B(3.6, 1.3, 1.2), w, x, y + 0.65, z); add(g, B(1.2, 1.6, 1.3), '#a9553a', x + 1.5, y + 0.8, z + 0.3);
-      for (let k = 0; k < 8; k++) add(g, B(0.24, 0.22, 1.2), '#97442f', x - 1.62 + k * 0.46, y + 1.41, z);
-      for (let k = 0; k < 6; k++) add(g, B(0.3, 0.55, 0.06), '#2a2630', x - 1.4 + k * 0.48, y + 0.28, z - 0.6, { noShadow: true });
-      return 1.9;
+      const w = '#b5603f', st = '#e3d3b8', dk = '#97442f';
+      add(g, B(3.6, 1.3, 1.2), w, x, y + 0.65, z); add(g, B(3.64, 0.05, 1.24), st, x, y + 0.6, z);
+      // portico gotico al piano terra
+      for (let k = 0; k < 9; k++) { const ax = x - 1.6 + k * 0.4; add(g, B(0.26, 0.4, 0.06), '#2a2630', ax, y + 0.2, z - 0.6, { noShadow: true }); add(g, C(0, 0.18, 0.16, 4), '#2a2630', ax, y + 0.48, z - 0.59, { ry: Math.PI / 4, noShadow: true }); }
+      for (let k = 0; k < 10; k++) add(g, B(0.07, 0.44, 0.1), st, x - 1.8 + k * 0.4, y + 0.22, z - 0.61);
+      // merli a coda di rondine sui due fronti
+      for (let k = 0; k < 12; k++) [-0.56, 0.56].forEach((dz) => { const mx = x - 1.65 + k * 0.3; add(g, B(0.18, 0.18, 0.08), dk, mx, y + 1.39, z + dz); add(g, B(0.05, 0.08, 0.08), dk, mx - 0.065, y + 1.52, z + dz); add(g, B(0.05, 0.08, 0.08), dk, mx + 0.065, y + 1.52, z + dz); });
+      add(g, B(3.5, 0.06, 1.0), '#93402c', x, y + 1.33, z);
+      // Palazzo del Capitano e torre
+      add(g, B(1.2, 1.6, 1.3), '#a9553a', x + 1.5, y + 0.8, z + 0.3); add(g, B(1.26, 0.06, 1.36), st, x + 1.5, y + 1.05, z + 0.3);
+      for (let k = 0; k < 4; k++) [-0.36, 0.96].forEach((dz) => add(g, B(0.18, 0.2, 0.08), dk, x + 1.05 + k * 0.3, y + 1.7, z + dz));
+      add(g, B(0.5, 2.3, 0.5), '#a04e36', x - 1.5, y + 1.15, z + 0.3); add(g, B(0.56, 0.06, 0.56), st, x - 1.5, y + 1.9, z + 0.3); add(g, C(0, 0.38, 0.4, 4), '#93402c', x - 1.5, y + 2.5, z + 0.3, { ry: Math.PI / 4 });
+      return 2.6;
     },
     rotonda(g, x, y, z) {
       add(g, C(1, 1, 1, 16), '#b86a48', x, y + 0.5, z); add(g, C(0.64, 1.04, 0.28, 16), '#a3492f', x, y + 1.14, z);
@@ -596,7 +679,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       P_(44.4044, 8.9050, 'Lanterna', 'Lanterna lighthouse', 'lanterna', 0.85),
     P_(44.4105, 8.8930, 'Sampierdarena'), P_(44.4262, 8.9368, 'Righi'), P_(44.4164, 8.9525, 'Stadio Luigi Ferraris', 'Luigi Ferraris stadium'), P_(44.4180, 8.9195, 'Castello d\'Albertis', 'D\'Albertis Castle'), P_(44.4290, 8.9480, 'Staglieno'), P_(44.3972, 8.9865, 'Sturla'),
       P_(44.4102, 8.9268, 'Porto Antico · Acquario', 'Old Port · Aquarium', 'bigo', 0.8, 1.536),
-      P_(44.4142, 8.9235, 'Galata Museo del Mare', 'Galata Maritime Museum'),
+      P_(44.4142, 8.9235, 'Galata Museo del Mare', 'Galata Maritime Museum', 'galata', 0.7, 1.57),
       P_(44.4115, 8.9285, 'Via del Campo'),
       P_(44.4114, 8.9330, 'Via Garibaldi · Strada Nuova'),
       P_(44.4130, 8.9352, 'Spianata Castelletto', 'Castelletto viewpoint'),
@@ -642,7 +725,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       P_(45.1650, 10.7870, 'Lago Superiore', 'Upper Lake'),
       P_(45.1660, 10.8045, 'Lago di Mezzo', 'Middle Lake'),
       P_(45.1555, 10.8070, 'Lago Inferiore', 'Lower Lake'),
-      P_(45.1505, 10.7910, 'Casa del Mantegna', 'Mantegna\'s House'),
+      P_(45.1505, 10.7910, 'Casa del Mantegna', 'Mantegna\'s House', 'mantegna', 0.6),
       P_(45.1478, 10.7875, 'Palazzo Te', '', 'palazzote', 1.2, -0.349),
       P_(45.1705, 10.7990, 'Cittadella · Porta Giulia'), P_(45.1640, 10.8200, 'Lunetta'), P_(45.1560, 10.7740, 'Belfiore'), P_(45.1445, 10.8020, 'Valletta Valsecchi')
     ],
@@ -669,7 +752,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       P_(43.2158, 5.3482, 'Les Goudes'),
       P_(43.2120, 5.3540, 'Callelongue'),
       P_(43.2135, 5.3700, 'Parco delle Calanche', 'Calanques National Park'),
-      P_(43.3027, 5.3805, 'Gare Saint-Charles', 'Saint-Charles station', 'stazione', 0.9), P_(43.3045, 5.3945, 'Palais Longchamp'), P_(43.3060, 5.3660, 'La Joliette · Les Docks')
+      P_(43.3027, 5.3805, 'Gare Saint-Charles', 'Saint-Charles station', 'stazione', 0.9), P_(43.3045, 5.3945, 'Palais Longchamp', '', 'longchamp', 0.8, 1.87), P_(43.3060, 5.3660, 'La Joliette · Les Docks')
     ]
   };
   const SS = 4, CKEY = 'soto-city-grid:v11:';
@@ -1377,6 +1460,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const y = gy(cellOf(l.x, l.z)), lg = new THREE.Group();
       const ht = LM[l.model](lg, 0, 0, 0) * LMS * l.sc;
       if (LMX[l.model]) LMX[l.model](lg, 0, 0, 0);
+      bakeLM(lg);
       const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: warmTex, transparent: true, depthWrite: false }));
       halo.rotation.x = -Math.PI / 2; halo.position.set(l.x, y + 0.012, l.z); halo.scale.setScalar(clearR * l.sc * 2.6); g.add(halo);
       lg.scale.setScalar(LMS * l.sc); lg.position.set(l.x, y, l.z); if (l.ry) lg.rotation.y = l.ry; g.add(lg);

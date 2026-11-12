@@ -30,6 +30,9 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Facciate: persiane (colore diverso per città), balconi, tende dei negozi al piano terra
 - [x] Colori per quartiere: Boccadasse e centro storico a Genova; Vieux Lyon, Croix-Rousse e Part-Dieu a Lione; Le Panier a Marsiglia
 - [x] Strade con il tracciato reale di OpenStreetMap: nastri continui appoggiati al terreno, larghezza per tipo (pedonali, vie, viali, arterie), lampioni e alberi lungo i viali, traffico che segue le curve
+- [x] Monumenti rifatti: San Lorenzo (navate, portali, campanile, loggia, cupola), Fourvière (torri merlate, portico, abside, Vergine dorata), Notre-Dame de la Garde (fasce, cupola, campanile con statua), Palazzo Ducale (portico gotico, merli a coda di rondine, torre)
+- [x] Monumenti nuovi: Galata Museo del Mare con il sottomarino, Casa del Mantegna con il cortile circolare, Palais Longchamp con colonnati e fontana
+- [x] Monumenti più leggeri da disegnare: le parti fisse di ognuno sono unite in due sole forme
 - [x] Verde: boschi più fitti sulle alture, macchia bassa sulle Calanche, canneti più fitti sui laghi di Mantova
 
 ## Da verificare
@@ -42,6 +45,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Foschia: appena percettibile nella vista d'insieme; da giudicare dal vivo se rinforzarla
 - [ ] Tetti, facciate e verde nuovi: visti solo nel browser di prova, di giorno (Lione, Genova, Calanche); Mantova non riaperta
 - [ ] Strade nuove: viste solo nel browser di prova, di giorno, a Genova e Mantova; Lione, Marsiglia, notte e traffico da vicino non controllati
+- [ ] Monumenti nuovi: visti nel browser di prova da un solo lato; orientamento di Galata e Palais Longchamp scelto a stima
 - [ ] Layout da telefono riprovato solo su Genova
 - [ ] Ultimi aggiornamenti sul sito pubblicato: luce, scheda del punto, mappa Europa non riaperti dal vivo dopo il caricamento
 - [ ] Orientamento dei monumenti scelto a stima: Notre-Dame de la Garde (lato della torre), Carignano, Sant'Andrea, Vélodrome, Porta Soprana
@@ -61,10 +65,10 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Strade: niente mezzeria, strisce pedonali né marciapiedi; gallerie non disegnate; i viadotti su terra (es. la Sopraelevata di Genova) seguono il suolo
 - [ ] Strade: ferrovie e impalcati dei ponti sono ancora a celle
 - [ ] Strade: le auto sono più grandi del vero e a fine strada tornano indietro
-- [ ] Monumenti da rifare con più dettaglio: San Lorenzo, Fourvière, Notre-Dame de la Garde, Palazzo Ducale
+- [ ] Altri monumenti ancora semplici: Lanterna, Palazzo Te, Sant'Andrea, La Major, Hôtel-Dieu, Castello di San Giorgio e gli altri 20
+- [ ] Accanto ad alcuni modelli resta anche l'edificio reale della mappa (si nota al Palazzo Ducale)
 - [ ] Colori per quartiere: zone scelte a stima con riquadri approssimativi; Mantova non ne ha
 - [ ] Tram su binari propri, arcate dei ponti, fontane nelle piazze
-- [ ] Monumenti senza modello: Galata Museo del Mare, Casa del Mantegna, Palais Longchamp
 - [ ] Fiumi e rilievi della mappa Europa: tracciati approssimativi, da rifinire
 - [ ] Anteprima delle città sulla home anche da telefono (oggi solo passando col mouse)
 
