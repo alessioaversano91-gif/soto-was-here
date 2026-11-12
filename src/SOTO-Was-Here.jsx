@@ -1450,7 +1450,13 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.receiveShadow = true; return m;
     };
     const rdM = RD ? roadMesh() : null;
-    const watM = inst(B(1, 1, 1), shade(mat('#ffffff', 0, { transparent: true, opacity: 0.92 }), 'water'), wat, (o, [x, z, wy, dp], col) => { o.position.set(x, (wy + BOT) / 2, z); o.scale.set(cs, wy - BOT, cs); col.copy(WDEP[dp]); });
+    const watTop = new THREE.PlaneGeometry(1, 1); watTop.rotateX(-Math.PI / 2); watTop.translate(0, 0.5, 0);
+    if (FP) {
+      const P = [], q4 = (xa, za, xb, zb, y) => P.push(xa, y, za, xa, BOT, za, xb, BOT, zb, xa, y, za, xb, BOT, zb, xb, y, zb);
+      for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { if (i && j && i < NX - 1 && j < NZ - 1) continue; const k = j * NX + i, c = G.t[k]; if (c !== 'w' && c !== 'x') continue; const y = gy(k) - 0.12, x0 = ox + i * cs, x1 = x0 + cs, z0 = oz + j * cs, z1 = z0 + cs; if (i === 0) q4(x0, z0, x0, z1, y); if (i === NX - 1) q4(x1, z1, x1, z0, y); if (j === 0) q4(x1, z0, x0, z0, y); if (j === NZ - 1) q4(x0, z1, x1, z1, y); }
+      if (P.length) { const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); ge.computeVertexNormals(); g.add(new THREE.Mesh(ge, new THREE.MeshLambertMaterial({ color: '#2f66a3', side: THREE.DoubleSide }))); }
+    }
+    const watM = inst(FP ? watTop : B(1, 1, 1), shade(mat('#ffffff', 0, { transparent: true, opacity: 0.92 }), 'water'), wat, (o, [x, z, wy, dp], col) => { o.position.set(x, (wy + BOT) / 2, z); o.scale.set(cs, wy - BOT, cs); col.copy(WDEP[dp]); });
     watM.castShadow = false;
     const brM = inst(B(1, 1, 1), white(), bridges, (o, [x, z, y], col) => { o.position.set(x, y, z); o.scale.set(cs, 0.12, cs); col.set('#4a4058'); });
     const bldM = inst(B(1, 1, 1), shade(white(), 'build'), bld, (o, [x, z, y, bh, c, w, d], col) => { o.position.set(x, y + bh / 2, z); o.scale.set(w, bh, d); col.set(c).offsetHSL(0, 0, (r() - 0.5) * 0.06); });
@@ -1756,7 +1762,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       this.opts = Object.assign({ pixel: 2, light: 'tramonto', autoRotate: true }, opts || {}); window.__soto = this;
       this.view = 'home'; this.cityId = null; this.city = null; this.lastI = 0; this.hold = false; this.v = new THREE.Vector3();
       const R = this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
-      R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap;
+      R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap; R.shadowMap.autoUpdate = false;
       R.domElement.style.cssText = 'position:relative;display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none';
       this.reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
       const bg = document.createElement('div');
@@ -1827,7 +1833,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     setOptions(o) { const pxCh = o.pixel !== undefined && o.pixel !== this.opts.pixel; Object.assign(this.opts, o); this.applyOpts(); if (pxCh) this.resize(); }
     applyOpts() {
       const name = this.opts.light === 'auto' ? this.autoL || 'tramonto' : this.opts.light, L = LIGHT[name] || LIGHT.tramonto;
-      this.lightName = LIGHT[name] ? name : 'tramonto';
+      this.lightName = LIGHT[name] ? name : 'tramonto'; this.shDirty = 260;
       this.tg = { sky: new THREE.Color(L.sky), gnd: new THREE.Color(L.gnd), sun: new THREE.Color(L.sun), hi: L.hi, si: L.si, sp: new THREE.Vector3(...L.sp).multiplyScalar(this.sizeK || 1), n: L.n, fog: new THREE.Color(L.fog) };
       if (!this.lit) { this.lit = true; this.hemi.color.copy(this.tg.sky); this.hemi.groundColor.copy(this.tg.gnd); this.hemi.intensity = L.hi; this.sun.color.copy(this.tg.sun); this.sun.intensity = L.si; this.sun.position.copy(this.tg.sp); SOTO_U.uNight.value = L.n; }
       if (this.bg) this.bg.style.background = L.bg;
@@ -1851,7 +1857,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       SOTO_U.uRow.value = c.cs * 0.5;
       const sk = (this.sizeK = c.sizeK || 1), hw = (c.half || 20) * 1.04, sc = this.sun.shadow.camera;
       Object.assign(sc, { left: -hw, right: hw, top: hw, bottom: -hw, far: 80 * sk }); sc.updateProjectionMatrix(); this.sun.shadow.normalBias = c.winU ? ((2 * hw) / this.sun.shadow.mapSize.x) * 1.6 : 0; this.sun.shadow.bias = c.winU ? -0.0005 : 0;
-      this.controls.maxDistance = 85 * sk; this.controls.minDistance = c.winU ? 2.5 : 4; this.lit = false; this.applyOpts();
+      this.controls.maxDistance = 85 * sk; this.controls.minDistance = c.winU ? 2.5 : 4; this.lit = false; this.applyOpts(); this.shDirty = 200;
       c.group.scale.y = 0.01; this.grow = { t0: performance.now() };
       this.controls.target.set(0, 0, 0);
       this.camera.position.copy(DIR0().multiplyScalar(this.baseDist() * 1.5)).add(new THREE.Vector3(0, 10, 0));
@@ -1944,6 +1950,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
           for (let k = 0; k < 6; k++) { const n = (Math.random() * this.city.nWater) | 0; W.setColorAt(n, Math.random() < 0.25 ? WHI : WCOL); }
           W.instanceColor.needsUpdate = true;
         }
+        this.fN = (this.fN || 0) + 1; if (this.grow || this.shDirty > 0 || this.fN % 5 === 0) { this.renderer.shadowMap.needsUpdate = true; if (this.shDirty > 0) this.shDirty--; }
         this.renderer.render(this.scene, this.camera);
         this.placeMarkers(t);
       } else if (this.view === 'home') { this.placePins(); this.animEuro(t); }

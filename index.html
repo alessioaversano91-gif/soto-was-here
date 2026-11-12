@@ -3537,7 +3537,38 @@ window.SOTO_EURO = {
       return m;
     };
     const rdM = RD ? roadMesh() : null;
-    const watM = inst(B(1, 1, 1), shade(mat('#ffffff', 0, {
+    const watTop = new THREE.PlaneGeometry(1, 1);
+    watTop.rotateX(-Math.PI / 2);
+    watTop.translate(0, 0.5, 0);
+    if (FP) {
+      const P = [],
+        q4 = (xa, za, xb, zb, y) => P.push(xa, y, za, xa, BOT, za, xb, BOT, zb, xa, y, za, xb, BOT, zb, xb, y, zb);
+      for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+        if (i && j && i < NX - 1 && j < NZ - 1) continue;
+        const k = j * NX + i,
+          c = G.t[k];
+        if (c !== 'w' && c !== 'x') continue;
+        const y = gy(k) - 0.12,
+          x0 = ox + i * cs,
+          x1 = x0 + cs,
+          z0 = oz + j * cs,
+          z1 = z0 + cs;
+        if (i === 0) q4(x0, z0, x0, z1, y);
+        if (i === NX - 1) q4(x1, z1, x1, z0, y);
+        if (j === 0) q4(x1, z0, x0, z0, y);
+        if (j === NZ - 1) q4(x0, z1, x1, z1, y);
+      }
+      if (P.length) {
+        const ge = new THREE.BufferGeometry();
+        ge.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+        ge.computeVertexNormals();
+        g.add(new THREE.Mesh(ge, new THREE.MeshLambertMaterial({
+          color: '#2f66a3',
+          side: THREE.DoubleSide
+        })));
+      }
+    }
+    const watM = inst(FP ? watTop : B(1, 1, 1), shade(mat('#ffffff', 0, {
       transparent: true,
       opacity: 0.92
     }), 'water'), wat, (o, [x, z, wy, dp], col) => {
@@ -4512,6 +4543,7 @@ window.SOTO_EURO = {
       });
       R.shadowMap.enabled = true;
       R.shadowMap.type = THREE.PCFSoftShadowMap;
+      R.shadowMap.autoUpdate = false;
       R.domElement.style.cssText = 'position:relative;display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none';
       this.reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
       const bg = document.createElement('div');
@@ -4694,6 +4726,7 @@ window.SOTO_EURO = {
       const name = this.opts.light === 'auto' ? this.autoL || 'tramonto' : this.opts.light,
         L = LIGHT[name] || LIGHT.tramonto;
       this.lightName = LIGHT[name] ? name : 'tramonto';
+      this.shDirty = 260;
       this.tg = {
         sky: new THREE.Color(L.sky),
         gnd: new THREE.Color(L.gnd),
@@ -4786,6 +4819,7 @@ window.SOTO_EURO = {
       this.controls.minDistance = c.winU ? 2.5 : 4;
       this.lit = false;
       this.applyOpts();
+      this.shDirty = 200;
       c.group.scale.y = 0.01;
       this.grow = {
         t0: performance.now()
@@ -4988,6 +5022,11 @@ window.SOTO_EURO = {
             W.setColorAt(n, Math.random() < 0.25 ? WHI : WCOL);
           }
           W.instanceColor.needsUpdate = true;
+        }
+        this.fN = (this.fN || 0) + 1;
+        if (this.grow || this.shDirty > 0 || this.fN % 5 === 0) {
+          this.renderer.shadowMap.needsUpdate = true;
+          if (this.shDirty > 0) this.shDirty--;
         }
         this.renderer.render(this.scene, this.camera);
         this.placeMarkers(t);
