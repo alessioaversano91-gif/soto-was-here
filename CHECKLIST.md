@@ -17,13 +17,14 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Layout per schermi stretti e telefono
 - [x] Pubblicazione su GitHub Pages, con aggiornamenti dalla chat
 - [x] **Genova rifatta**: area più ampia (circa 9,9 × 6,2 km, da Sampierdarena a Sturla e fino a Righi e Staglieno), 22.000 edifici con il contorno reale e i cortili, pendii lisci, fasce coltivate sulle alture, tetti in ardesia, monumenti in proporzione
+- [x] **Lione rifatta**: area più ampia (circa 7 × 7,4 km, da Vaise a Confluence e da Fourvière a Villeurbanne), 33.000 edifici con il contorno reale, pendii lisci, nuove etichette (Perrache, Confluence, Guillotière, Gratte-Ciel, Vaise, Monplaisir)
 
 ## Da verificare
 
 - [ ] Fluidità sul telefono: misurata solo sul computer (60 fotogrammi al secondo nel pannello dell'app)
 - [ ] Layout su telefono vero: provato solo in un browser di prova a 400 px di larghezza
-- [ ] Nuova Genova: provata solo nel browser di prova, non sul sito pubblicato né sul telefono (ha circa il triplo della geometria di prima)
-- [ ] Peso della pagina: salito da circa 0,5 a 1,4 MB per i dati di Genova; con le altre tre città arriverà intorno a 3–4 MB
+- [ ] Nuove Genova e Lione: provate solo nel browser di prova, non sul sito pubblicato né sul telefono (Lione è la più pesante: circa una volta e mezza Genova)
+- [ ] Peso della pagina: ora 2,7 MB (era 0,5); con Mantova e Marsiglia arriverà intorno a 4 MB
 - [ ] Ultimi aggiornamenti sul sito pubblicato: luce, scheda del punto, mappa Europa non riaperti dal vivo dopo il caricamento
 - [ ] Orientamento dei monumenti scelto a stima: Notre-Dame de la Garde (lato della torre), Carignano, Sant'Andrea, Vélodrome, Porta Soprana
 - [ ] Monumenti non orientati: Palais du Pharo, Cité Internationale, Teatro Bibiena, Fort Saint-Jean, Castello e Palazzo Te (solo allineati ai muri)
@@ -31,7 +32,8 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 ## Manca
 
 ### Grafica
-- [ ] Piante reali, pendii lisci e area più ampia per **Lione** (aggiungere vigneti/orti sulle colline se ci sono)
+- [ ] Lione: scartati gli edifici sotto i 70 m² (garage, capanni) e semplificati i contorni per alleggerire; niente vigneti o orti sulle colline
+- [ ] Lione: ponti e sponde dei fiumi ancora a blocchi
 - [ ] Idem per **Mantova** (con canneti più fitti sui laghi)
 - [ ] Idem per **Marsiglia** (con roccia a vista sulle Calanche; allargando entra anche la Gare Saint-Charles)
 - [ ] Per ogni città: una raccolta dati dal computer (circa 5 minuti con l'app desktop aperta), poi palette dei tetti, scala dei monumenti e nuove etichette
