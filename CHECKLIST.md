@@ -21,6 +21,11 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] **Mantova rifatta**: area più ampia (circa 4,7 × 4,4 km, con i tre laghi interi, Cittadella, Lunetta, Belfiore e Te), 6.500 edifici con il contorno reale
 - [x] **Marsiglia rifatta**: area più ampia (circa 7,5 × 11,8 km, fino a Saint-Charles, Longchamp e la Joliette), griglia più fine (30 m invece di 38), 40.000 edifici con il contorno reale, roccia a vista sulle Calanche, Gare Saint-Charles con il suo modello
 - [x] La visuale ora arriva fino ai bordi delle città allargate (prima si fermava alla vecchia misura)
+- [x] Sponde: gli scalini tra terra e acqua sono diventati tratti obliqui, con bordo in pietra
+- [x] Ponti: piloni, sottoarchi a gradini e parapetti
+- [x] Foschia in lontananza, con colore diverso per giorno, tramonto e notte
+- [x] Lampioni spenti di giorno, tenui al tramonto, accesi di notte con alone a terra
+- [x] Riflessi delle luci sull'acqua di notte, vicino alle zone abitate
 
 ## Da verificare
 
@@ -28,7 +33,9 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Layout su telefono vero: provato solo in un browser di prova a 400 px di larghezza
 - [ ] Le quattro città nuove: provate solo nel browser di prova, non sul sito pubblicato né sul telefono (le più pesanti sono Lione e Marsiglia)
 - [ ] Peso della pagina: 4,1 MB (era 0,5 prima delle piante reali)
-- [ ] Luce di notte e layout da telefono riprovati solo su Genova
+- [ ] Sponde, ponti, foschia e luci notturne: visti solo nel browser di prova (Lione e Mantova di giorno, Genova e Marsiglia di notte)
+- [ ] Foschia: appena percettibile nella vista d'insieme; da giudicare dal vivo se rinforzarla
+- [ ] Layout da telefono riprovato solo su Genova
 - [ ] Ultimi aggiornamenti sul sito pubblicato: luce, scheda del punto, mappa Europa non riaperti dal vivo dopo il caricamento
 - [ ] Orientamento dei monumenti scelto a stima: Notre-Dame de la Garde (lato della torre), Carignano, Sant'Andrea, Vélodrome, Porta Soprana
 - [ ] Monumenti non orientati: Palais du Pharo, Cité Internationale, Teatro Bibiena, Fort Saint-Jean, Castello e Palazzo Te (solo allineati ai muri)
@@ -37,7 +44,8 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 
 ### Grafica
 - [ ] Lione: scartati gli edifici sotto i 70 m² (garage, capanni) e semplificati i contorni per alleggerire; niente vigneti o orti sulle colline
-- [ ] Lione: ponti e sponde dei fiumi ancora a blocchi
+- [ ] Sponde: ammorbidite a partire dalla griglia, non tracciate sul contorno reale dell'acqua; i canali larghi una cella restano a scalini
+- [ ] Ponti: niente arcate curve vere; i ponti in diagonale restano a gradini
 - [ ] Mantova: canneti più fitti sui laghi non ancora aggiunti
 - [ ] Marsiglia: scartati gli edifici sotto i 60 m² e semplificati i contorni; le isole del Frioul restano fuori dal bordo
 - [ ] Marsiglia: Vieux-Port corretto a mano (i pontili coprivano l'acqua); altri porticcioli da controllare
@@ -45,7 +53,6 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Genova: le fasce coltivate sono messe a stima sui pendii verdi esposti a sud, non sui terreni agricoli veri
 - [ ] Genova: i tetti a falde sono semplificati (a padiglione) e solo sugli edifici dalla pianta semplice; gli altri hanno il tetto piano
 - [ ] Tram su binari propri, arcate dei ponti, fontane nelle piazze
-- [ ] Lampioni spenti di giorno
 - [ ] Monumenti senza modello: Galata Museo del Mare, Casa del Mantegna, Palais Longchamp
 - [ ] Fiumi e rilievi della mappa Europa: tracciati approssimativi, da rifinire
 - [ ] Anteprima delle città sulla home anche da telefono (oggi solo passando col mouse)

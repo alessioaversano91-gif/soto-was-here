@@ -445,10 +445,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   }
 
   const TCOL = { road: '#3a3247', quay: '#9c8f7a', plaza: '#b3a58b', park: '#5e8a45', build: '#6f6559' };
-  let WCOL, WHI, WDEP, WFOAM, WLOW, WSUN, WMOON;
+  let WCOL, WHI, WDEP, WFOAM, WLOW, WSUN, WMOON, WLAMP;
   const initCol = () => {
     if (WCOL) return;
-    WCOL = new THREE.Color('#3f86c4'); WHI = new THREE.Color('#8cc4ec'); WFOAM = new THREE.Color('#d6f0fa'); WLOW = new THREE.Color('#2f66a3'); WSUN = new THREE.Color('#ffdca6'); WMOON = new THREE.Color('#cdd6ff');
+    WCOL = new THREE.Color('#3f86c4'); WHI = new THREE.Color('#8cc4ec'); WFOAM = new THREE.Color('#d6f0fa'); WLOW = new THREE.Color('#2f66a3'); WSUN = new THREE.Color('#ffdca6'); WMOON = new THREE.Color('#cdd6ff'); WLAMP = new THREE.Color('#f0a850');
     WDEP = ['#6cc0e0', '#6cc0e0', '#57a6d6', '#4793cb', '#3f86c4', '#3879b9', '#326dad'].map((c) => new THREE.Color(c));
   };
 
@@ -906,12 +906,14 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const k = j * NX + i, q = pass - 1; if (wdp[k] !== 9) continue;
       if ((i > 0 && wdp[k - 1] === q) || (i < NX - 1 && wdp[k + 1] === q) || (j > 0 && wdp[k - NX] === q) || (j < NZ - 1 && wdp[k + NX] === q)) wdp[k] = pass;
     }
+    const urb = new Uint8Array(NX * NZ);
+    for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const c0 = G.t[j * NX + i]; if (c0 !== 'b' && c0 !== 'R') continue; for (let b = Math.max(0, j - 3); b <= Math.min(NZ - 1, j + 3); b++) for (let a = Math.max(0, i - 3); a <= Math.min(NX - 1, i + 3); a++) urb[b * NX + a] = 1; }
     for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
       const k = j * NX + i, x = ox + (i + 0.5) * cs, z = oz + (j + 0.5) * cs, y = gy(k);
       let c = G.t[k]; ct[k] = c;
       if (c === 'w' || c === 'x') {
-        const wy = y - 0.12; wat.push([x, z, wy, Math.min(6, wdp[k])]); top[k] = wy; if (y < 0.05) seaCells.push([x, z, wy]);
-        if (c === 'x') { bridges.push([x, z, y + 0.12]); top[k] = y + 0.2; }
+        const wy = y - 0.12; wat.push([x, z, wy, Math.min(6, wdp[k]), urb[k]]); top[k] = wy; if (y < 0.05) seaCells.push([x, z, wy]);
+        if (c === 'x') { bridges.push([x, z, y + 0.12, i, j]); top[k] = y + 0.2; }
         continue;
       }
       if (models.some((l) => hyp(l.x - x, l.z - z) < clearR * l.sc)) c = 'q';
@@ -972,9 +974,24 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const CW = NX + 1, cor = new Float32Array(CW * (NZ + 1));
       for (let j = 0; j <= NZ; j++) for (let i = 0; i <= NX; i++) { let a = 0, n = 0; for (let b = -1; b <= 0; b++) for (let c2 = -1; c2 <= 0; c2++) { const ii = i + c2, jj = j + b; if (!edge(ii, jj)) { a += gy(jj * NX + ii); n++; } } cor[j * CW + i] = n ? a / n : 0; }
       let nl = 0, ne = 0; for (let k = 0; k < NX * NZ; k++) if (!isW(k)) { nl++; const i = k % NX, j = (k / NX) | 0; if (edge(i - 1, j)) ne++; if (edge(i + 1, j)) ne++; if (edge(i, j - 1)) ne++; if (edge(i, j + 1)) ne++; }
-      const P = new Float32Array((nl + ne) * 18), Cc = new Uint8Array((nl + ne) * 18), col = new THREE.Color(); let o = 0;
+      // Sponde: gli scalini tra terra e acqua diventano tratti obliqui (cunei di banchina negli angoli rientranti).
+      const wedges = [];
+      for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
+        if (G.t[j * NX + i] !== 'w') continue;
+        for (let dz = -1; dz <= 1; dz += 2) for (let dx = -1; dx <= 1; dx += 2) {
+          if (edge(i + dx, j) || edge(i, j + dz) || !edge(i - dx, j) || !edge(i, j - dz)) continue;
+          const wAt = (a, b) => a >= 0 && b >= 0 && a < NX && b < NZ && G.t[b * NX + a] === 'w';
+          let rx = 1, rz = 1;
+          while (rx < 3 && wAt(i - dx * rx, j) && !edge(i - dx * rx, j + dz) && edge(i - dx * rx, j - dz)) rx++;
+          while (rz < 3 && wAt(i, j - dz * rz) && !edge(i + dx, j - dz * rz) && edge(i - dx, j - dz * rz)) rz++;
+          if (rx > 1 && rz > 1) continue;
+          const ci = i + (dx > 0 ? 1 : 0), cj = j + (dz > 0 ? 1 : 0);
+          wedges.push([ci, cj, ci - dx * rx, cj, ci, cj - dz * rz, (j + dz) * NX + i]);
+        }
+      }
+      const P = new Float32Array((nl + ne) * 18 + wedges.length * 27), Cc = new Uint8Array(P.length), col = new THREE.Color(); let o = 0;
       const v = (x, y, z, cr, cg, cb) => { P[o] = x; P[o + 1] = y; P[o + 2] = z; Cc[o] = cr; Cc[o + 1] = cg; Cc[o + 2] = cb; o += 3; };
-      const skirt = (e, xa, za, ya, xb, zb, yb) => { if (!e) return; const w = e === 2, y0 = w ? Math.min(ya, yb) - 0.3 : BOT, t = w ? 150 : 86, u = w ? 128 : 64, q = w ? 122 : 92; v(xa, ya, za, t, u, q); v(xa, y0, za, 34, 24, 50); v(xb, y0, zb, 34, 24, 50); v(xa, ya, za, t, u, q); v(xb, y0, zb, 34, 24, 50); v(xb, yb, zb, t, u, q); };
+      const skirt = (e, xa, za, ya, xb, zb, yb) => { if (!e) return; const w = e === 2, y0 = w ? Math.min(ya, yb) - 0.3 : BOT, t = w ? 190 : 86, u = w ? 178 : 64, q = w ? 164 : 92, b1 = w ? 104 : 34, b2 = w ? 96 : 24, b3 = w ? 108 : 50; v(xa, ya, za, t, u, q); v(xa, y0, za, b1, b2, b3); v(xb, y0, zb, b1, b2, b3); v(xa, ya, za, t, u, q); v(xb, y0, zb, b1, b2, b3); v(xb, yb, zb, t, u, q); };
       for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
         const k = j * NX + i; if (isW(k)) continue;
         const x0 = ox + i * cs, x1 = x0 + cs, z0 = oz + j * cs, z1 = z0 + cs, a = cor[j * CW + i], b = cor[(j + 1) * CW + i], c2 = cor[(j + 1) * CW + i + 1], d = cor[j * CW + i + 1];
@@ -983,6 +1000,13 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         skirt(edge(i - 1, j), x0, z0, a, x0, z1, b); skirt(edge(i + 1, j), x1, z1, c2, x1, z0, d); skirt(edge(i, j - 1), x1, z0, d, x0, z0, a); skirt(edge(i, j + 1), x0, z1, b, x1, z1, c2);
         top[k] = (a + b + c2 + d) / 4;
       }
+      wedges.forEach(([pi, pj, ai, aj, bi, bj, nk]) => {
+        const X = (q) => ox + q * cs, Z = (q) => oz + q * cs, py = cor[pj * CW + pi], ay = cor[aj * CW + ai], by = cor[bj * CW + bi], nt = ct[nk];
+        tcol(col, nt === 'p' || nt === 's' || nt === 'k' ? nt : 'q', 0); const cr = Math.round(col.r * 255), cg = Math.round(col.g * 255), cb = Math.round(col.b * 255);
+        const up = (Z(aj) - Z(pj)) * (X(bi) - X(pi)) - (X(ai) - X(pi)) * (Z(bj) - Z(pj)) > 0;
+        v(X(pi), py, Z(pj), cr, cg, cb); if (up) { v(X(ai), ay, Z(aj), cr, cg, cb); v(X(bi), by, Z(bj), cr, cg, cb); } else { v(X(bi), by, Z(bj), cr, cg, cb); v(X(ai), ay, Z(aj), cr, cg, cb); }
+        skirt(2, X(ai), Z(aj), ay, X(bi), Z(bj), by);
+      });
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P, 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc, 3, true)); geo.computeVertexNormals();
       const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); m.castShadow = m.receiveShadow = true; return m;
     };
@@ -1049,6 +1073,15 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const treeM = inst(new THREE.IcosahedronGeometry(0.42, 0), white(), trees, (o, [x, z, y, s], col) => { o.position.set(x, y + 0.42 * s, z); o.scale.setScalar(s); o.rotation.y = r() * 3; col.set(greens[(r() * 3) | 0]); });
     const coneM = inst(new THREE.ConeGeometry(0.32, 1, 6), white(), cones, (o, [x, z, y, q], col) => { o.position.set(x, y + 0.62 * q, z); o.scale.set(q, q * 1.25, q); col.set(['#2f5a34', '#3a6b3c', '#2a4f3a'][(r() * 3) | 0]); });
     (FP ? [terrM, watM, brM, fpM, treeM, coneM] : [terrM, watM, brM, bldM, roofM, gabM, treeM, coneM]).forEach((m) => g.add(m));
+    const brx = [];
+    bridges.forEach(([x, z, yb, i, j]) => {
+      const tAt = (a, b) => (a >= 0 && b >= 0 && a < NX && b < NZ ? G.t[b * NX + a] : '');
+      let h = 1, v = 1; for (let a = i - 1; tAt(a, j) === 'x' && h < 12; a--) h++; for (let a = i + 1; tAt(a, j) === 'x' && h < 12; a++) h++; for (let a = j - 1; tAt(i, a) === 'x' && v < 12; a--) v++; for (let a = j + 1; tAt(i, a) === 'x' && v < 12; a++) v++;
+      const ph = (h <= 2 && v <= 2 ? i + j : h >= v ? i : j) % 4, under = yb - 0.06, bot = yb - 0.44;
+      if (ph === 0) brx.push([x, (under + bot) / 2, z, cs * 0.78, under - bot, cs * 0.78, '#b9ad9e']); else if (ph !== 2) brx.push([x, under - 0.035, z, cs, 0.07, cs, '#a99d90']);
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dz]) => { if (tAt(i + dx, j + dz) === 'w') brx.push([x + dx * cs * 0.46, yb + 0.085, z + dz * cs * 0.46, dx ? cs * 0.08 : cs, 0.05, dx ? cs : cs * 0.08, '#d3c8b8']); });
+    });
+    if (brx.length) g.add(inst(B(1, 1, 1), white(), brx, (o, [x, y, z, sx, sy, sz, c], col) => { o.position.set(x, y, z); o.scale.set(sx, sy, sz); col.set(c); }));
     // Dettagli che compaiono solo da vicino: segnaletica, lampioni, binari, volumi sui tetti.
     const det = new THREE.Group(); g.add(det); if (!FP) det.add(xtrM);
     walls.forEach(([x, y, z, ew]) => dbox.push([x, y + cs * 0.07, z, ew ? cs : cs * 0.14, cs * 0.14, ew ? cs * 0.14 : cs, '#b9ad9c']));
@@ -1080,7 +1113,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
     det.add(quiet(inst(B(1, 1, 1), white(), marks, (o, [x, y, z, sx, sz, c], col) => { o.position.set(x, y + 0.004, z); o.scale.set(sx, 0.008, sz); col.set(c); })));
     det.add(quiet(inst(B(1, 1, 1), white(), lamps, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.3, z); o.scale.set(cs * 0.06, cs * 0.6, cs * 0.06); col.set('#2a2436'); })));
-    det.add(quiet(inst(B(1, 1, 1), mat('#ffd98a', 1), lamps, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.64, z); o.scale.setScalar(cs * 0.16); col.set('#ffffff'); })));
+    const lampMat = new THREE.MeshLambertMaterial({ color: '#cfc8d6', emissive: '#ffc35e', emissiveIntensity: 0.3, flatShading: true });
+    det.add(quiet(inst(B(1, 1, 1), lampMat, lamps, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.64, z); o.scale.setScalar(cs * 0.16); col.set('#ffffff'); })));
+    const poolMat = new THREE.MeshBasicMaterial({ color: '#ffae52', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+    const poolG = new THREE.CircleGeometry(1, 10); poolG.rotateX(-Math.PI / 2);
+    if (lamps.length) det.add(quiet(inst(poolG, poolMat, lamps, (o, [x, y, z], col) => { o.position.set(x, y + 0.014, z); o.scale.setScalar(cs * 1.1); col.set('#ffffff'); })));
     // Traffico: auto e bus che percorrono i tratti rettilinei dei viali.
     const scan = (ax) => {
       const A = ax ? NZ : NX, F = ax ? NX : NZ;
@@ -1235,13 +1272,13 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
     const labels = lms.map((l) => ({ it: l.it, en: l.en || l.it, x: l.x, z: l.z }));
     const spins = []; g.traverse((o) => { if (o.userData.spin) spins.push(o); });
-    return { spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
+    return { spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
   }
 
   const LIGHT = {
-    tramonto: { sky: '#c7b2ff', gnd: '#2a1d40', hi: 0.9, sun: '#ffc283', si: 1.1, sp: [14, 16, 6], n: 0, bg: 'radial-gradient(ellipse 62% 48% at 50% 60%, rgba(124,77,219,0.30), rgba(240,130,90,0.07) 55%, rgba(11,10,15,0) 76%)' },
-    notte: { sky: '#5b4ea8', gnd: '#0e0b18', hi: 0.5, sun: '#9fb2ff', si: 0.42, sp: [-10, 18, 8], n: 1, bg: 'radial-gradient(ellipse 60% 46% at 50% 60%, rgba(70,60,170,0.24), rgba(11,10,15,0) 72%)' },
-    giorno: { sky: '#ffffff', gnd: '#7a7080', hi: 0.85, sun: '#fff1d6', si: 1.05, sp: [10, 20, 12], n: -0.5, bg: 'radial-gradient(ellipse 75% 60% at 50% 55%, rgba(150,175,255,0.34), rgba(120,110,210,0.14) 55%, rgba(11,10,15,0) 82%)' }
+    tramonto: { sky: '#c7b2ff', gnd: '#2a1d40', hi: 0.9, sun: '#ffc283', si: 1.1, sp: [14, 16, 6], n: 0, fog: '#c39fce', bg: 'radial-gradient(ellipse 62% 48% at 50% 60%, rgba(124,77,219,0.30), rgba(240,130,90,0.07) 55%, rgba(11,10,15,0) 76%)' },
+    notte: { sky: '#5b4ea8', gnd: '#0e0b18', hi: 0.5, sun: '#9fb2ff', si: 0.42, sp: [-10, 18, 8], n: 1, fog: '#1b1740', bg: 'radial-gradient(ellipse 60% 46% at 50% 60%, rgba(70,60,170,0.24), rgba(11,10,15,0) 72%)' },
+    giorno: { sky: '#ffffff', gnd: '#7a7080', hi: 0.85, sun: '#fff1d6', si: 1.05, sp: [10, 20, 12], n: -0.5, fog: '#cfdaf6', bg: 'radial-gradient(ellipse 75% 60% at 50% 55%, rgba(150,175,255,0.34), rgba(120,110,210,0.14) 55%, rgba(11,10,15,0) 82%)' }
   };
   const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
   const back = (k) => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
@@ -1261,7 +1298,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       this.stars = [0, 1].map((n) => { const c = document.createElement('canvas'); c.className = 'soto-stars' + n; c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated'; return c; });
       this.bg = bg; cityEl.appendChild(bg); this.stars.forEach((c) => cityEl.appendChild(c));
       cityEl.appendChild(R.domElement);
-      this.scene = new THREE.Scene();
+      this.scene = new THREE.Scene(); this.scene.fog = new THREE.Fog('#b99ad2', 60, 300);
       this.camera = new THREE.PerspectiveCamera(28, 1, 1, 500);
       this.hemi = new THREE.HemisphereLight(); this.sun = new THREE.DirectionalLight();
       this.sun.castShadow = true; const sm = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 1024 : 2048; this.sun.shadow.mapSize.set(sm, sm);
@@ -1325,7 +1362,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     applyOpts() {
       const name = this.opts.light === 'auto' ? this.autoL || 'tramonto' : this.opts.light, L = LIGHT[name] || LIGHT.tramonto;
       this.lightName = LIGHT[name] ? name : 'tramonto';
-      this.tg = { sky: new THREE.Color(L.sky), gnd: new THREE.Color(L.gnd), sun: new THREE.Color(L.sun), hi: L.hi, si: L.si, sp: new THREE.Vector3(...L.sp).multiplyScalar(this.sizeK || 1), n: L.n };
+      this.tg = { sky: new THREE.Color(L.sky), gnd: new THREE.Color(L.gnd), sun: new THREE.Color(L.sun), hi: L.hi, si: L.si, sp: new THREE.Vector3(...L.sp).multiplyScalar(this.sizeK || 1), n: L.n, fog: new THREE.Color(L.fog) };
       if (!this.lit) { this.lit = true; this.hemi.color.copy(this.tg.sky); this.hemi.groundColor.copy(this.tg.gnd); this.hemi.intensity = L.hi; this.sun.color.copy(this.tg.sun); this.sun.intensity = L.si; this.sun.position.copy(this.tg.sp); SOTO_U.uNight.value = L.n; }
       if (this.bg) this.bg.style.background = L.bg;
       if (this.stars) this.stars.forEach((c) => { c.style.visibility = this.lightName === 'giorno' ? 'hidden' : 'inherit'; });
@@ -1410,19 +1447,22 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const ppb = (c.cs * this.renderer.domElement.height) / (2 * cd * 0.2493), fdt = this.reduce ? 0 : Math.min(0.1, (t - (this.pt || t)) / 1000); this.pt = t;
         SOTO_U.uWin.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 2) / 1.5) : cl01((ppb - 4) / 3);
         if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'tramonto', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
-        if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; }
+        if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; this.scene.fog.color.lerp(G2.fog, q); }
+        this.scene.fog.near = cd; this.scene.fog.far = cd + (c.half || 20) * 4;
+        if (c.lampMat) { const nv = SOTO_U.uNight.value; c.lampMat.emissiveIntensity = Math.max(0, 0.3 + 0.9 * nv); c.poolMat.opacity = 0.3 * cl01(0.12 + nv); }
         if (c.life && !this.reduce) c.life(t);
         if (c.spins && fdt) c.spins.forEach((o) => { o.rotation.y += o.userData.spin * fdt; });
         if (c.cars) { c.cars.mesh.visible = ppb > 2.4; if (c.cars.mesh.visible && fdt) c.cars.tick(fdt); }
         if (c.detail) c.detail.visible = ppb > 4.2;
         if (c.wave && t - (this.wt2 || 0) > 150) {
           this.wt2 = t; const A = c.water.instanceColor.array, wv = c.wave, T = this.reduce ? 0 : t / 1000;
-          const sp = this.sun.position, sl = Math.hypot(sp.x, sp.z) || 1, gx = sp.x / sl, gz = sp.z / sl, GL = this.lightName === 'giorno' ? WFOAM : this.lightName === 'notte' ? WMOON : WSUN;
+          const sp = this.sun.position, sl = Math.hypot(sp.x, sp.z) || 1, gx = sp.x / sl, gz = sp.z / sl, GL = this.lightName === 'giorno' ? WFOAM : this.lightName === 'notte' ? WMOON : WSUN, nite = SOTO_U.uNight.value > 0.6;
           for (let n = 0; n < wv.length; n++) {
             const q = wv[n], x = q[0], z = q[1], dp = q[3];
             const ph = (x * 0.5 + z * 0.85) * 0.42 - T * 0.11 + Math.sin(x * 0.7 - z * 0.4) * 0.12, crest = ph - Math.floor(ph) < 0.07 && Math.sin(x * 1.7 + z * 2.9) > -0.3;
             const perp = Math.abs(x * gz - z * gx), glit = dp >= 2 && perp < 1.4 && Math.sin(x * 9.1 + z * 6.7 + T * 2.6) > 0.5 + perp * 0.32;
-            const col = dp === 1 && Math.sin(x * 3.1 + z * 2.3 + T * 1.6) > 0.8 ? WFOAM : glit ? GL : crest ? (dp <= 3 ? WHI : WDEP[dp - 2]) : WDEP[dp];
+            const lampR = nite && q[4] && dp <= 4 && Math.sin(x * 23.7 + z * 17.3) > 0.25 && Math.sin(x * 5.3 - z * 3.1 + T * 1.4) > -0.5;
+            const col = dp === 1 && Math.sin(x * 3.1 + z * 2.3 + T * 1.6) > 0.8 ? WFOAM : lampR ? WLAMP : glit ? GL : crest ? (dp <= 3 ? WHI : WDEP[dp - 2]) : WDEP[dp];
             A[n * 3] = col.r; A[n * 3 + 1] = col.g; A[n * 3 + 2] = col.b;
           }
           c.water.instanceColor.needsUpdate = true;
