@@ -49,6 +49,8 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Strisce pedonali sulle strade principali; gallerie tratteggiate con imbocchi; arcate curve sui ponti dritti
 - [x] Traghetti a Genova e Marsiglia, mercati con bancarelle nelle quattro città, panni stesi nei vicoli di Genova e Marsiglia
 - [x] Home: la mappa d'Europa si ingrandisce sulla città scelta prima che compaia il diorama
+- [x] Prestazioni: il codice è tradotto in anticipo (la pagina non scarica più il traduttore né rielabora 4,7 MB a ogni apertura); i dati di ogni città si decodificano solo quando la si apre
+- [x] Prestazioni: acqua con una sola faccia per cella; ombre ridisegnate a ogni cambio di luce e ogni 5 fotogrammi invece che sempre; normali e colori calcolati più in fretta in costruzione
 - [x] Verde: boschi più fitti sulle alture, macchia bassa sulle Calanche, canneti più fitti sui laghi di Mantova
 
 ## Da verificare
@@ -84,6 +86,10 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Portici: i contorni reali non li distinguono, andrebbero disegnati a mano dove servono (es. Sottoripa, via XX Settembre)
 - [ ] Genova: le fasce coltivate sono messe a stima sui pendii verdi esposti a sud, non sui terreni agricoli veri
 - [ ] Tetti: sulle piante complesse la falda è solo un bordo inclinato attorno a un colmo piano, non un tetto a capanna vero; niente abbaini né terrazze
+- [ ] Prestazioni: aprire una città blocca la pagina per 2–4 secondi sul portatile di prova (la parte più lenta è la costruzione degli edifici); per toglierlo servirebbe spostarla in un processo a parte
+- [ ] Prestazioni: misure fatte su un solo computer (Intel Iris Xe) in un riquadro piccolo; a schermo intero e su altre schede non misurato
+- [ ] Ombre delle nuvole e crescita iniziale: ora si aggiornano a scatti di 5 fotogrammi, da guardare dal vivo
+- [ ] build.py ora richiede node con @babel/standalone per la versione veloce; senza, produce la pagina di prima
 - [ ] Acqua: i riflessi lungo le banchine sono macchie di colore, non l'immagine dei palazzi (le scie delle barche c'erano già)
 - [ ] Ponti in diagonale ancora a gradini, senza arcate curve
 - [ ] Strisce pedonali messe a intervalli regolari, non agli incroci veri

@@ -683,6 +683,18 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
   };
 
+  // Normali calcolate direttamente sugli array: molto piu rapido di computeVertexNormals sulle mesh grandi.
+  function fastNormals(geo) {
+    const P = geo.attributes.position.array, I = geo.index ? geo.index.array : null, N = new Float32Array(P.length), nt = (I ? I.length : P.length / 3) / 3;
+    for (let t = 0; t < nt; t++) {
+      const a = (I ? I[t * 3] : t * 3) * 3, b = (I ? I[t * 3 + 1] : t * 3 + 1) * 3, c = (I ? I[t * 3 + 2] : t * 3 + 2) * 3;
+      const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+      const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      N[a] += nx; N[a + 1] += ny; N[a + 2] += nz; N[b] += nx; N[b + 1] += ny; N[b + 2] += nz; N[c] += nx; N[c + 1] += ny; N[c + 2] += nz;
+    }
+    for (let k = 0; k < N.length; k += 3) { const l = Math.hypot(N[k], N[k + 1], N[k + 2]) || 1; N[k] /= l; N[k + 1] /= l; N[k + 2] /= l; }
+    geo.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  }
   function inst(geo, material, list, fn) {
     const m = new THREE.InstancedMesh(geo, material, Math.max(1, list.length));
     m.count = list.length;
@@ -1183,6 +1195,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     initCol();
     const p = PAL[id], r = rng(p.seed + 99), g = new THREE.Group(), NX = G.NX, NZ = G.NZ;
     const RD = !!(G.fp && G.rd); let corA = null;
+    const tm = [['start', performance.now()]], mark = (n) => tm.push([n, performance.now()]);
     const FP = !!G.fp, SIZE = G.size || HALF * 2, SK = SIZE / (HALF * 2);
     const cs = SIZE / Math.max(NX, NZ), wpm = cs / G.cell, k31 = (G.cell * 1.6) / 31;
     const TEX = 1.0 * k31, BEX = 2.4 * k31, STEP = 0.025;
@@ -1264,7 +1277,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       Q.forEach((cell, m) => { if (on[m] && !used[m]) mk([cell]); });
     }
     const white = () => mat('#ffffff');
-    const tcol = (col, c, pk) => col.set(c === 'v' ? (pk ? '#9a875a' : '#7f9c47') : c === 'P' ? '#857b8c' : c === 'k' && id !== 'marsiglia' ? '#a99d8d' : c === 'k' && FP ? '#b7ab92' : RCOL[c] || RCOL.o).offsetHSL(c === 'p' && pk === 2 ? 0.03 : 0, 0, (r() - 0.5) * (c === 'p' ? 0.1 : c === 'k' && FP ? 0.12 : c === 'o' || c === 'q' ? 0.025 : 0.05) + ((c === 'o' || c === 'q') && pk ? 0.04 : 0) - (c === 'p' && pk === 2 ? 0.05 : 0));
+    mark('celle');
+    const CCACHE = {}, cc = (hex) => CCACHE[hex] || (CCACHE[hex] = new THREE.Color(hex)), GREY = new THREE.Color('#8f8a98'), P2 = new THREE.Color(RCOL.p).offsetHSL(0.03, 0, 0), jit = (col, d) => { const k = 1 + d * 1.8; col.r = Math.min(1, col.r * k); col.g = Math.min(1, col.g * k); col.b = Math.min(1, col.b * k); return col; };
+    const tcol = (col, c, pk) => jit(col.copy(c === 'p' && pk === 2 ? P2 : cc(c === 'v' ? (pk ? '#9a875a' : '#7f9c47') : c === 'P' ? '#857b8c' : c === 'k' && id !== 'marsiglia' ? '#a99d8d' : c === 'k' && FP ? '#b7ab92' : RCOL[c] || RCOL.o)), (r() - 0.5) * (c === 'p' ? 0.1 : c === 'k' && FP ? 0.12 : c === 'o' || c === 'q' ? 0.025 : 0.05) + ((c === 'o' || c === 'q') && pk ? 0.04 : 0) - (c === 'p' && pk === 2 ? 0.05 : 0));
     // Terreno: a colonne nelle citta a griglia, superficie continua con pendii morbidi dove ci sono i contorni reali.
     const landMesh = () => {
       const isW = (k) => G.t[k] === 'w' || G.t[k] === 'x', edge = (i2, j2) => i2 < 0 || j2 < 0 || i2 >= NX || j2 >= NZ ? 1 : isW(j2 * NX + i2) ? 2 : 0;
@@ -1306,7 +1321,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         v(X(pi), py, Z(pj), cr, cg, cb); if (up) { v(X(ai), ay, Z(aj), cr, cg, cb); v(X(bi), by, Z(bj), cr, cg, cb); } else { v(X(bi), by, Z(bj), cr, cg, cb); v(X(ai), ay, Z(aj), cr, cg, cb); }
         skirt(2, X(ai), Z(aj), ay, X(bi), Z(bj), by);
       });
-      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P, 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc, 3, true)); geo.computeVertexNormals();
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P, 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc, 3, true)); fastNormals(geo);
       const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); m.castShadow = m.receiveShadow = true; return m;
     };
     // Edifici con il contorno reale: un'unica mesh estrusa, con cortili, tetti a falde sulle piante semplici e tetti piani sulle altre.
@@ -1335,7 +1350,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const rows = Math.max(1, Math.round(hm / 3.5)), bh = Math.max(0.02, hm * hU), yB = g0 - 0.015, yR = g1 + bh, sd = r(), tall = hm >= 40;
         const fk = r() < 0.3 ? r() : hash(id + ':' + ((cx / (cs * 2.4)) | 0) + ':' + ((cz / (cs * 2.4)) | 0));
         const tn = tints.find((q) => cx > q[0] && cx < q[2] && cz > q[1] && cz < q[3]), FACE = tn ? tn[4] : p.face;
-        col.set(tall ? tallC : FACE[(fk * FACE.length) | 0]).offsetHSL(0, 0, (r() - 0.5) * 0.07);
+        jit(col.copy(cc(tall ? tallC : FACE[(fk * FACE.length) | 0])), (r() - 0.5) * 0.07);
         const vB = ((yB - g1) / bh) * rows;
         rings.forEach((R, rn) => { for (let a = 0; a < R.length; a++) { const A = R[a], Bp = R[(a + 1) % R.length], len = hyp(Bp[0] - A[0], Bp[1] - A[1]); if (len < 1e-5) continue; const nw = Math.max(1, Math.round(len / pitch)), u0 = (a + rn * 7) * 16; const v0 = V(A[0], yB, A[1], u0, vB, sd, 0), v1 = V(Bp[0], yB, Bp[1], u0 + nw, vB, sd, 0), v2 = V(Bp[0], yR, Bp[1], u0 + nw, rows, sd, 0), v3 = V(A[0], yR, A[1], u0, rows, sd, 0); tri(v0, v1, v2); tri(v0, v2, v3); } });
         let ar = 0, convex = nr === 1 && O.length <= 8, sg = 0;
@@ -1344,7 +1359,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const pitched = convex && !tall && hm < 30 && ar < 1600 * wpm * wpm && r() < 0.85;
         let tp = yR;
         if (pitched) {
-          col.set(RF[(r() * RF.length) | 0]).offsetHSL(0, 0, (r() - 0.5) * 0.06);
+          jit(col.copy(cc(RF[(r() * RF.length) | 0])), (r() - 0.5) * 0.06);
           const rh = Math.min(4.5 * hU, 0.4 * Math.sqrt(ar)), I = O.map((pt) => [cx + (pt[0] - cx) * 0.42, cz + (pt[1] - cz) * 0.42]);
           for (let a = 0; a < O.length; a++) { const b = (a + 1) % O.length, v0 = V(O[a][0], yR, O[a][1], 0, 0, sd, 2), v1 = V(O[b][0], yR, O[b][1], 1, 0, sd, 2), v2 = V(I[b][0], yR + rh, I[b][1], 1, 1, sd, 2), v3 = V(I[a][0], yR + rh, I[a][1], 0, 1, sd, 2); tri(v0, v1, v2); tri(v0, v2, v3); }
           const base = nv; I.forEach((pt) => V(pt[0], yR + rh, pt[1], 0, 1, sd, 2)); for (let a = 1; a < I.length - 1; a++) tri(base, base + a, base + a + 1);
@@ -1355,12 +1370,12 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
           const ok = IN && sA(IN[0]) < 0 && -sA(IN[0]) > 0.3 * ar && IN.every((R) => R.every((pt) => pip(pt[0], pt[1], O)));
           if (ok) {
             const rh = d * 0.85 * (hU / wpm) * 0.5;
-            col.set(RF[(r() * RF.length) | 0]).offsetHSL(0, 0, (r() - 0.5) * 0.06);
+            jit(col.copy(cc(RF[(r() * RF.length) | 0])), (r() - 0.5) * 0.06);
             rings.forEach((R, rn) => { const I = IN[rn]; for (let a = 0; a < R.length; a++) { const b = (a + 1) % R.length, v0 = V(R[a][0], yR, R[a][1], 0, 0, sd, 2), v1 = V(R[b][0], yR, R[b][1], 1, 0, sd, 2), v2 = V(I[b][0], yR + rh, I[b][1], 1, 1, sd, 2), v3 = V(I[a][0], yR + rh, I[a][1], 0, 1, sd, 2); tri(v0, v1, v2); tri(v0, v2, v3); } });
-            col.offsetHSL(0, -0.05, -0.05); flatTop(IN, yR + rh, 1); tp = yR + rh;
+            col.multiplyScalar(0.9); flatTop(IN, yR + rh, 1); tp = yR + rh;
             if (r() < chP) { const I = IN[0], q = I[(r() * I.length) | 0], q2 = I[(I.indexOf(q) + 2) % I.length], px = q[0] + (q2[0] - q[0]) * 0.25, pz = q[1] + (q2[1] - q[1]) * 0.25, cw = 0.9 * wpm, ch = 1.5 * hU; if (pip(px, pz, I)) dbox.push([px, tp + ch / 2, pz, cw, ch, cw, '#8d5f4c']); }
           } else {
-            col.set(tall ? '#8f8a98' : RF[(r() * RF.length) | 0]).lerp(new THREE.Color('#8f8a98'), 0.35).offsetHSL(0, 0, (r() - 0.5) * 0.05);
+            jit(col.copy(cc(tall ? '#8f8a98' : RF[(r() * RF.length) | 0])).lerp(GREY, 0.35), (r() - 0.5) * 0.05);
             flatTop(rings, yR, 1);
             if (r() < (tall ? 0.8 : 0.2) && pip(cx, cz, O) && !rings.slice(1).some((R) => pip(cx, cz, R))) { const w2 = Math.min(Math.sqrt(ar) * 0.28, 9 * wpm), ch = 2.6 * hU; dbox.push([cx, yR + ch / 2, cz, w2, ch, w2 * 0.7, '#a9a4b2']); }
           }
@@ -1370,12 +1385,13 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(P.slice(0, nv * 3), 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc.slice(0, nv * 3), 3, true)); geo.setAttribute('aW', new THREE.BufferAttribute(AW.slice(0, nv * 4), 4));
-      geo.setIndex(new THREE.BufferAttribute(IX.slice(0, ni), 1)); geo.computeVertexNormals();
+      geo.setIndex(new THREE.BufferAttribute(IX.slice(0, ni), 1)); fastNormals(geo);
       const m = new THREE.Mesh(geo, shadeFp(new THREE.MeshLambertMaterial({ vertexColors: true }), { genova: '#3d6b50', lione: '#8a8f98', mantova: '#56604a', marsiglia: '#5f8fa8' }[id])); m.castShadow = m.receiveShadow = true; m.userData.smokeAt = smokeAt; m.userData.pitch = pitch; return m;
     };
     const isWk = (k) => G.t[k] === 'w' || G.t[k] === 'x';
     const terrM = FP ? landMesh() : inst(B(1, 1, 1), shade(white(), 'terr'), terr, (o, [x, z, y, c, pk], col) => { o.position.set(x, (y + BOT) / 2, z); o.scale.set(cs, y - BOT, cs); tcol(col, c, pk); });
-    const fpM = FP ? fpMesh() : null;
+    mark('terreno');
+    const fpM = FP ? fpMesh() : null; mark('edifici');
     // Strade con il tracciato reale: nastri continui appoggiati al terreno.
     const routes = [], rLamps = [];
     const peop = [], railRoutes = [];
@@ -1446,10 +1462,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         }
         if (R3.length >= 12) routes.push({ P: R3, hw });
       });
-      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P.slice(0, nv * 3), 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc.slice(0, nv * 3), 3, true)); geo.setIndex(new THREE.BufferAttribute(IX.slice(0, ni), 1)); geo.computeVertexNormals();
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P.slice(0, nv * 3), 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc.slice(0, nv * 3), 3, true)); geo.setIndex(new THREE.BufferAttribute(IX.slice(0, ni), 1)); fastNormals(geo);
       const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.receiveShadow = true; return m;
     };
-    const rdM = RD ? roadMesh() : null;
+    const rdM = RD ? roadMesh() : null; mark('strade');
     const watTop = new THREE.PlaneGeometry(1, 1); watTop.rotateX(-Math.PI / 2); watTop.translate(0, 0.5, 0);
     if (FP) {
       const P = [], q4 = (xa, za, xb, zb, y) => P.push(xa, y, za, xa, BOT, za, xb, BOT, zb, xa, y, za, xb, BOT, zb, xb, y, zb);
@@ -1743,7 +1759,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
     const labels = lms.map((l) => ({ it: l.it, en: l.en || l.it, x: l.x, z: l.z }));
     const spins = []; g.traverse((o) => { if (o.userData.spin) spins.push(o); });
-    return { spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
+    mark('resto'); const tms = {}; for (let k = 1; k < tm.length; k++) tms[tm[k][0]] = Math.round(tm[k][1] - tm[k - 1][1]);
+    return { tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
   }
 
   const LIGHT = {
@@ -1847,7 +1864,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const st = (s) => { if (this.cityId === id && this.onStatus) this.onStatus(s); };
       st('osm');
       const tB = performance.now();
-      getGrid(id, st).then((G) => { const t1 = performance.now(), c = buildReal(id, G); this.stats = { decode: Math.round(t1 - tB), build: Math.round(performance.now() - t1) }; return c; }, (e) => { console.warn('OSM failed, stylized fallback', e); this.fallback = true; return buildCity(id); }).then((c) => {
+      getGrid(id, st).then((G) => { const t1 = performance.now(), c = buildReal(id, G); this.stats = { decode: Math.round(t1 - tB), build: Math.round(performance.now() - t1), parts: c.tms }; return c; }, (e) => { console.warn('OSM failed, stylized fallback', e); this.fallback = true; return buildCity(id); }).then((c) => {
         if (this.cityId !== id) return;
         this.mount(c); st(this.fallback ? 'fallback' : 'ready'); this.fallback = false;
       });
