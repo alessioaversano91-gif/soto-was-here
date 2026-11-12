@@ -1,6 +1,6 @@
 # SOTO Was Here — checklist
 
-Aggiornata l'11 novembre 2026. Sito: https://alessioaversano91-gif.github.io/soto-was-here/
+Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/soto-was-here/
 
 ## Fatto
 
@@ -40,6 +40,7 @@ Aggiornata l'11 novembre 2026. Sito: https://alessioaversano91-gif.github.io/sot
 ### Funzioni
 - [ ] Punti condivisi tra la crew sul sito pubblico: su GitHub restano nel browser di chi li inserisce
 - [ ] Database e login (Lovable), come da piano iniziale
+- [ ] Idea da valutare: account utente abilitati (es. Albi, Seba, Lollo, Alecio) che possono entrare nell'Editor e inserire punti; gli altri visitatori vedono solo i punti pubblicati
 - [ ] Galleria di più foto per punto, altri campi di testo, pagina Editor separata
 - [ ] Pulsante "Scarica" del JSON nell'artifact di Claude (oggi funziona solo "Copia")
 - [ ] La scelta della luce non viene ricordata alla visita successiva
