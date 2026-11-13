@@ -155,3 +155,14 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Mercati: le bancarelle cercano uno spazio libero tra gli edifici e hanno dimensioni reali. Viste a Genova e Mantova; a Lione e Marsiglia sono state piazzate ma non le ho viste in immagine
 - [ ] Orizzonte visto solo di giorno e nel browser di prova; restano leggere striature radiali in pianura (Lione)
 - [ ] Rilievi dell'orizzonte indicativi (forma inventata, solo direzione e altezza di massima reali)
+
+## Edifici più realistici (13 novembre, notte)
+- [x] Finestre con cornice in pietra, davanzale, ombra dell'incasso, montanti e traverse, tende ai lati
+- [x] Persiane a stecche aperte o chiuse, tapparelle abbassate a metà sui condomini, tende a rullo sulle vetrate delle torri
+- [x] Balconi alla francese con soletta e ringhiera su una parte delle finestre
+- [x] Cornicione sotto il tetto, colature e chiazze sull'intonaco
+- [x] Piano terra in tre varianti: portici ad arco, negozi con insegna colorata, portoni e finestre con inferriata
+- [x] Di notte le finestre accese hanno tinte diverse (calda, bianca, azzurra da televisore) e intensità variabile
+- [x] Nessuna geometria aggiunta: è tutto nel materiale; i tratti più fini compaiono solo quando si è abbastanza vicini
+- [ ] Visto solo nel browser di prova (a bassa definizione); costo sulla fluidità non misurato sul computer reale né su telefono
+- [ ] Non fatto: abbaini e lucernari sui tetti a falde, portici continui, insegne con scritte

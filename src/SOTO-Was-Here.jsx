@@ -66,7 +66,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     return m;
   }
   /* Rifinitura grafica: piccoli innesti negli shader Lambert (finestre sugli edifici, strati di terra, profondità dell'acqua). */
-  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 }, uSky: { value: new THREE.Color('#c7b2ff') }, uSunDir: { value: new THREE.Vector3(0.6, 0.7, 0.3) }, uSunCol: { value: new THREE.Color('#ffc283') }, uCl: { value: new THREE.Vector2(0.2, 0.2) } };
+  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 }, uSky: { value: new THREE.Color('#c7b2ff') }, uSunDir: { value: new THREE.Vector3(0.6, 0.7, 0.3) }, uSunCol: { value: new THREE.Color('#ffc283') }, uCl: { value: new THREE.Vector2(0.2, 0.2) }, uFine: { value: 0 } };
   // Ombre di nuvole che scorrono su terreno, strade ed edifici (stessa formula in tutti i materiali).
   const CLOUD = '\nuniform vec2 uCl;\nfloat cH(vec2 p) { return fract(sin(dot(p, vec2(91.7, 283.3))) * 43758.5453); }\nfloat cN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(cH(i), cH(i + vec2(1.0, 0.0)), f.x), mix(cH(i + vec2(0.0, 1.0)), cH(i + vec2(1.0, 1.0)), f.x), f.y); }\nfloat clSh(vec2 w) { vec2 p = w * uCl.x + vec2(uT * 0.03, uT * 0.011); return 1.0 - uCl.y * smoothstep(0.5, 0.74, cN(p) * 0.62 + cN(p * 2.3 + 7.0) * 0.38); }';
   const SHADE = {
@@ -154,47 +154,92 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   function shadeFp(m, shut) {
     m.customProgramCacheKey = () => 'soto-fp';
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uShut = { value: new THREE.Color(shut || '#4f5d52') }; sh.uniforms.uSky = SOTO_U.uSky; sh.uniforms.uCl = SOTO_U.uCl; sh.uniforms.uT = SOTO_U.uT;
+      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uShut = { value: new THREE.Color(shut || '#4f5d52') }; sh.uniforms.uSky = SOTO_U.uSky; sh.uniforms.uCl = SOTO_U.uCl; sh.uniforms.uT = SOTO_U.uT; sh.uniforms.uFine = SOTO_U.uFine;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aW;\nvarying vec4 vW;\nvarying vec2 vWc;').replace('#include <begin_vertex>', '#include <begin_vertex>\n        vW = aW; vWc = (modelMatrix * vec4(transformed, 1.0)).xz;');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform vec3 uShut;\nuniform vec3 uSky;\nuniform float uT;\nvarying vec4 vW;\nvarying vec2 vWc;' + CLOUD + '\nfloat sH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat sNz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(sH(i), sH(i + vec2(1.0, 0.0)), f.x), mix(sH(i + vec2(0.0, 1.0)), sH(i + vec2(1.0, 1.0)), f.x), f.y); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform vec3 uShut;\nuniform vec3 uSky;\nuniform float uT;\nuniform float uFine;\nvarying vec4 vW;\nvarying vec2 vWc;' + CLOUD + '\nfloat sBx(vec2 p, vec2 a, vec2 b) { return step(a.x, p.x) * step(p.x, b.x) * step(a.y, p.y) * step(p.y, b.y); }\nfloat sH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat sNz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(sH(i), sH(i + vec2(1.0, 0.0)), f.x), mix(sH(i + vec2(0.0, 1.0)), sH(i + vec2(1.0, 1.0)), f.x), f.y); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
       diffuseColor.rgb *= clSh(vWc);
       if (vW.w < 0.5) {
-        float sty = floor(vW.z + 0.0001), bz = vW.z - sty;
+        // Facciata: tutto disegnato dal materiale (nessuna geometria in piu). Il dettaglio fine si accende solo da vicino.
+        float sty = floor(vW.z + 0.0001), bz = vW.z - sty, rows = max(1.0, floor(-vW.w * 64.0 + 0.5));
         vec2 sg = vW.xy, sf = fract(sg), sid = floor(sg);
-        float gf = step(sg.y, 1.0), fl = step(1.0, sg.y), ab = step(0.0, sg.y), wy = step(0.3, sf.y) * step(sf.y, 0.8);
-        float ww = 0.24 - 0.06 * step(0.5, fract(bz * 7.0));
-        float win = step(ww, sf.x) * step(sf.x, 1.0 - ww) * wy, shut = 0.0, gk = 0.85, old = step(sty, 1.5);
-        float shop = step(0.16, sf.x) * step(sf.x, 0.84) * step(sf.y, 0.66);
-        if (sty < 0.5) {
-          shut = (step(ww - 0.12, sf.x) * step(sf.x, ww) + step(1.0 - ww, sf.x) * step(sf.x, 1.12 - ww)) * wy * fl * step(0.25, fract(bz * 13.0));
-          float hb = fract(sin(dot(vec2(sid.y, bz * 91.0), vec2(12.9, 78.2))) * 4375.5);
-          diffuseColor.rgb *= 1.0 - 0.45 * uWin * fl * step(0.62, hb) * step(0.08, sf.x) * step(sf.x, 0.92) * step(0.2, sf.y) * step(sf.y, 0.3);
-          diffuseColor.rgb *= 1.0 + 0.1 * uWin * step(1.0, sg.y) * step(sg.y, 1.09);
-          diffuseColor.rgb *= 1.0 - 0.07 * uWin * gf * ab * step(0.5, fract(sg.y * 5.0)) * step(0.5, fract(bz * 3.0));
-        } else if (sty < 1.5) {
-          win = step(0.08, sf.x) * step(sf.x, 0.92) * step(0.38, sf.y) * step(sf.y, 0.8);
-          float bal = step(0.45, sH(vec2(floor(sid.x * 0.5), bz * 57.0))) * fl * step(sf.y, 0.36);
-          diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.87, 0.86, 0.83), uShut, step(0.6, fract(bz * 5.0)) * 0.75), bal * uWin * 0.8);
-          diffuseColor.rgb *= 1.0 - 0.32 * uWin * fl * step(sf.y, 0.06);
-        } else if (sty < 2.5) {
-          win = step(0.05, sf.x) * step(sf.x, 0.95) * step(0.2, sf.y) * step(sf.y, 0.95); gk = 0.95; shop = win;
-          diffuseColor.rgb *= 1.0 - 0.22 * uWin;
-        } else {
-          win = step(0.04, sf.x) * step(sf.x, 0.96) * step(0.64, sf.y) * step(sf.y, 0.88);
-          shop = step(0.5, sH(vec2(sid.x, bz * 31.0))) * step(0.15, sf.x) * step(sf.x, 0.85) * step(sf.y, 0.78);
-          diffuseColor.rgb *= 1.0 - 0.06 * uWin * step(0.5, fract(sg.x * 7.0));
+        float gf = step(sg.y, 1.0), fl = 1.0 - gf, ab = step(0.0, sg.y), body = ab * step(sg.y, rows), old = step(sty, 1.5);
+        float hw = sH(sid + bz * 17.0), h2 = sH(sid * 1.7 + bz * 91.0);
+        float lit = step(mix(0.5, 0.3, uNight), fract(sin(dot(sid + bz * 37.0, vec2(41.3, 289.1))) * 9173.3));
+        vec3 base = diffuseColor.rgb * (0.9 + 0.1 * step(0.25, sg.y)) * (0.74 + 0.26 * smoothstep(-0.3, 2.4, sg.y)), wall = base, em = vec3(0.0);
+        if (uWin > 0.004) {
+          wall *= 0.9 + 0.12 * sNz(sg * vec2(5.0, 7.0) + bz * 40.0) + 0.1 * sNz(sg * vec2(0.9, 0.6) + bz * 9.0);
+          wall *= 1.0 - 0.12 * old * sNz(vec2(sg.x * 9.0, sg.y * 0.8) + bz * 13.0) * smoothstep(0.35, 0.9, sNz(vec2(sg.x * 2.0, 3.0) + bz * 5.0));
+          vec2 lo, hi; vec3 frameC = mix(vec3(0.93, 0.91, 0.86), vec3(0.2, 0.17, 0.15), step(0.6, fract(bz * 29.0)));
+          float shutK = 0.0, balc = 0.0, closed = 0.0, roll = 0.0, g3 = fract(bz * 3.0 + 0.2);
+          if (sty < 0.5) {
+            float ww = 0.27 - 0.06 * step(0.5, fract(bz * 7.0));
+            balc = fl * step(0.74, h2) * step(0.3, fract(bz * 19.0));
+            lo = vec2(ww, mix(0.24, 0.05, balc)); hi = vec2(1.0 - ww, 0.82);
+            shutK = step(0.25, fract(bz * 13.0)) * fl; closed = step(0.9, hw) * shutK;
+            wall *= 1.0 + 0.16 * step(rows - 0.1, sg.y) * step(sg.y, rows) - 0.2 * step(rows - 0.16, sg.y) * step(sg.y, rows - 0.1);
+            wall *= 1.0 + 0.1 * step(1.0, sg.y) * step(sg.y, 1.09);
+            wall *= 1.0 - 0.07 * gf * ab * step(0.5, fract(sg.y * 5.0)) * step(0.5, g3);
+          } else if (sty < 1.5) {
+            lo = vec2(0.08, 0.38); hi = vec2(0.92, 0.8);
+            float bc = step(0.45, sH(vec2(floor(sid.x * 0.5), bz * 57.0))) * fl * body;
+            wall = mix(wall, mix(vec3(0.87, 0.86, 0.83), uShut, step(0.6, fract(bz * 5.0)) * 0.75) * (1.0 - 0.12 * uFine * step(0.5, fract(sf.x * 6.0))), bc * step(sf.y, 0.36) * 0.8);
+            wall *= 1.0 - 0.32 * fl * body * step(sf.y, 0.06) - 0.2 * bc * step(0.93, sf.y);
+            roll = step(0.55, hw) * (0.25 + 0.6 * h2);
+            wall *= 1.0 + 0.1 * step(rows - 0.08, sg.y) * step(sg.y, rows);
+          } else if (sty < 2.5) { lo = vec2(0.03, 0.2); hi = vec2(0.97, 0.96); wall *= 0.78; roll = step(0.7, hw) * (0.2 + 0.5 * h2); }
+          else { lo = vec2(0.04, 0.64); hi = vec2(0.96, 0.88); wall *= 1.0 - 0.06 * step(0.5, fract(sg.x * 7.0)); }
+          float act = body * mix(fl, 1.0, step(1.5, sty) * step(sty, 2.5)), inW = sBx(sf, lo, hi), win = inW * act;
+          vec2 wp = (sf - lo) / (hi - lo);
+          if (sty < 0.5) {
+            wall = mix(wall, wall * 1.22 + 0.03, (sBx(sf, lo - vec2(0.035, 0.03), hi + vec2(0.035, 0.04)) - inW) * act * 0.9);
+            wall = mix(wall, wall * 1.3 + 0.04, sBx(sf, vec2(lo.x - 0.07, lo.y - 0.045), vec2(hi.x + 0.07, lo.y)) * act * (1.0 - balc));
+            wall *= 1.0 - act * (1.0 - balc) * (0.22 * sBx(sf, vec2(lo.x - 0.07, lo.y - 0.09), vec2(hi.x + 0.07, lo.y - 0.045)) + 0.07 * sBx(sf, vec2(lo.x, lo.y - 0.3), vec2(hi.x, lo.y - 0.09)));
+            float sh = (sBx(sf, vec2(lo.x - 0.13, lo.y), vec2(lo.x, hi.y)) + sBx(sf, vec2(hi.x, lo.y), vec2(hi.x + 0.13, hi.y))) * shutK * (1.0 - closed) * act;
+            wall = mix(wall, uShut * (1.0 - 0.22 * uFine * step(0.5, fract(sf.y * 10.0))), sh * 0.9);
+          }
+          vec3 glass = mix(vec3(0.06, 0.07, 0.11), uSky, 0.18 + 0.4 * wp.y + 0.14 * sNz(sg * 0.35 + bz * 3.0));
+          glass *= 1.0 - 0.45 * max(step(0.9, wp.y), step(wp.x, 0.07));
+          float curt = (step(0.5, h2) * step(wp.x, 0.28) + step(0.75, h2) * step(0.72, wp.x)) * old;
+          glass = mix(glass, vec3(0.6, 0.58, 0.54), curt * 0.5);
+          float mul = sty < 0.5 ? max(step(abs(wp.x - 0.5), 0.06), step(abs(wp.y - 0.66), 0.04) * uFine) : sty < 1.5 ? max(step(abs(wp.x - 0.33), 0.03), step(abs(wp.x - 0.67), 0.03)) : sty < 2.5 ? max(step(abs(wp.x - 0.5), 0.035), step(wp.y, 0.16)) : step(0.5, fract(wp.x * 3.0)) * 0.0;
+          float cov = sty < 0.5 ? closed : step(1.0 - roll, wp.y);
+          vec3 covC = sty < 0.5 ? uShut * (1.0 - 0.22 * uFine * step(0.5, fract(sf.y * 10.0))) : vec3(0.78, 0.77, 0.74) * (1.0 - 0.16 * uFine * step(0.5, fract(sf.y * 12.0)));
+          vec3 lc = hw > 0.8 ? vec3(0.62, 0.76, 1.0) : hw > 0.45 ? vec3(1.0, 0.9, 0.72) : vec3(1.0, 0.72, 0.36);
+          float litW = lit * (1.0 - cov) * (1.0 - 0.7 * mul);
+          wall = mix(wall, mix(mix(glass * (1.0 - lit), frameC, mul * 0.85), covC, cov), win);
+          em += lc * (0.55 + 0.45 * h2) * win * litW * (1.0 - 0.35 * curt);
+          // balcone alla francese: soletta e ringhiera
+          float bx0 = lo.x - 0.14, bx1 = hi.x + 0.14, rail = sBx(sf, vec2(bx0, 0.03), vec2(bx1, 0.3)) * balc * act * max(max(step(0.5, fract(sf.x * 12.0)), 0.75 * (1.0 - uFine)), max(step(0.26, sf.y), step(sf.y, 0.06)));
+          wall = mix(wall, vec3(0.13, 0.13, 0.15), rail * 0.8); em *= 1.0 - 0.8 * rail;
+          wall = mix(wall, vec3(0.78, 0.76, 0.72), sBx(sf, vec2(bx0 - 0.02, 0.0), vec2(bx1 + 0.02, 0.035)) * balc * act);
+          // piano terra: portici ad arco, negozi con insegna, oppure portoni e finestre con inferriata
+          float gz = gf * ab * (1.0 - step(1.5, sty) * step(sty, 2.5)), gwin = 0.0, gdoor = 0.0, grate = 0.0;
+          if (sty > 2.5) gdoor = step(0.5, sH(vec2(sid.x, bz * 31.0))) * sBx(sf, vec2(0.15, 0.0), vec2(0.85, 0.78));
+          else if (sty > 0.5 || (g3 >= 0.33 && g3 < 0.66)) {
+            gwin = sBx(sf, vec2(0.12, 0.0), vec2(0.88, 0.62));
+            float hs = fract(sin(dot(vec2(floor(sg.x / 2.0), bz * 53.0), vec2(27.1, 61.7))) * 2531.7);
+            vec3 ac = hs > 0.85 ? vec3(0.78, 0.25, 0.2) : hs > 0.7 ? vec3(0.2, 0.45, 0.35) : hs > 0.4 ? vec3(0.92, 0.88, 0.78) : vec3(0.16, 0.2, 0.34);
+            wall = mix(wall, ac * (1.0 - 0.1 * uFine * step(0.5, fract(sf.x * 6.0))), gz * sBx(sf, vec2(0.08, 0.66), vec2(0.92, 0.9)) * step(0.25, hs));
+          } else if (g3 < 0.33) {
+            float d = length((sf - vec2(0.5, 0.45)) * vec2(1.0, 0.7)), up = step(0.45, sf.y);
+            gwin = max(sBx(sf, vec2(0.2, 0.0), vec2(0.8, 0.45)), step(d, 0.3) * up);
+            wall = mix(wall, wall * 1.2 + 0.02, gz * (max(sBx(sf, vec2(0.15, 0.0), vec2(0.85, 0.45)), step(d, 0.35) * up) - gwin));
+          } else {
+            float dr = step(0.5, sH(vec2(floor(sid.x / 3.0), bz * 7.0))) * step(mod(sid.x, 3.0), 0.5);
+            gdoor = dr * sBx(sf, vec2(0.3, 0.0), vec2(0.7, 0.74)); gwin = (1.0 - dr) * sBx(sf, vec2(0.3, 0.32), vec2(0.7, 0.76)); grate = gwin;
+            wall = mix(wall, wall * 1.2 + 0.02, gz * (dr * sBx(sf, vec2(0.26, 0.0), vec2(0.74, 0.79)) + (1.0 - dr) * sBx(sf, vec2(0.26, 0.27), vec2(0.74, 0.8))) * (1.0 - gdoor) * (1.0 - gwin));
+          }
+          vec3 doorC = (sty > 2.5 ? vec3(0.3, 0.33, 0.38) : mix(vec3(0.27, 0.17, 0.1), uShut * 0.7, step(0.5, fract(bz * 41.0)))) * (0.8 + 0.2 * step(0.06, abs(sf.x - 0.5))) * (0.85 + 0.15 * step(0.5, fract(sf.y * (sty > 2.5 ? 14.0 : 4.0))));
+          wall = mix(wall, doorC, gdoor * gz);
+          vec3 gg = mix(vec3(0.07, 0.07, 0.1), uSky, 0.12 + 0.3 * sf.y) * (1.0 - 0.5 * step(0.55, sf.y) * step(g3, 0.33) * (1.0 - step(0.5, sty)));
+          gg = mix(gg, vec3(0.1), grate * max(step(0.6, fract(sf.x * 8.0)), step(0.7, fract(sf.y * 5.0))) * 0.9 * uFine);
+          float gl = lit * (1.0 - grate);
+          wall = mix(wall, mix(gg * (1.0 - gl), frameC, step(abs(sf.x - 0.5), 0.015) * (1.0 - grate) * 0.8), gwin * gz);
+          em += vec3(1.0, 0.86, 0.62) * gwin * gz * gl * 0.9;
+          wall *= 1.0 - 0.3 * old * ab * step(0.95, sf.x) * step(0.8, sH(vec2(sid.x, bz * 77.0)));
         }
-        win = mix(win, shop, gf) * ab;
-        diffuseColor.rgb = mix(diffuseColor.rgb, uShut, shut * uWin * 0.85);
-        float hs = fract(sin(dot(vec2(floor(sg.x / 2.0), bz * 53.0), vec2(27.1, 61.7))) * 2531.7);
-        vec3 ac = hs > 0.85 ? vec3(0.78, 0.25, 0.2) : hs > 0.7 ? vec3(0.2, 0.45, 0.35) : vec3(0.92, 0.88, 0.78);
-        diffuseColor.rgb = mix(diffuseColor.rgb, ac, old * (1.0 - fl) * ab * step(0.66, sf.y) * step(sf.y, 0.9) * step(0.55, hs) * uWin);
-        diffuseColor.rgb *= 1.0 - 0.3 * uWin * old * ab * step(0.95, sf.x) * step(0.8, sH(vec2(sid.x, bz * 77.0)));
-        float lit = step(mix(0.5, 0.3, uNight), fract(sin(dot(sid + bz * 37.0, vec2(41.3, 289.1))) * 9173.3)) * (1.0 - gf * step(2.5, sty));
-        diffuseColor.rgb *= (0.9 + 0.1 * step(0.25, sg.y)) * (0.74 + 0.26 * smoothstep(-0.3, 2.4, sg.y));
-        diffuseColor.rgb *= 0.93 + 0.14 * sNz(sg * vec2(5.0, 7.0) + bz * 40.0) * uWin;
-        diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.07, 0.08, 0.13), uSky, 0.2 + 0.45 * sf.y), win * uWin * (1.0 - lit) * gk);
-        totalEmissiveRadiance += vec3(1.0, 0.74, 0.38) * (win * lit * uWin * (0.8 + 0.9 * uNight) + step(mix(0.9, 0.62, uNight), bz) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5))));
+        diffuseColor.rgb = mix(base, wall, uWin);
+        totalEmissiveRadiance += em * uWin * (0.8 + 0.9 * uNight) + vec3(1.0, 0.74, 0.38) * step(mix(0.9, 0.62, uNight), bz) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5)));
       } else if (vW.w < 1.5) {
         float ty = floor(vW.z + 0.0001), bz = vW.z - ty; vec2 rp = vW.xy;
         diffuseColor.rgb *= 0.9 + 0.2 * sNz(rp * 0.7 + bz * 50.0) * uWin;
@@ -1416,11 +1461,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         // Stile di facciata: 0 palazzo tradizionale, 1 condominio moderno con balconi, 2 vetrata continua (torri), 3 capannone.
         const ar0 = Math.abs(sA(O)) / (wpm * wpm), s2 = (sd * 7.31) % 1, sty = tall ? 2 : ar0 > 2500 && hm <= 14 ? 3 : s2 < (hm >= 26 ? 0.6 : hm >= 18 ? 0.25 : hm >= 12 ? 0.08 : 0) * (tn ? 0.5 : 1) ? 1 : 0, sdW = sd + sty;
         if (sty === 3) col.lerp(GREY, 0.45);
-        const wv0 = nv;
+        const wv0 = nv, wk = -rows / 64; // il numero di piani viaggia col muro: serve a cornicione e ultimo piano
         { if (!occ) { oc = cs / 3; ONX = NX * 3; ONZ = NZ * 3; occ = new Uint8Array(ONX * ONZ); }
           let ax = 1e9, bx = -1e9, az = 1e9, bz = -1e9; O.forEach((q) => { ax = Math.min(ax, q[0]); bx = Math.max(bx, q[0]); az = Math.min(az, q[1]); bz = Math.max(bz, q[1]); });
           for (let j = Math.max(0, Math.floor((az - oz) / oc)); j <= Math.min(ONZ - 1, Math.floor((bz - oz) / oc)); j++) for (let i = Math.max(0, Math.floor((ax - ox) / oc)); i <= Math.min(ONX - 1, Math.floor((bx - ox) / oc)); i++) occ[j * ONX + i] = 1; }
-        rings.forEach((R, rn) => { for (let a = 0; a < R.length; a++) { const A = R[a], Bp = R[(a + 1) % R.length], len = hyp(Bp[0] - A[0], Bp[1] - A[1]); if (len < 1e-5) continue; const nw = Math.max(1, Math.round(len / pitch)), u0 = (a + rn * 7) * 16; const v0 = V(A[0], yB, A[1], u0, vB, sdW, 0), v1 = V(Bp[0], yB, Bp[1], u0 + nw, vB, sdW, 0), v2 = V(Bp[0], yR, Bp[1], u0 + nw, rows, sdW, 0), v3 = V(A[0], yR, A[1], u0, rows, sdW, 0); tri(v0, v1, v2); tri(v0, v2, v3); } });
+        rings.forEach((R, rn) => { for (let a = 0; a < R.length; a++) { const A = R[a], Bp = R[(a + 1) % R.length], len = hyp(Bp[0] - A[0], Bp[1] - A[1]); if (len < 1e-5) continue; const nw = Math.max(1, Math.round(len / pitch)), u0 = (a + rn * 7) * 16; const v0 = V(A[0], yB, A[1], u0, vB, sdW, wk), v1 = V(Bp[0], yB, Bp[1], u0 + nw, vB, sdW, wk), v2 = V(Bp[0], yR, Bp[1], u0 + nw, rows, sdW, wk), v3 = V(A[0], yR, A[1], u0, rows, sdW, wk); tri(v0, v1, v2); tri(v0, v2, v3); } });
         const wvN = nv;
         let ar = 0, convex = nr === 1 && O.length <= 8, sg = 0;
         for (let a = 0; a < O.length; a++) { const A = O[a], Bp = O[(a + 1) % O.length], C2 = O[(a + 2) % O.length]; ar += A[0] * Bp[1] - Bp[0] * A[1]; const cr = (Bp[0] - A[0]) * (C2[1] - Bp[1]) - (Bp[1] - A[1]) * (C2[0] - Bp[0]); if (Math.abs(cr) > 1e-7) { if (sg && Math.sign(cr) !== sg) convex = false; sg = Math.sign(cr); } }
@@ -2058,6 +2103,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         // finestre: compaiono solo quando un edificio occupa abbastanza pixel
         const ppb = (c.cs * this.renderer.domElement.height) / (2 * cd * 0.2493), fdt = this.reduce ? 0 : Math.min(0.1, (t - (this.pt || t)) / 1000); this.pt = t;
         SOTO_U.uWin.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 2) / 1.5) : cl01((ppb - 4) / 3);
+        SOTO_U.uFine.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 10) / 6) : 0; // tratti finissimi (stecche, ringhiere) solo quando un piano occupa abbastanza pixel
         if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'alba', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
         if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; this.scene.fog.color.lerp(G2.fog, q); }
         SOTO_U.uT.value = this.reduce ? 0 : (t / 1000) % 1000; SOTO_U.uCl.value.y = 0.24 * cl01(1 - SOTO_U.uNight.value); SOTO_U.uSky.value.copy(this.hemi.color); SOTO_U.uSunDir.value.copy(this.sun.position).normalize(); SOTO_U.uSunCol.value.copy(this.sun.color).multiplyScalar(Math.min(1, this.sun.intensity));
