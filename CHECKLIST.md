@@ -51,6 +51,11 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Home: la mappa d'Europa si ingrandisce sulla città scelta prima che compaia il diorama
 - [x] Prestazioni: il codice è tradotto in anticipo (la pagina non scarica più il traduttore né rielabora 4,7 MB a ogni apertura); i dati di ogni città si decodificano solo quando la si apre
 - [x] Prestazioni: acqua con una sola faccia per cella; ombre ridisegnate a ogni cambio di luce e ogni 5 fotogrammi invece che sempre; normali e colori calcolati più in fretta in costruzione
+- [x] Vista nitida a risoluzione piena, predefinita su desktop, con interruttore HD/PX accanto alle luci (su telefono resta lo stile pixel)
+- [x] Materiali: grana su terreno e strade, intonaco sulle facciate, tegole sui tetti, alberi sfumati dal basso verso l'alto
+- [x] Vetri delle finestre che riflettono il colore del cielo
+- [x] Acqua con increspature, riflesso del cielo più forte in lontananza, luccichio del sole
+- [x] Ombre più definite su desktop; leggera vignettatura ai bordi
 - [x] Verde: boschi più fitti sulle alture, macchia bassa sulle Calanche, canneti più fitti sui laghi di Mantova
 
 ## Da verificare
@@ -90,6 +95,9 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Prestazioni: misure fatte su un solo computer (Intel Iris Xe) in un riquadro piccolo; a schermo intero e su altre schede non misurato
 - [ ] Ombre delle nuvole e crescita iniziale: ora si aggiornano a scatti di 5 fotogrammi, da guardare dal vivo
 - [ ] build.py ora richiede node con @babel/standalone per la versione veloce; senza, produce la pagina di prima
+- [ ] Resa: provata la mappatura dei toni "da pellicola", scartata perché sbiadiva la tavolozza viola/arancio
+- [ ] Resa: tetti piani senza trama; nessun riflesso vero dei palazzi; niente bagliore attorno alle luci
+- [ ] Vista nitida: vista nel browser di prova solo a Genova e Lione; il costo sulla scheda grafica va controllato a schermo intero
 - [ ] Acqua: i riflessi lungo le banchine sono macchie di colore, non l'immagine dei palazzi (le scie delle barche c'erano già)
 - [ ] Ponti in diagonale ancora a gradini, senza arcate curve
 - [ ] Strisce pedonali messe a intervalli regolari, non agli incroci veri

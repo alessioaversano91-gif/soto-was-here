@@ -66,7 +66,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     return m;
   }
   /* Rifinitura grafica: piccoli innesti negli shader Lambert (finestre sugli edifici, strati di terra, profondità dell'acqua). */
-  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 } };
+  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 }, uSky: { value: new THREE.Color('#c7b2ff') }, uSunDir: { value: new THREE.Vector3(0.6, 0.7, 0.3) }, uSunCol: { value: new THREE.Color('#ffc283') } };
   const SHADE = {
     build: `if (abs(vSN.y) < 0.5) {
         bool fx = abs(vSN.x) > 0.5;
@@ -93,14 +93,22 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     water: `if (abs(vSN.y) < 0.5) {
         float dep = (1.0 - vSP.y) * vSI.z;
         diffuseColor.rgb *= 1.0 - 0.62 * clamp(floor(dep / 0.2) / 6.0, 0.0, 1.0);
+      } else {
+        vec2 wp = vWw.xz;
+        vec2 rn = vec2(sin(wp.x * 38.0 + uT * 1.7) + sin((wp.x + wp.y) * 23.0 - uT * 1.3), cos(wp.y * 41.0 - uT * 1.5) + cos((wp.x - wp.y) * 27.0 + uT * 1.1)) * 0.07;
+        vec3 wn = normalize(vec3(rn.x, 1.0, rn.y)), wv = normalize(cameraPosition - vWw);
+        float fr = pow(1.0 - max(dot(wn, wv), 0.0), 3.0);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uSky * vec3(0.55, 0.78, 1.0), 0.03 + 0.3 * fr);
+        float sp = pow(max(dot(wn, normalize(wv + uSunDir)), 0.0), 120.0);
+        totalEmissiveRadiance += uSunCol * sp * 0.8;
       }`
   };
   function shade(m, kind) {
     m.customProgramCacheKey = () => 'soto-' + kind;
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uRow = SOTO_U.uRow; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uT = SOTO_U.uT;
+      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uRow = SOTO_U.uRow; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uT = SOTO_U.uT; sh.uniforms.uSky = SOTO_U.uSky; sh.uniforms.uSunDir = SOTO_U.uSunDir; sh.uniforms.uSunCol = SOTO_U.uSunCol;
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nuniform float uT;\nuniform float uRow;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
+        .replace('#include <common>', '#include <common>\nuniform float uT;\nuniform float uRow;\nvarying vec3 vWw;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
         vSN = normal; vSP = position + 0.5;
         #ifdef USE_INSTANCING
@@ -113,19 +121,40 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         #ifdef USE_INSTANCING
           vec4 sW = instanceMatrix * vec4(position, 1.0);
           transformed.y += step(0.0, position.y) * (sin(sW.x * 2.6 + uT * 1.3) * cos(sW.z * 2.1 - uT * 0.9) + 0.5 * sin((sW.x + sW.z) * 5.3 + uT * 2.1)) * 0.011 / sSy;
-        #endif` : ''));
+        #endif` : '') + `
+        #ifdef USE_INSTANCING
+          vWw = (modelMatrix * (instanceMatrix * vec4(transformed, 1.0))).xyz;
+        #else
+          vWw = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        #endif`);
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
+        .replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform float uT;\nuniform vec3 uSky;\nuniform vec3 uSunDir;\nuniform vec3 uSunCol;\nvarying vec3 vWw;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      ' + SHADE[kind]);
+    };
+    return m;
+  }
+  // Grana fine su terreno, strade e alberi: una variazione di colore calcolata dalla posizione, senza immagini.
+  function shadeW(m, kind, k) {
+    m.customProgramCacheKey = () => 'soto-w-' + kind;
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uK = { value: k };
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;\nvarying vec3 vLP;').replace('#include <begin_vertex>', `#include <begin_vertex>
+        vLP = position;
+        #ifdef USE_INSTANCING
+          vWP = (modelMatrix * (instanceMatrix * vec4(transformed, 1.0))).xyz;
+        #else
+          vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        #endif`);
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uK;\nvarying vec3 vWP;\nvarying vec3 vLP;\nfloat sH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat sNz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(sH(i), sH(i + vec2(1.0, 0.0)), f.x), mix(sH(i + vec2(0.0, 1.0)), sH(i + vec2(1.0, 1.0)), f.x), f.y); }').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      ' + { ground: 'diffuseColor.rgb *= 0.86 + 0.28 * (0.6 * sNz(vWP.xz * uK * 2.6) + 0.4 * sNz(vWP.xz * uK * 11.0));', road: 'diffuseColor.rgb *= 0.9 + 0.2 * sNz(vWP.xz * uK * 16.0);', tree: 'diffuseColor.rgb *= (0.68 + 0.56 * clamp(vLP.y * 1.2 + 0.5, 0.0, 1.0)) * (0.88 + 0.24 * sH(floor(vWP.xz * uK * 10.0) + floor(vWP.y * uK * 10.0)));' }[kind]);
     };
     return m;
   }
   function shadeFp(m, shut) {
     m.customProgramCacheKey = () => 'soto-fp';
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uShut = { value: new THREE.Color(shut || '#4f5d52') };
+      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uShut = { value: new THREE.Color(shut || '#4f5d52') }; sh.uniforms.uSky = SOTO_U.uSky;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aW;\nvarying vec4 vW;').replace('#include <begin_vertex>', '#include <begin_vertex>\n        vW = aW;');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform vec3 uShut;\nvarying vec4 vW;').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform vec3 uShut;\nuniform vec3 uSky;\nvarying vec4 vW;\nfloat sH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat sNz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(sH(i), sH(i + vec2(1.0, 0.0)), f.x), mix(sH(i + vec2(0.0, 1.0)), sH(i + vec2(1.0, 1.0)), f.x), f.y); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
       if (vW.w < 0.5) {
         vec2 sg = vW.xy, sf = fract(sg), sid = floor(sg);
         float gf = step(sg.y, 1.0), win = step(0.24, sf.x) * step(sf.x, 0.76) * step(0.3, sf.y) * step(sf.y, 0.8);
@@ -140,9 +169,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         diffuseColor.rgb = mix(diffuseColor.rgb, ac, (1.0 - fl) * step(0.0, sg.y) * step(0.66, sf.y) * step(sf.y, 0.9) * step(0.55, hs) * uWin);
         float lit = step(mix(0.5, 0.3, uNight), fract(sin(dot(sid + vW.z * 37.0, vec2(41.3, 289.1))) * 9173.3));
         diffuseColor.rgb *= (0.9 + 0.1 * step(0.25, sg.y)) * (0.74 + 0.26 * smoothstep(-0.3, 2.4, sg.y));
-        diffuseColor.rgb *= 1.0 - 0.42 * win * uWin * (1.0 - lit);
+        diffuseColor.rgb *= 0.93 + 0.14 * sNz(sg * vec2(5.0, 7.0) + vW.z * 40.0) * uWin;
+        diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.07, 0.08, 0.13), uSky, 0.2 + 0.45 * sf.y), win * uWin * (1.0 - lit) * 0.85);
         totalEmissiveRadiance += vec3(1.0, 0.74, 0.38) * (win * lit * uWin * (0.8 + 0.9 * uNight) + step(mix(0.9, 0.62, uNight), vW.z) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5))));
-      } else if (vW.w > 1.5) { diffuseColor.rgb *= 1.0 - 0.12 * uWin * mod(floor(vW.y * 4.0), 2.0); }`);
+      } else if (vW.w > 1.5) { float tr = fract(vW.y * 5.0), tc = fract(vW.x * 7.0 + step(0.5, fract(vW.y * 2.5)) * 0.5); diffuseColor.rgb *= 1.0 - uWin * (0.16 * smoothstep(0.7, 1.0, tr) + 0.08 * step(0.88, tc)); diffuseColor.rgb *= 0.94 + 0.12 * sH(floor(vW.xy * vec2(7.0, 5.0)) + vW.z); }`);
     };
     return m;
   }
@@ -1322,7 +1352,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         skirt(2, X(ai), Z(aj), ay, X(bi), Z(bj), by);
       });
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P, 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc, 3, true)); fastNormals(geo);
-      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); m.castShadow = m.receiveShadow = true; return m;
+      const m = new THREE.Mesh(geo, shadeW(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), 'ground', 1 / cs)); m.castShadow = m.receiveShadow = true; return m;
     };
     // Edifici con il contorno reale: un'unica mesh estrusa, con cortili, tetti a falde sulle piante semplici e tetti piani sulle altre.
     const fpMesh = () => {
@@ -1463,7 +1493,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         if (R3.length >= 12) routes.push({ P: R3, hw });
       });
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P.slice(0, nv * 3), 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc.slice(0, nv * 3), 3, true)); geo.setIndex(new THREE.BufferAttribute(IX.slice(0, ni), 1)); fastNormals(geo);
-      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })); m.receiveShadow = true; return m;
+      const m = new THREE.Mesh(geo, shadeW(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), 'road', 1 / cs)); m.receiveShadow = true; return m;
     };
     const rdM = RD ? roadMesh() : null; mark('strade');
     const watTop = new THREE.PlaneGeometry(1, 1); watTop.rotateX(-Math.PI / 2); watTop.translate(0, 0.5, 0);
@@ -1481,8 +1511,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const gabM = inst(gableGeo(), shade(white(), 'roof'), gab, (o, [x, z, y, c, len, wid, ry, rh], col) => { o.position.set(x, y, z); o.rotation.y = ry; o.scale.set(len, rh, wid); col.set(c); });
     const xtrM = inst(B(1, 1, 1), white(), xtr, (o, [x, z, y, q, h], col) => { o.position.set(x, y + h / 2, z); o.scale.set(q, h, q); col.set('#b9b2c2'); });
     const greens = ['#4f7f3a', '#5f9444', '#3f6e33'];
-    const treeM = inst(new THREE.IcosahedronGeometry(0.42, 0), white(), trees, (o, [x, z, y, s], col) => { o.position.set(x, y + 0.42 * s, z); o.scale.setScalar(s); o.rotation.y = r() * 3; col.set(greens[(r() * 3) | 0]); });
-    const coneM = inst(new THREE.ConeGeometry(0.32, 1, 6), white(), cones, (o, [x, z, y, q], col) => { o.position.set(x, y + 0.62 * q, z); o.scale.set(q, q * 1.25, q); col.set(['#2f5a34', '#3a6b3c', '#2a4f3a'][(r() * 3) | 0]); });
+    const treeM = inst(new THREE.IcosahedronGeometry(0.42, 0), FP ? shadeW(white(), 'tree', 1 / cs) : white(), trees, (o, [x, z, y, s], col) => { o.position.set(x, y + 0.42 * s, z); o.scale.setScalar(s); o.rotation.y = r() * 3; col.set(greens[(r() * 3) | 0]); });
+    const coneM = inst(new THREE.ConeGeometry(0.32, 1, 6), FP ? shadeW(white(), 'tree', 1 / cs) : white(), cones, (o, [x, z, y, q], col) => { o.position.set(x, y + 0.62 * q, z); o.scale.set(q, q * 1.25, q); col.set(['#2f5a34', '#3a6b3c', '#2a4f3a'][(r() * 3) | 0]); });
     (FP ? [terrM, watM, brM, fpM, treeM, coneM] : [terrM, watM, brM, bldM, roofM, gabM, treeM, coneM]).forEach((m) => g.add(m)); if (rdM) g.add(rdM);
     if (FP && (id === 'genova' || id === 'marsiglia')) {
       const D = Math.max(NX, NZ) * cs * 0.16, P = [], A = [], c = WDEP[5], sea = (i, j) => G.t[j * NX + i] === 'w' && gy(j * NX + i) < 0.05, yw = (i, j) => gy(j * NX + i) - 0.125;
@@ -1787,10 +1817,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       this.stars = [0, 1].map((n) => { const c = document.createElement('canvas'); c.className = 'soto-stars' + n; c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated'; return c; });
       this.bg = bg; cityEl.appendChild(bg); this.stars.forEach((c) => cityEl.appendChild(c));
       cityEl.appendChild(R.domElement);
+      const vg = document.createElement('div'); vg.style.cssText = 'position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 75% at 50% 52%, rgba(8,5,18,0) 55%, rgba(8,5,18,0.34) 100%)'; cityEl.appendChild(vg);
       this.scene = new THREE.Scene(); this.scene.fog = new THREE.Fog('#b99ad2', 60, 300);
       this.camera = new THREE.PerspectiveCamera(28, 1, 1, 500);
       this.hemi = new THREE.HemisphereLight(); this.sun = new THREE.DirectionalLight();
-      this.sun.castShadow = true; const sm = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 1024 : 2048; this.sun.shadow.mapSize.set(sm, sm);
+      this.sun.castShadow = true; const sm = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 1024 : 4096; this.sun.shadow.mapSize.set(sm, sm);
       Object.assign(this.sun.shadow.camera, { left: -20, right: 20, top: 20, bottom: -20, near: 1, far: 80 });
       this.scene.add(this.hemi, this.sun, this.sun.target);
       const Ct = this.controls = new (THREE.OrbitControls || MiniOrbit)(this.camera, R.domElement);
@@ -1835,7 +1866,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     resize() {
       const w = this.cityEl.clientWidth, h = this.cityEl.clientHeight; if (!w || !h) return;
       const px = Math.max(1, this.opts.pixel | 0);
-      this.renderer.setPixelRatio(px === 1 ? Math.min(2, devicePixelRatio) : 1 / px);
+      this.renderer.setPixelRatio(px === 1 ? Math.min(1.5, devicePixelRatio) : 1 / px); this.renderer.domElement.style.imageRendering = px === 1 ? 'auto' : 'pixelated';
       this.renderer.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
       this.drawStars(w, h);
     }
@@ -1937,7 +1968,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         SOTO_U.uWin.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 2) / 1.5) : cl01((ppb - 4) / 3);
         if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'alba', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
         if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; this.scene.fog.color.lerp(G2.fog, q); }
-        SOTO_U.uT.value = this.reduce ? 0 : (t / 1000) % 1000;
+        SOTO_U.uT.value = this.reduce ? 0 : (t / 1000) % 1000; SOTO_U.uSky.value.copy(this.hemi.color); SOTO_U.uSunDir.value.copy(this.sun.position).normalize(); SOTO_U.uSunCol.value.copy(this.sun.color).multiplyScalar(Math.min(1, this.sun.intensity));
         this.scene.fog.near = cd; this.scene.fog.far = cd + (c.half || 20) * 4;
         if (c.lampMat) { const nv = SOTO_U.uNight.value; c.lampMat.emissiveIntensity = Math.max(0, 0.3 + 0.9 * nv); c.poolMat.opacity = 0.3 * cl01(0.12 + nv); }
         if (c.life && !this.reduce) c.life(t);
@@ -2227,7 +2258,7 @@ class SotoWasHere extends React.Component {
     super(p);
     this.rootRef = React.createRef(); this.cityRef = React.createRef(); this.euroRef = React.createRef();
     const ui = safeGet(UIKEY) || {};
-    this.state = { points: [], loaded: false, view: ui.view === 'city' ? 'city' : 'home', city: ui.city || 'genova', mode: 'explore', light: 'tramonto', lang: ui.lang || 'it', sel: null, draft: null, filter: null, panel: true, draftLang: 'it', pop: null, cityStatus: null, user: null, login: null, dataModal: null, saving: false, tick: 0 };
+    this.state = { points: [], loaded: false, view: ui.view === 'city' ? 'city' : 'home', city: ui.city || 'genova', mode: 'explore', light: 'tramonto', hd: !(typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches), lang: ui.lang || 'it', sel: null, draft: null, filter: null, panel: true, draftLang: 'it', pop: null, cityStatus: null, user: null, login: null, dataModal: null, saving: false, tick: 0 };
   }
   get api() { return this.props.api || {}; }
   componentDidMount() {
@@ -2244,7 +2275,7 @@ class SotoWasHere extends React.Component {
     window.addEventListener('resize', this.onResize);
   }
   componentWillUnmount() { clearTimeout(this.bt); clearTimeout(this.mt); if (this.eng) this.eng.dispose(); if (typeof this.unsub === 'function') this.unsub(); window.removeEventListener('resize', this.onResize); }
-  engOpts() { const o = this.props.options || {}; return { pixel: o.pixelSize ?? 2, light: o.light ?? 'tramonto', autoRotate: o.autoRotate ?? true }; }
+  engOpts() { const o = this.props.options || {}; return { pixel: this.state.hd ? 1 : o.pixelSize ?? 2, light: o.light ?? 'tramonto', autoRotate: o.autoRotate ?? true }; }
   boot() {
     if (!(window.THREE && window.SotoEngine && this.cityRef.current)) { this.bt = setTimeout(() => this.boot(), 100); return; }
     this.eng = new window.SotoEngine(this.rootRef.current, this.cityRef.current, this.euroRef.current, this.engOpts());
@@ -2287,6 +2318,7 @@ class SotoWasHere extends React.Component {
     }, 600);
   }
   setLight(l) { this.setState({ light: l }); if (this.eng) this.eng.setOptions({ light: l }); }
+  setHd(v) { this.setState({ hd: v }); if (this.eng) this.eng.setOptions({ pixel: v ? 1 : (this.props.options || {}).pixelSize ?? 2 }); }
   isNarrow() { const el = this.rootRef.current; return (el ? el.clientWidth : typeof innerWidth === 'undefined' ? 1200 : innerWidth) <= 860; }
   select(p) { const w = this.pos(p); this.setState({ sel: p.id }); if (this.eng) this.eng.flyTo(w.x, w.z, 11); }
   edit(p) { const w = this.pos(p); this.setState((s) => ({ draft: { id: p.id, city: p.city, member: p.member, titleIt: p.title.it || '', titleEn: p.title.en || '', textIt: p.text.it || '', textEn: p.text.en || '', date: p.date, photo: p.photo, photoFile: null, status: p.status, x: w.x, z: w.z, lat: p.lat, lon: p.lon }, pop: null, draftLang: s.lang })); if (this.eng) this.eng.flyTo(w.x, w.z, 16); }
@@ -2639,6 +2671,7 @@ class SotoWasHere extends React.Component {
               {[['alba', '\u263C', 'Alba', 'Dawn'], ['giorno', '\u2600', 'Giorno', 'Day'], ['tramonto', '\u25D0', 'Tramonto', 'Sunset'], ['notte', '\u263E', 'Notte', 'Night'], ['auto', '\u21BB', 'Ciclo automatico', 'Auto cycle']].map(([id, ic, it, en]) => (
                 <button key={id} onClick={() => this.setLight(id)} title={L === 'it' ? it : en} aria-label={L === 'it' ? it : en} aria-pressed={s.light === id} style={st(`width:44px;height:38px;border:0;border-bottom:1px solid #2e2347;background:${s.light === id ? '#2e2347' : 'none'};color:${s.light === id ? '#ffd98a' : '#9a96a6'};font-size:16px;cursor:pointer`)}>{ic}</button>
               ))}
+              <button onClick={() => this.setHd(!s.hd)} title={L === 'it' ? (s.hd ? 'Passa allo stile pixel' : 'Passa alla vista nitida') : s.hd ? 'Switch to pixel style' : 'Switch to sharp view'} aria-label={L === 'it' ? 'Vista nitida' : 'Sharp view'} aria-pressed={s.hd} style={st(`width:44px;height:34px;border:0;background:${s.hd ? '#2e2347' : 'none'};color:${s.hd ? '#ffd98a' : '#9a96a6'};font-family:Silkscreen,monospace;font-size:11px;cursor:pointer`)}>{s.hd ? 'HD' : 'PX'}</button>
             </div>
             <div style={st('position:absolute;right:clamp(12px,2vw,24px);bottom:24px;display:flex;flex-direction:column;border:1px solid #2e2347;border-radius:12px;overflow:hidden;background:rgba(17,14,25,0.94)')}>
               <button onClick={() => this.eng && this.eng.zoom(0.75)} aria-label="Zoom +" style={st('width:44px;height:44px;border:0;border-bottom:1px solid #2e2347;background:none;color:#f1eff5;font-size:20px;cursor:pointer')}>+</button>
