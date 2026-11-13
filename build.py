@@ -20,12 +20,22 @@ LIBS = '''<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/thre
 ERR = '''document.body.innerHTML = '<pre style="color:#f1eff5;padding:16px;white-space:pre-wrap">' + e.message + '\\n' + (e.stack || '') + '</pre>';'''
 PREP = lambda c: re.sub(r'^import .*$', '', c, flags=re.M).replace('window.THREE = Object.assign({}, THREE_NS);', 'window.THREE = Object.assign({}, THREE_UMD);').replace('export default function App', 'window.__App = function App')
 
-def compiled():
+def compiled(split=False):
     """Sposta i dati grandi fuori dal codice e traduce il JSX. Restituisce (dati, codice) oppure None."""
     data, lines = [], []
     for ln in src.split('\n'):
         m = re.match(r'^(\s*)const (\w+) = (.*);$', ln) if len(ln) > 20000 else None
-        if m:
+        if m and split and m.group(2) == 'EMBED_CITY':
+            # Sul sito i dati di ogni citta stanno in un file a parte, scaricato solo quando la si apre.
+            import hashlib
+            (root / 'data').mkdir(exist_ok=True)
+            urls = {}
+            for cid, blob in re.findall(r"(\w+): '([^']+)'", m.group(3)):
+                (root / 'data' / (cid + '.txt')).write_text(blob, encoding='ascii')
+                urls[cid] = 'data/%s.txt?v=%s' % (cid, hashlib.sha1(blob.encode()).hexdigest()[:8])
+            data.append('"EMBED_CITY":' + json.dumps(urls))
+            lines.append('%sconst %s = window.__SOTO_DATA.%s;' % (m.group(1), m.group(2), m.group(2)))
+        elif m:
             data.append('%s:%s' % (json.dumps(m.group(2)), m.group(3)))
             lines.append('%sconst %s = window.__SOTO_DATA.%s;' % (m.group(1), m.group(2), m.group(2)))
         else:
@@ -40,8 +50,8 @@ def compiled():
     assert '</script' not in out
     return 'window.__SOTO_DATA={' + ','.join(data) + '};', out
 
-def body(extra=''):
-    c = compiled()
+def body(extra='', split=False):
+    c = compiled(split)
     if c:
         return LIBS, '<div id="root"></div>\n<script>' + c[0] + '</script>\n' + extra + '<script>\n(function (React, THREE_UMD) {\n  try {\n' + c[1] + '\n    ReactDOM.createRoot(document.getElementById(\'root\')).render(React.createElement(window.__App));\n  } catch (e) {\n    ' + ERR + '\n  }\n})(window.React, window.THREE);\n</script>\n'
     return LIBS + '<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>\n', '<div id="root"></div>\n<script type="text/plain" id="soto-src">' + src + '</script>\n' + extra + '''<script>
@@ -61,7 +71,7 @@ def body(extra=''):
 '''
 
 STYLE = '<style>html,body{margin:0;height:100%;background:#0b0a0f;color:#f1eff5;color-scheme:dark}#root{height:100%}</style>\n'
-libs, bd = body()
+libs, bd = body(split=True)
 page = '''<!doctype html>
 <html lang="it">
 <head>

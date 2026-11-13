@@ -136,3 +136,15 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Posizione allineata al contorno reale dell'edificio per: San Lorenzo, Galata, Carignano, Principe, Fourvière, Saint-Jean, Hôtel-Dieu, Gare Part-Dieu, Castello di San Giorgio, Rotonda, Casa del Mantegna, Fort Saint-Jean, Saint-Victor, Château d'If, Cité Radieuse, Saint-Charles
 - [ ] Posizione NON verificata (nessun contorno riconoscibile nei dati, lasciata com'era): Lanterna, De Ferrari, Porta Soprana, Brignole, Teatri romani, Bellecour, Cité Internationale, Tour Part-Dieu, Palazzo Ducale, Sant'Andrea, Gabbia, Bibiena, Palazzo Te, La Major, Pharo, Longchamp
 - [ ] Non rivisti in immagine dopo la modifica: Porta Soprana, Brignole, Carignano, Fourvière, Bibiena, Palazzo Te, Mantegna, Saint-Victor, Pharo, If, Cité Radieuse, Saint-Charles, Longchamp
+
+## Giro del 13 novembre: posizioni, caricamento, tetti e facciate
+- [x] Posizioni verificate sulla mappa reale (ricerca per nome su OpenStreetMap) per tutti i monumenti; corretti quelli fuori posto (Sant'Andrea, Bibiena, Gabbia, Palazzo Te, Mantegna, Rotonda, Pharo, Cité Internationale, Bigo, Carignano, Fort Saint-Jean, Gare Part-Dieu e ritocchi minori)
+- [x] Corrette anche alcune etichette senza modello: Piazza Sordello, Piazza Virgiliana, Porta Giulia, Ponte di San Giorgio, Castello d'Albertis, Castelletto, Piazza della Vittoria, Mur des Canuts, Vallon des Auffes, Cours Julien
+- [ ] Etichette non controllate: quartieri e zone ampie (Boccadasse, Righi, Croix-Rousse, Le Panier, ecc.) e Fresque des Lyonnais (la ricerca ha restituito un altro murale)
+- [x] Sito: i dati di ogni città sono in un file a parte (cartella data/), scaricato solo all'apertura; pagina iniziale da 4,7 MB a 0,7 MB. L'artifact resta in un unico file
+- [x] I dati partono già al passaggio del mouse o al clic sulla città, durante lo zoom della mappa
+- [x] Costruzione della città a tappe: la pagina non resta bloccata in un colpo solo (il tempo totale è lo stesso)
+- [ ] Non fatto: costruzione degli edifici in sottofondo (worker); tempi reali su telefono non misurati
+- [x] Facciate in quattro stili: palazzo tradizionale (con marcapiano, bugnato, pluviali, persiane non ovunque), condominio moderno con balconi, vetrata continua per le torri, capannone
+- [x] Tetti piani: guaina a teli, terrazze piastrellate, tetti verdi; parapetto; impianti, pannelli solari, cisterne, torrini scala, antenne sulle torri
+- [ ] Visti solo nel browser di prova. Non confermati in immagine: bancarelle dei mercati, traghetti e treni in movimento, imbocchi delle gallerie, panni stesi, zoom della mappa
