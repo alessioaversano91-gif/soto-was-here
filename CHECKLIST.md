@@ -129,3 +129,10 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - Suoni d'ambiente attivabili: mare, città, gabbiani
 - Percorso animato tra i punti di una città, in ordine di data
 - Modalità foto: nasconde l'interfaccia per fare screenshot del diorama
+
+## Controllo monumenti (dimensione, altezza, posizione)
+- [x] Dimensioni riportate alla scala reale delle città: a Genova, Lione e Marsiglia quasi tutti i monumenti erano circa il doppio del vero; ingranditi quelli troppo piccoli (Vélodrome, Hôtel-Dieu, Fort Saint-Jean)
+- [x] Altezza regolabile per ogni monumento, separata dalla larghezza (torri più slanciate, stazioni e palazzi più bassi)
+- [x] Posizione allineata al contorno reale dell'edificio per: San Lorenzo, Galata, Carignano, Principe, Fourvière, Saint-Jean, Hôtel-Dieu, Gare Part-Dieu, Castello di San Giorgio, Rotonda, Casa del Mantegna, Fort Saint-Jean, Saint-Victor, Château d'If, Cité Radieuse, Saint-Charles
+- [ ] Posizione NON verificata (nessun contorno riconoscibile nei dati, lasciata com'era): Lanterna, De Ferrari, Porta Soprana, Brignole, Teatri romani, Bellecour, Cité Internationale, Tour Part-Dieu, Palazzo Ducale, Sant'Andrea, Gabbia, Bibiena, Palazzo Te, La Major, Pharo, Longchamp
+- [ ] Non rivisti in immagine dopo la modifica: Porta Soprana, Brignole, Carignano, Fourvière, Bibiena, Palazzo Te, Mantegna, Saint-Victor, Pharo, If, Cité Radieuse, Saint-Charles, Longchamp
