@@ -166,3 +166,10 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Nessuna geometria aggiunta: è tutto nel materiale; i tratti più fini compaiono solo quando si è abbastanza vicini
 - [ ] Visto solo nel browser di prova (a bassa definizione); costo sulla fluidità non misurato sul computer reale né su telefono
 - [ ] Non fatto: abbaini e lucernari sui tetti a falde, portici continui, insegne con scritte
+
+## Tetti a falde (13 novembre, notte)
+- [x] Abbaini lungo le mansarde a Lione e Marsiglia, con cornice chiara e luce accesa di notte su una parte
+- [x] Lucernari sparsi sui tetti a padiglione in tutte le città
+- [x] Tegole con passo reale (prima erano stirate sulla lunghezza del lato) e linea di gronda
+- [ ] Sono disegnati sulla falda, non sporgono: visti molto da vicino e di lato risultano piatti
+- [ ] Visto solo nel browser di prova (Lione giorno e notte, Mantova giorno); Marsiglia e Genova non riviste
