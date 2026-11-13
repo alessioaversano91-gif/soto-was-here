@@ -66,7 +66,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     return m;
   }
   /* Rifinitura grafica: piccoli innesti negli shader Lambert (finestre sugli edifici, strati di terra, profondità dell'acqua). */
-  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 }, uSky: { value: new THREE.Color('#c7b2ff') }, uSunDir: { value: new THREE.Vector3(0.6, 0.7, 0.3) }, uSunCol: { value: new THREE.Color('#ffc283') } };
+  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 }, uSky: { value: new THREE.Color('#c7b2ff') }, uSunDir: { value: new THREE.Vector3(0.6, 0.7, 0.3) }, uSunCol: { value: new THREE.Color('#ffc283') }, uCl: { value: new THREE.Vector2(0.2, 0.2) } };
+  // Ombre di nuvole che scorrono su terreno, strade ed edifici (stessa formula in tutti i materiali).
+  const CLOUD = '\nuniform vec2 uCl;\nfloat cH(vec2 p) { return fract(sin(dot(p, vec2(91.7, 283.3))) * 43758.5453); }\nfloat cN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(cH(i), cH(i + vec2(1.0, 0.0)), f.x), mix(cH(i + vec2(0.0, 1.0)), cH(i + vec2(1.0, 1.0)), f.x), f.y); }\nfloat clSh(vec2 w) { vec2 p = w * uCl.x + vec2(uT * 0.03, uT * 0.011); return 1.0 - uCl.y * smoothstep(0.5, 0.74, cN(p) * 0.62 + cN(p * 2.3 + 7.0) * 0.38); }';
   const SHADE = {
     build: `if (abs(vSN.y) < 0.5) {
         bool fx = abs(vSN.x) > 0.5;
@@ -106,7 +108,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   function shade(m, kind) {
     m.customProgramCacheKey = () => 'soto-' + kind;
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uRow = SOTO_U.uRow; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uT = SOTO_U.uT; sh.uniforms.uSky = SOTO_U.uSky; sh.uniforms.uSunDir = SOTO_U.uSunDir; sh.uniforms.uSunCol = SOTO_U.uSunCol;
+      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uRow = SOTO_U.uRow; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uT = SOTO_U.uT; sh.uniforms.uSky = SOTO_U.uSky; sh.uniforms.uSunDir = SOTO_U.uSunDir; sh.uniforms.uSunCol = SOTO_U.uSunCol; sh.uniforms.uCl = SOTO_U.uCl;
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nuniform float uT;\nuniform float uRow;\nvarying vec3 vWw;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -128,8 +130,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
           vWw = (modelMatrix * vec4(transformed, 1.0)).xyz;
         #endif`);
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform float uT;\nuniform vec3 uSky;\nuniform vec3 uSunDir;\nuniform vec3 uSunCol;\nvarying vec3 vWw;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;')
-        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      ' + SHADE[kind]);
+        .replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform float uT;\nuniform vec3 uSky;\nuniform vec3 uSunDir;\nuniform vec3 uSunCol;\nvarying vec3 vWw;\nvarying vec3 vSN;\nvarying vec3 vSP;\nvarying vec3 vSI;\nvarying vec2 vSC;' + CLOUD)
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      ' + SHADE[kind] + '\n      diffuseColor.rgb *= clSh(vWw.xz);');
     };
     return m;
   }
@@ -137,7 +139,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   function shadeW(m, kind, k) {
     m.customProgramCacheKey = () => 'soto-w-' + kind;
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uK = { value: k };
+      sh.uniforms.uK = { value: k }; sh.uniforms.uCl = SOTO_U.uCl; sh.uniforms.uT = SOTO_U.uT;
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWP;\nvarying vec3 vLP;').replace('#include <begin_vertex>', `#include <begin_vertex>
         vLP = position;
         #ifdef USE_INSTANCING
@@ -145,16 +147,17 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         #else
           vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;
         #endif`);
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uK;\nvarying vec3 vWP;\nvarying vec3 vLP;\nfloat sH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat sNz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(sH(i), sH(i + vec2(1.0, 0.0)), f.x), mix(sH(i + vec2(0.0, 1.0)), sH(i + vec2(1.0, 1.0)), f.x), f.y); }').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      ' + { ground: 'diffuseColor.rgb *= 0.86 + 0.28 * (0.6 * sNz(vWP.xz * uK * 2.6) + 0.4 * sNz(vWP.xz * uK * 11.0));', road: 'diffuseColor.rgb *= 0.9 + 0.2 * sNz(vWP.xz * uK * 16.0);', tree: 'diffuseColor.rgb *= (0.68 + 0.56 * clamp(vLP.y * 1.2 + 0.5, 0.0, 1.0)) * (0.88 + 0.24 * sH(floor(vWP.xz * uK * 10.0) + floor(vWP.y * uK * 10.0)));' }[kind]);
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uK;\nuniform float uT;' + CLOUD + '\nvarying vec3 vWP;\nvarying vec3 vLP;\nfloat sH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat sNz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(sH(i), sH(i + vec2(1.0, 0.0)), f.x), mix(sH(i + vec2(0.0, 1.0)), sH(i + vec2(1.0, 1.0)), f.x), f.y); }').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      ' + { ground: 'diffuseColor.rgb *= 0.86 + 0.28 * (0.6 * sNz(vWP.xz * uK * 2.6) + 0.4 * sNz(vWP.xz * uK * 11.0));', road: 'diffuseColor.rgb *= 0.9 + 0.2 * sNz(vWP.xz * uK * 16.0);', tree: 'diffuseColor.rgb *= (0.68 + 0.56 * clamp(vLP.y * 1.2 + 0.5, 0.0, 1.0)) * (0.88 + 0.24 * sH(floor(vWP.xz * uK * 10.0) + floor(vWP.y * uK * 10.0)));' }[kind] + '\n      diffuseColor.rgb *= clSh(vWP.xz);');
     };
     return m;
   }
   function shadeFp(m, shut) {
     m.customProgramCacheKey = () => 'soto-fp';
     m.onBeforeCompile = (sh) => {
-      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uShut = { value: new THREE.Color(shut || '#4f5d52') }; sh.uniforms.uSky = SOTO_U.uSky;
-      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aW;\nvarying vec4 vW;').replace('#include <begin_vertex>', '#include <begin_vertex>\n        vW = aW;');
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform vec3 uShut;\nuniform vec3 uSky;\nvarying vec4 vW;\nfloat sH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat sNz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(sH(i), sH(i + vec2(1.0, 0.0)), f.x), mix(sH(i + vec2(0.0, 1.0)), sH(i + vec2(1.0, 1.0)), f.x), f.y); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      sh.uniforms.uWin = SOTO_U.uWin; sh.uniforms.uNight = SOTO_U.uNight; sh.uniforms.uShut = { value: new THREE.Color(shut || '#4f5d52') }; sh.uniforms.uSky = SOTO_U.uSky; sh.uniforms.uCl = SOTO_U.uCl; sh.uniforms.uT = SOTO_U.uT;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aW;\nvarying vec4 vW;\nvarying vec2 vWc;').replace('#include <begin_vertex>', '#include <begin_vertex>\n        vW = aW; vWc = (modelMatrix * vec4(transformed, 1.0)).xz;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uWin;\nuniform float uNight;\nuniform vec3 uShut;\nuniform vec3 uSky;\nuniform float uT;\nvarying vec4 vW;\nvarying vec2 vWc;' + CLOUD + '\nfloat sH(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\nfloat sNz(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(sH(i), sH(i + vec2(1.0, 0.0)), f.x), mix(sH(i + vec2(0.0, 1.0)), sH(i + vec2(1.0, 1.0)), f.x), f.y); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      diffuseColor.rgb *= clSh(vWc);
       if (vW.w < 0.5) {
         float sty = floor(vW.z + 0.0001), bz = vW.z - sty;
         vec2 sg = vW.xy, sf = fract(sg), sid = floor(sg);
@@ -1249,6 +1252,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   };
   // Costruzione a tappe: tra una tappa e l'altra la pagina respira (niente blocco lungo su telefono).
   function* buildReal(id, G) {
+    let occ = null, ONX = 0, ONZ = 0, oc = 0, mks = [];
     initCol();
     const p = PAL[id], r = rng(p.seed + 99), g = new THREE.Group(), NX = G.NX, NZ = G.NZ;
     const RD = !!(G.fp && G.rd); let corA = null;
@@ -1413,6 +1417,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const ar0 = Math.abs(sA(O)) / (wpm * wpm), s2 = (sd * 7.31) % 1, sty = tall ? 2 : ar0 > 2500 && hm <= 14 ? 3 : s2 < (hm >= 26 ? 0.6 : hm >= 18 ? 0.25 : hm >= 12 ? 0.08 : 0) * (tn ? 0.5 : 1) ? 1 : 0, sdW = sd + sty;
         if (sty === 3) col.lerp(GREY, 0.45);
         const wv0 = nv;
+        { if (!occ) { oc = cs / 3; ONX = NX * 3; ONZ = NZ * 3; occ = new Uint8Array(ONX * ONZ); }
+          let ax = 1e9, bx = -1e9, az = 1e9, bz = -1e9; O.forEach((q) => { ax = Math.min(ax, q[0]); bx = Math.max(bx, q[0]); az = Math.min(az, q[1]); bz = Math.max(bz, q[1]); });
+          for (let j = Math.max(0, Math.floor((az - oz) / oc)); j <= Math.min(ONZ - 1, Math.floor((bz - oz) / oc)); j++) for (let i = Math.max(0, Math.floor((ax - ox) / oc)); i <= Math.min(ONX - 1, Math.floor((bx - ox) / oc)); i++) occ[j * ONX + i] = 1; }
         rings.forEach((R, rn) => { for (let a = 0; a < R.length; a++) { const A = R[a], Bp = R[(a + 1) % R.length], len = hyp(Bp[0] - A[0], Bp[1] - A[1]); if (len < 1e-5) continue; const nw = Math.max(1, Math.round(len / pitch)), u0 = (a + rn * 7) * 16; const v0 = V(A[0], yB, A[1], u0, vB, sdW, 0), v1 = V(Bp[0], yB, Bp[1], u0 + nw, vB, sdW, 0), v2 = V(Bp[0], yR, Bp[1], u0 + nw, rows, sdW, 0), v3 = V(A[0], yR, A[1], u0, rows, sdW, 0); tri(v0, v1, v2); tri(v0, v2, v3); } });
         const wvN = nv;
         let ar = 0, convex = nr === 1 && O.length <= 8, sg = 0;
@@ -1604,6 +1611,34 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     }
     if (brx.length) g.add(inst(B(1, 1, 1), white(), brx, (o, [x, y, z, sx, sy, sz, c], col) => { o.position.set(x, y, z); o.scale.set(sx, sy, sz); col.set(c); }));
     // Dettagli che compaiono solo da vicino: segnaletica, lampioni, binari, volumi sui tetti.
+    // Orizzonte: oltre il bordo la campagna continua, sale in colline e si perde nella foschia.
+    if (FP) {
+      const W = NX * cs, H = NZ * cs, x0 = ox, z0 = oz, x1 = ox + W, z1 = oz + H, K = 14, Dm = Math.max(W, H) * 0.95, ins = Math.min(W, H) * 0.3, c01 = (v) => Math.max(0, Math.min(1, v));
+      const AMP = { genova: [1, 0.9, 0.55, 0.2, 0, 0.15, 0.5, 0.9], lione: [0.45, 0.25, 0.12, 0.15, 0.25, 0.5, 0.7, 0.6], mantova: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], marsiglia: [0.6, 0.8, 0.85, 0.9, 0.7, 0.2, 0, 0.3] }[id] || [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4];
+      const HM = ({ genova: 700, lione: 280, mantova: 14, marsiglia: 480 }[id] || 200) * wpm * 1.3, WH = new THREE.Color('#948a5c'), HZC = new THREE.Color('#8f8ca8'), col = new THREE.Color();
+      const PAL = ({ genova: ['#56704a', '#3c5a3c', '#6f746c'], lione: ['#6f7d54', '#4a6440', '#666f62'], mantova: ['#74834f', '#66794a', '#66794a'], marsiglia: ['#857f66', '#6b7556', '#a39d8c'] }[id] || ['#66794a', '#4a6440', '#6f746c']).map((q) => new THREE.Color(q));
+      const hasSea = id === 'genova' || id === 'marsiglia', cells = [];
+      for (let i = 0; i < NX; i++) cells.push([i, 0, x0 + (i + 0.5) * cs, z0]); for (let j = 0; j < NZ; j++) cells.push([NX - 1, j, x1, z0 + (j + 0.5) * cs]);
+      for (let i = NX - 1; i >= 0; i--) cells.push([i, NZ - 1, x0 + (i + 0.5) * cs, z1]); for (let j = NZ - 1; j >= 0; j--) cells.push([0, j, x0, z0 + (j + 0.5) * cs]);
+      const stp = Math.max(1, Math.round(cells.length / 220)), S = [];
+      for (let q = 0; q < cells.length; q += stp) { const [i, j, px, pz] = cells[q], k = j * NX + i, wat = G.t[k] === 'w', qx = Math.max(x0 + ins, Math.min(x1 - ins, px)), qz = Math.max(z0 + ins, Math.min(z1 - ins, pz)), l = Math.hypot(px - qx, pz - qz) || 1; S.push({ px, pz, nx: (px - qx) / l, nz: (pz - qz) / l, y: wat ? gy(k) - 0.125 : gy(k), wat, sea: wat && hasSea && gy(k) < 0.05 }); }
+      const N = S.length, dw = S.map((q) => (q.wat ? 0 : 99)); for (let q = 0; q < 2 * N; q++) dw[q % N] = Math.min(dw[q % N], dw[(q + N - 1) % N] + 1); for (let q = 2 * N; q > 0; q--) dw[q % N] = Math.min(dw[q % N], dw[(q + 1) % N] + 1);
+      const hh = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+      const nz2 = (x, z) => { const i = Math.floor(x), j = Math.floor(z), u = x - i, v = z - j, su = u * u * (3 - 2 * u), sv = v * v * (3 - 2 * v); return (hh(i, j) * (1 - su) + hh(i + 1, j) * su) * (1 - sv) + (hh(i, j + 1) * (1 - su) + hh(i + 1, j + 1) * su) * sv; };
+      const amp = (nx, nz) => { const t = (Math.atan2(nx, -nz) / (Math.PI / 4) + 8) % 8, a = Math.floor(t), f = t - a; return AMP[a % 8] * (1 - f) + AMP[(a + 1) % 8] * f; };
+      const Vt = S.map((q, qn) => { const am = amp(q.nx, q.nz) * Math.min(1, dw[qn] / 7), row = []; for (let k = 0; k <= K; k++) {
+        const d = Dm * Math.pow(k / K, 1.35), x = q.px + q.nx * d, z = q.pz + q.nz * d, f = 9 / Dm, n = 0.55 * nz2(x * f + 31, z * f + 17) + 0.3 * nz2(x * f * 2.3, z * f * 2.3) + 0.15 * nz2(x * f * 5.1 + 9, z * f * 5.1), t = c01((k / K - 0.04) / 0.7);
+        const wk = q.wat ? c01((k - 2) / 3) : 1, rise = wk * (t * t * (3 - 2 * t) * am * HM * (0.12 + 1.9 * n * n) + (k ? (n - 0.5) * HM * 0.06 * am : 0)), hv = nz2(x * f * 3.1 + 5, z * f * 3.1 + 2);
+        col.copy(PAL[0]).lerp(PAL[1], c01(rise / (HM * 0.45))).lerp(PAL[2], c01((rise / HM - 0.75) / 0.4)); if (rise < HM * 0.12) col.lerp(WH, 0.6 * c01((hv - 0.5) * 4)); col.multiplyScalar(0.8 + 0.12 * nz2(x * f * 6.3, z * f * 6.3)); if (q.wat) col.lerp(WDEP[3], 1 - wk); col.lerp(HZC, 0.6 * Math.pow(k / K, 1.2));
+        row.push([x, q.y - (k ? 0 : 0.02) + rise, z, col.r, col.g, col.b, q.sea ? 0 : Math.min(1, (K - k) / 5)]); } return row; });
+      const P = [], A = [], put = (v) => { P.push(v[0], v[1], v[2]); A.push(v[3], v[4], v[5], v[6]); };
+      for (let q = 0; q < N; q++) { const a = Vt[q], b = Vt[(q + 1) % N]; for (let k = 0; k < K; k++) { if (a[k][6] + b[k][6] + a[k + 1][6] + b[k + 1][6] <= 0) continue; [a[k], a[k + 1], b[k + 1], a[k], b[k + 1], b[k]].forEach(put); } }
+      if (P.length) {
+        const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); ge.setAttribute('color', new THREE.Float32BufferAttribute(A, 4)); ge.computeVertexNormals();
+        if (ge.attributes.normal.array[1] < 0) { const ix = []; for (let q = 0; q < P.length / 3; q += 3) ix.push(q, q + 2, q + 1); ge.setIndex(ix); ge.computeVertexNormals(); const nn = ge.attributes.normal.array; for (let q = 0; q < nn.length; q += 3) if (nn[q + 1] < 0) { nn[q] = -nn[q]; nn[q + 1] = -nn[q + 1]; nn[q + 2] = -nn[q + 2]; } }
+        const hz = new THREE.Mesh(ge, new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, side: THREE.DoubleSide })); hz.renderOrder = -2; hz.frustumCulled = false; g.add(hz);
+      }
+    }
     const det = new THREE.Group(); g.add(det); if (!FP) det.add(xtrM);
     walls.forEach(([x, y, z, ew]) => dbox.push([x, y + cs * 0.07, z, ew ? cs : cs * 0.14, cs * 0.14, ew ? cs * 0.14 : cs, '#b9ad9c']));
     const quiet = (m) => { m.castShadow = false; m.frustumCulled = false; return m; };
@@ -1637,7 +1672,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     // Mercati: file di bancarelle con le tende colorate.
     ({ genova: [[44.4066, 8.9402], [44.4108, 8.9292]], lione: [[45.7628, 4.8328], [45.7742, 4.8325]], mantova: [[45.1586, 10.7966]], marsiglia: [[43.2953, 5.3746], [43.2962, 5.3802]] }[id] || []).forEach(([la, lo]) => {
       const w = M.toWorld(la, lo), AW = ['#d24b3a', '#f1eff5', '#3f9a6c', '#e0b23a', '#3f78c4'];
-      for (let a = 0; a < 5; a++) for (let b = 0; b < 2; b++) { const x = w.x + (a - 2) * cs * 0.34, z = w.z + (b - 0.5) * cs * 0.5, k = Math.max(0, Math.min(NZ - 1, Math.floor((z - oz) / cs))) * NX + Math.max(0, Math.min(NX - 1, Math.floor((x - ox) / cs))), y = top[k]; if (G.t[k] === 'w' || G.t[k] === 'b') continue; dbox.push([x, y + cs * 0.07, z, cs * 0.24, cs * 0.14, cs * 0.16, '#8d6a4c']); dbox.push([x, y + cs * 0.24, z, cs * 0.3, cs * 0.05, cs * 0.24, AW[(a + b * 2) % 5]]); peop.push([x + cs * 0.05, y, z + (b ? 1 : -1) * cs * 0.2]); }
+      const m = FP ? Math.min(cs, 9 * wpm) : cs, free = (x, z) => { if (!occ) return true; const i = Math.floor((x - ox) / oc), j = Math.floor((z - oz) / oc); return i >= 0 && j >= 0 && i < ONX && j < ONZ && !occ[j * ONX + i]; };
+      const lay = (cx, cz) => { const o = []; for (let a = 0; a < 5; a++) for (let b = 0; b < 2; b++) { const x = cx + (a - 2) * m * 0.34, z = cz + (b - 0.5) * m * 0.5, k = Math.max(0, Math.min(NZ - 1, Math.floor((z - oz) / cs))) * NX + Math.max(0, Math.min(NX - 1, Math.floor((x - ox) / cs))); if (G.t[k] === 'w' || (FP ? !free(x, z) : G.t[k] === 'b')) return null; o.push([x, FP ? gy(k) : top[k], z, a, b]); } return o; };
+      let st = null; for (let rad = 0; rad < 16 && !st; rad++) for (let q = 0, nq = Math.max(1, rad * 6); q < nq && !st; q++) { const an = (q / nq) * Math.PI * 2; st = lay(w.x + Math.cos(an) * rad * cs * 0.4, w.z + Math.sin(an) * rad * cs * 0.4); }
+      if (st) mks.push([st[4][0], st[4][2]]);
+      (st || []).forEach(([x, y, z, a, b]) => { dbox.push([x, y + m * 0.07, z, m * 0.24, m * 0.14, m * 0.16, '#8d6a4c']); dbox.push([x, y + m * 0.24, z, m * 0.3, m * 0.05, m * 0.24, AW[(a + b * 2) % 5]]); peop.push([x + m * 0.05, y, z + (b ? 1 : -1) * m * 0.2]); });
     });
     if (peop.length) { const PC = ['#e9dcc0', '#d24b3a', '#3f78c4', '#2a2630', '#e0b23a', '#7b6cf6', '#f1eff5']; det.add(quiet(inst(B(1, 1, 1), white(), coarse ? peop.filter((q, n) => n % 2 === 0) : peop, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.1, z); o.scale.set(cs * 0.055, cs * 0.17, cs * 0.055); col.set(PC[(r() * PC.length) | 0]); }))); }
     det.add(quiet(inst(B(1, 1, 1), white(), marks, (o, [x, y, z, sx, sz, c], col) => { o.position.set(x, y + 0.004, z); o.scale.set(sx, 0.008, sz); col.set(c); })));
@@ -1843,7 +1882,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const labels = lms.map((l) => ({ it: l.it, en: l.en || l.it, x: l.x, z: l.z }));
     const spins = []; g.traverse((o) => { if (o.userData.spin) spins.push(o); });
     mark('resto'); const tms = {}; for (let k = 1; k < tm.length; k++) tms[tm[k][0]] = Math.round(tm[k][1] - tm[k - 1][1]);
-    return { tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
+    return { mks, tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
   }
 
   const LIGHT = {
@@ -2021,7 +2060,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         SOTO_U.uWin.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 2) / 1.5) : cl01((ppb - 4) / 3);
         if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'alba', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
         if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; this.scene.fog.color.lerp(G2.fog, q); }
-        SOTO_U.uT.value = this.reduce ? 0 : (t / 1000) % 1000; SOTO_U.uSky.value.copy(this.hemi.color); SOTO_U.uSunDir.value.copy(this.sun.position).normalize(); SOTO_U.uSunCol.value.copy(this.sun.color).multiplyScalar(Math.min(1, this.sun.intensity));
+        SOTO_U.uT.value = this.reduce ? 0 : (t / 1000) % 1000; SOTO_U.uCl.value.y = 0.24 * cl01(1 - SOTO_U.uNight.value); SOTO_U.uSky.value.copy(this.hemi.color); SOTO_U.uSunDir.value.copy(this.sun.position).normalize(); SOTO_U.uSunCol.value.copy(this.sun.color).multiplyScalar(Math.min(1, this.sun.intensity));
         this.scene.fog.near = cd; this.scene.fog.far = cd + (c.half || 20) * 4;
         if (c.lampMat) { const nv = SOTO_U.uNight.value; c.lampMat.emissiveIntensity = Math.max(0, 0.3 + 0.9 * nv); c.poolMat.opacity = 0.3 * cl01(0.12 + nv); }
         if (c.life && !this.reduce) c.life(t);

@@ -148,3 +148,10 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Facciate in quattro stili: palazzo tradizionale (con marcapiano, bugnato, pluviali, persiane non ovunque), condominio moderno con balconi, vetrata continua per le torri, capannone
 - [x] Tetti piani: guaina a teli, terrazze piastrellate, tetti verdi; parapetto; impianti, pannelli solari, cisterne, torrini scala, antenne sulle torri
 - [ ] Visti solo nel browser di prova. Non confermati in immagine: bancarelle dei mercati, traghetti e treni in movimento, imbocchi delle gallerie, panni stesi, zoom della mappa
+
+## Orizzonte, ombre di nuvole, mercati (13 novembre, sera)
+- [x] Oltre il bordo della città il terreno continua: campagna e colline che sfumano nella foschia (monti alle spalle di Genova, colline a ovest di Lione, pianura a Mantova, rilievi calcarei attorno a Marsiglia); sul lato mare resta l'acqua
+- [x] Ombre di nuvole che scorrono lente su terreno, strade ed edifici (di giorno; spariscono di notte)
+- [x] Mercati: le bancarelle cercano uno spazio libero tra gli edifici e hanno dimensioni reali. Viste a Genova e Mantova; a Lione e Marsiglia sono state piazzate ma non le ho viste in immagine
+- [ ] Orizzonte visto solo di giorno e nel browser di prova; restano leggere striature radiali in pianura (Lione)
+- [ ] Rilievi dell'orizzonte indicativi (forma inventata, solo direzione e altezza di massima reali)
