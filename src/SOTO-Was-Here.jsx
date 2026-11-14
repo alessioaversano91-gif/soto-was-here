@@ -1330,6 +1330,14 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const lms = (LMK[id] || []).map((l) => Object.assign({}, l, M.toWorld(l.lat, l.lon)));
     const models = lms.filter((l) => l.model && LM[l.model]), LMS = LM_SCALE * (G.fp ? Math.min(1, (0.62 * (G.size / (Math.max(G.NX, G.NZ) * G.cell))) / 0.00426) : 1), clearR = LMS * 1.9;
     const top = new Float32Array(NX * NZ), terr = [], wat = [], bridges = [], bld = [], roofs = [], trees = [];
+    // Altezza delle banchine sull'acqua, in metri reali per citta (prima era una misura fissa: 14 m a Genova, 15 a Marsiglia).
+    const wk = FP ? Math.max(0.25, Math.min(1, (({ genova: 2.5, marsiglia: 2.2, lione: 6.5, mantova: 1.8 }[id] || 4) * 2 * wpm) / 0.12)) : 1, WD = 0.12 * wk;
+    // Rive: vicino all'acqua il terreno non puo salire a strapiombo (i dati di quota, a maglia larga, creavano pareti da cava).
+    if (FP && !G.shoreDone) {
+      G.shoreDone = 1; const E = G.e, N = NX * NZ, seen = new Uint8Array(N), hw = new Float32Array(N); let fr = [];
+      for (let k = 0; k < N; k++) if (G.t[k] === 'w' || G.t[k] === 'x') { seen[k] = 1; hw[k] = E[k]; fr.push(k); }
+      for (let d = 1; d <= 8 && fr.length; d++) { const nx = []; for (const k of fr) { const i = k % NX, j = (k / NX) | 0; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + a, jj = j + b; if (ii < 0 || jj < 0 || ii >= NX || jj >= NZ) continue; const n = jj * NX + ii; if (seen[n]) continue; seen[n] = 1; hw[n] = hw[k]; nx.push(n); } } for (const n of nx) { const cap = Math.round(hw[n] + 1 + (d - 1) * 14); if (E[n] > cap) E[n] = cap; } fr = nx; }
+    }
     const gy = FP ? (k) => G.e[k] * wpm * TEX : (k) => Math.round((G.e[k] * wpm * TEX) / STEP) * STEP;
     const pkA = new Uint8Array(NX * NZ), walls = [];
     const seaCells = [], isB = new Uint8Array(NX * NZ), xtr = [], gab = [], ct = new Array(NX * NZ), cones = [], props = [], dbox = [], umb = [], av = [];
@@ -1346,8 +1354,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const k = j * NX + i, x = ox + (i + 0.5) * cs, z = oz + (j + 0.5) * cs, y = gy(k);
       let c = G.t[k]; ct[k] = c;
       if (c === 'w' || c === 'x') {
-        const wy = y - 0.12; wat.push([x, z, wy, Math.min(6, wdp[k]), urb[k]]); top[k] = wy; if (y < 0.05) seaCells.push([x, z, wy]);
-        if (c === 'x') { bridges.push([x, z, y + 0.12, i, j]); top[k] = y + 0.2; }
+        const wy = y - WD; wat.push([x, z, wy, Math.min(6, wdp[k]), urb[k]]); top[k] = wy; if (y < 0.05) seaCells.push([x, z, wy]);
+        if (c === 'x') { bridges.push([x, z, y + 0.12 * wk, i, j]); top[k] = y + 0.2 * wk; }
         continue;
       }
       if (models.some((l) => hyp(l.x - x, l.z - z) < clearR * l.sc)) c = 'q';
@@ -1554,17 +1562,17 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const cellT = (x, z) => G.t[Math.max(0, Math.min(NZ - 1, Math.floor((z - oz) / cs))) * NX + Math.max(0, Math.min(NX - 1, Math.floor((x - ox) / cs)))];
       const hAt = (x, z) => {
         const fi = (x - ox) / cs, fj = (z - oz) / cs, i = Math.max(0, Math.min(NX - 1, Math.floor(fi))), j = Math.max(0, Math.min(NZ - 1, Math.floor(fj))), k = j * NX + i, c = G.t[k];
-        if (c === 'w' || c === 'x') return gy(k) + 0.185;
+        if (c === 'w' || c === 'x') return gy(k) + 0.185 * wk;
         const u = Math.max(0, Math.min(1, fi - i)), v = Math.max(0, Math.min(1, fj - j)), a = corA[j * CW + i], b = corA[(j + 1) * CW + i], c2 = corA[(j + 1) * CW + i + 1], d = corA[j * CW + i + 1];
         return v >= u ? a + (b - a) * v + (c2 - b) * u : a + (d - a) * u + (c2 - d) * v;
       };
-      const WID = [3.6, 5.5, 9, 12, 4.2, 2.6, 2.6], COL = ['#a2959f', '#4b4259', '#443b54', '#3c344e', '#6f6875', '#5a546c', '#6f6875'].map((q) => new THREE.Color(q)), SIDE = new THREE.Color('#a096a6'), LINE = new THREE.Color('#e9e2f0'), RAILC = new THREE.Color('#37313f'), TUNC = new THREE.Color('#786d86');
+      const WID = [3.6, 5.5, 9, 12, 4.2, 2.6, 2.6], COL = ['#a2959f', '#4b4259', '#443b54', '#3c344e', '#6f6875', '#5a546c', '#6f6875'].map((q) => new THREE.Color(q)), SIDE = new THREE.Color('#a096a6'), LINE = new THREE.Color('#e9e2f0'), RAILC = new THREE.Color('#37313f'), TUNC = new THREE.Color('#786d86'), ISLE = new THREE.Color('#5f9444'), CARC = ['#d9d6d0', '#2a2c33', '#8a8f98', '#b23b34', '#3a5a8c', '#e9e6e0', '#55595f', '#c9b98a'];
       const lines = []; let np = 0;
       for (let q = 0; q < D.length;) {
         const head = D[q], n = D[q + 1]; q += 2; const cl = head & 3, pts = []; let px = 0, pz = 0;
         for (let a = 0; a < n; a++) { const x = ox + D[q] * sxm, z = oz + D[q + 1] * szm; q += 2; if (a) { const L = hyp(x - px, z - pz), m = Math.max(1, Math.ceil(L / step)); for (let b = 1; b <= m; b++) pts.push([px + ((x - px) * b) / m, pz + ((z - pz) * b) / m]); } else pts.push([x, z]); px = x; pz = z; }
         if (pts.length < 2 || models.some((l) => hyp(l.x - pts[0][0], l.z - pts[0][1]) < clearR * l.sc * 0.6)) continue;
-        lines.push([cl, pts, head & 4]); np += pts.length * (cl >= 2 ? 2.4 : 1) + 8;
+        lines.push([cl, pts, head & 4]); np += pts.length * (cl >= 1 ? 2.4 : 1) + 30;
       }
       const TN = G.tn || [], tuns = [];
       for (let q = 0; q < TN.length;) {
@@ -1614,12 +1622,19 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         [pts[0], pts[N - 1]].forEach((q) => { const y = hAt(q[0], q[1]); if (cellT(q[0], q[1]) === 'w') return; dbox.push([q[0], y + cs * 0.13, q[1], cs * 0.3, cs * 0.26, cs * 0.3, '#2a2630']); dbox.push([q[0], y + cs * 0.29, q[1], cs * 0.4, cs * 0.07, cs * 0.4, '#b3a798']); });
       });
       lines.forEach(([cl, pts, br]) => {
-        const hw = (WID[cl] * wpm) / 2, lift = 0.012 + cl * 0.003, R3 = [], N = pts.length, Y = profile(pts, cl === 2 || cl === 3 ? hw + 1.7 * wpm : hw);
+        const hw = (WID[cl] * wpm) / 2, lift = 0.012 + cl * 0.003, R3 = [], N = pts.length, SW = cl === 2 || cl === 3 ? 1.7 : cl === 1 ? 1.3 : 0, Y = profile(pts, hw + SW * wpm);
         // viadotti: i tratti segnati come ponte ma su terra si alzano su piloni
         const vl = br ? pts.map((q, a) => { const c = cellT(q[0], q[1]); return c === 'w' || c === 'x' ? 0 : 0.085 * Math.min(1, a / 4, (N - 1 - a) / 4); }) : null;
-        if (cl === 2 || cl === 3) emit(pts, 0, N - 1, hw + 1.7 * wpm, SIDE, lift - 0.005, vl, Y, 4);
+        if (SW) emit(pts, 0, N - 1, hw + SW * wpm, SIDE, lift - 0.005, vl, Y, cl === 1 ? 5 : 4);
         emit(pts, 0, N - 1, hw, COL[cl], lift, vl, Y, cl > 3 ? 9 : cl);
-        if (cl >= 1 && cl <= 3 && N > 1) [[0, 1], [N - 1, N - 2]].forEach(([e, f]) => { const L = hyp(pts[e][0] - pts[f][0], pts[e][1] - pts[f][1]) || 1; cap(pts[e][0], pts[e][1], (pts[e][0] - pts[f][0]) / L, (pts[e][1] - pts[f][1]) / L, hw, COL[cl], Y[e] + lift + (vl ? vl[e] : 0)); });
+        if (cl >= 1 && cl <= 3 && N > 1) [[0, 1], [N - 1, N - 2]].forEach(([e, f]) => { const L = hyp(pts[e][0] - pts[f][0], pts[e][1] - pts[f][1]) || 1; const ux = (pts[e][0] - pts[f][0]) / L, uz = (pts[e][1] - pts[f][1]) / L, yy = Y[e] + lift + (vl ? vl[e] : 0); cap(pts[e][0], pts[e][1], ux, uz, hw + SW * wpm, SIDE, yy - 0.005); cap(pts[e][0], pts[e][1], ux, uz, hw, COL[cl], yy); });
+        // rotatoria: un anello chiuso e piccolo riceve l'isola centrale verde col suo cordolo
+        if (cl >= 1 && cl <= 3 && N >= 6 && hyp(pts[0][0] - pts[N - 1][0], pts[0][1] - pts[N - 1][1]) < 3 * wpm) {
+          let mx = 0, mz = 0; pts.forEach((q) => { mx += q[0]; mz += q[1]; }); mx /= N; mz /= N; let R = 0; pts.forEach((q) => { R += hyp(q[0] - mx, q[1] - mz); }); R /= N;
+          if (R > 7 * wpm && R < 45 * wpm && R - hw > 2 * wpm) { const yy = Y[0] + lift + 0.004; [[R - hw + 0.5 * wpm, SIDE, 0], [R - hw - 0.4 * wpm, ISLE, 0.003]].forEach(([rad, c, dy]) => { cap(mx, mz, 1, 0, rad, c, yy + dy); cap(mx, mz, -1, 0, rad, c, yy + dy); }); if (R - hw > 5 * wpm) av.push([mx, mz, yy, cs * 0.5]); }
+        }
+        // auto in sosta lungo le vie minori
+        if (cl === 1 && !br) for (let a = 2; a + 1 < N; a += 3) { if (r() > (coarse ? 0.15 : 0.32)) continue; const A = pts[a - 1], Bp = pts[a + 1], L = hyp(Bp[0] - A[0], Bp[1] - A[1]) || 1, dx = (Bp[0] - A[0]) / L, dz = (Bp[1] - A[1]) / L, sd = r() < 0.5 ? 1 : -1, off = hw - 0.95 * wpm, x = pts[a][0] - dz * off * sd, z = pts[a][1] + dx * off * sd, ct2 = cellT(x, z); if (ct2 === 'w' || ct2 === 'x') continue; const ry = Math.atan2(-dz, dx), hU2 = wpm * 2, y = Y[a] + lift; dbox.push([x, y + 0.45 * hU2, z, 4.2 * wpm, 0.75 * hU2, 1.75 * wpm, CARC[(r() * CARC.length) | 0], ry]); dbox.push([x - dx * 0.2 * wpm, y + 1.05 * hU2, z - dz * 0.2 * wpm, 2.2 * wpm, 0.55 * hU2, 1.55 * wpm, '#2b2f3a', ry]); }
         if (cl > 3) { emit(pts, 0, N - 1, hw * 0.34, RAILC, lift + 0.004, vl, Y); if (N >= 10) railRoutes.push({ kind: cl, P: pts.map((q, a) => { const A = pts[Math.max(0, a - 1)], Bp = pts[Math.min(N - 1, a + 1)], L = hyp(Bp[0] - A[0], Bp[1] - A[1]) || 1; return [q[0], Y[a] + (vl ? vl[a] : 0), q[1], (Bp[0] - A[0]) / L, (Bp[1] - A[1]) / L]; }) }); return; }
         if ((cl === 2 || cl === 3) && !br) for (let a = 18; a + 1 < N; a += 36) { const A = pts[a], Bp = pts[a + 1], L = hyp(Bp[0] - A[0], Bp[1] - A[1]) || 1, nx = -(Bp[1] - A[1]) / L, nz = (Bp[0] - A[0]) / L; for (let k = -2; k <= 2; k++) emit([[A[0] + nx * k * hw * 0.36, A[1] + nz * k * hw * 0.36], [Bp[0] + nx * k * hw * 0.36, Bp[1] + nz * k * hw * 0.36]], 0, 1, hw * 0.1, LINE, lift + 0.005, null, [Y[a], Y[a + 1]]); }
         for (let a = 0; a < N; a++) {
@@ -1642,11 +1657,13 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         if (uRd > 0.004 && vR.z < 8.5) {
           float ty = vR.z, hwm = vR.w, x = vR.x * hwm, v = vR.y, ax = abs(x), ln = 0.0; vec3 rc = diffuseColor.rgb;
           if (ty > 3.5) {
-            float kx = ax - (hwm - 1.7);
+            float kx = ax - (hwm - (ty > 4.5 ? 1.3 : 1.7));
             rc *= 1.0 - 0.1 * step(0.35, kx) * max(step(0.9, fract(v / 1.6)), step(0.85, fract(kx / 1.3)) * 0.0);
             rc = mix(rc, rc * 1.22 + 0.03, step(0.0, kx) * step(kx, 0.38));
           } else if (ty > 2.5) {
             ln = max(step(ax, 0.24), max(step(abs(ax - hwm * 0.5), 0.2) * step(0.5, fract(v / 9.0)), step(abs(ax - (hwm - 0.55)), 0.18)));
+            float lv = fract(v / 64.0) * 64.0, lx = abs(fract(ax / (hwm * 0.5)) - 0.5) * hwm * 0.5; lv = x > 0.0 ? lv : 8.0 - lv;
+            ln = max(ln, max(step(lx, 0.2) * step(1.5, lv) * step(lv, 4.6), step(lx, (6.4 - lv) * 0.5) * step(4.6, lv) * step(lv, 6.4)));
             rc *= 1.0 - 0.07 * step(0.8, rH(floor(vec2(x / 3.0 + 40.0, v / 7.0))));
           } else if (ty > 1.5) {
             ln = step(ax, 0.22) * step(0.45, fract(v / 7.0));
@@ -1668,12 +1685,12 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const watTop = new THREE.PlaneGeometry(1, 1); watTop.rotateX(-Math.PI / 2); watTop.translate(0, 0.5, 0);
     if (FP) {
       const P = [], q4 = (xa, za, xb, zb, y) => P.push(xa, y, za, xa, BOT, za, xb, BOT, zb, xa, y, za, xb, BOT, zb, xb, y, zb);
-      for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { if (i && j && i < NX - 1 && j < NZ - 1) continue; const k = j * NX + i, c = G.t[k]; if (c !== 'w' && c !== 'x') continue; const y = gy(k) - 0.12, x0 = ox + i * cs, x1 = x0 + cs, z0 = oz + j * cs, z1 = z0 + cs; if (i === 0) q4(x0, z0, x0, z1, y); if (i === NX - 1) q4(x1, z1, x1, z0, y); if (j === 0) q4(x1, z0, x0, z0, y); if (j === NZ - 1) q4(x0, z1, x1, z1, y); }
+      for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { if (i && j && i < NX - 1 && j < NZ - 1) continue; const k = j * NX + i, c = G.t[k]; if (c !== 'w' && c !== 'x') continue; const y = gy(k) - WD, x0 = ox + i * cs, x1 = x0 + cs, z0 = oz + j * cs, z1 = z0 + cs; if (i === 0) q4(x0, z0, x0, z1, y); if (i === NX - 1) q4(x1, z1, x1, z0, y); if (j === 0) q4(x1, z0, x0, z0, y); if (j === NZ - 1) q4(x0, z1, x1, z1, y); }
       if (P.length) { const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); ge.computeVertexNormals(); g.add(new THREE.Mesh(ge, new THREE.MeshLambertMaterial({ color: '#2f66a3', side: THREE.DoubleSide }))); }
     }
     const watM = inst(FP ? watTop : B(1, 1, 1), shade(mat('#ffffff', 0, { transparent: true, opacity: 0.92 }), 'water'), wat, (o, [x, z, wy, dp], col) => { o.position.set(x, (wy + BOT) / 2, z); o.scale.set(cs, wy - BOT, cs); col.copy(WDEP[dp]); });
     watM.castShadow = false;
-    const brM = inst(B(1, 1, 1), white(), bridges, (o, [x, z, y], col) => { o.position.set(x, y, z); o.scale.set(cs, 0.12, cs); col.set('#4a4058'); });
+    const brM = inst(B(1, 1, 1), white(), bridges, (o, [x, z, y], col) => { o.position.set(x, y, z); o.scale.set(cs, 0.12 * wk, cs); col.set('#4a4058'); });
     const bldM = inst(B(1, 1, 1), shade(white(), 'build'), bld, (o, [x, z, y, bh, c, w, d], col) => { o.position.set(x, y + bh / 2, z); o.scale.set(w, bh, d); col.set(c).offsetHSL(0, 0, (r() - 0.5) * 0.06); });
     const roofGeo = new THREE.ConeGeometry(0.7071, 1, 4); roofGeo.rotateY(Math.PI / 4);
     const roofM = inst(roofGeo, shade(white(), 'roof'), roofs, (o, [x, z, y, c, w, rh], col) => { o.position.set(x, y + rh / 2, z); o.scale.set(w, rh, w); col.set(c); });
@@ -1684,7 +1701,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const coneM = inst(new THREE.ConeGeometry(0.32, 1, 6), FP ? shadeW(white(), 'tree', 1 / cs) : white(), cones, (o, [x, z, y, q], col) => { o.position.set(x, y + 0.62 * q, z); o.scale.set(q, q * 1.25, q); col.set(['#2f5a34', '#3a6b3c', '#2a4f3a'][(r() * 3) | 0]); });
     (FP ? [terrM, watM, brM, fpM, treeM, coneM] : [terrM, watM, brM, bldM, roofM, gabM, treeM, coneM]).forEach((m) => g.add(m)); if (rdM) g.add(rdM);
     if (FP && (id === 'genova' || id === 'marsiglia')) {
-      const D = Math.max(NX, NZ) * cs * 0.16, P = [], A = [], c = WDEP[5], sea = (i, j) => G.t[j * NX + i] === 'w' && gy(j * NX + i) < 0.05, yw = (i, j) => gy(j * NX + i) - 0.125;
+      const D = Math.max(NX, NZ) * cs * 0.16, P = [], A = [], c = WDEP[5], sea = (i, j) => G.t[j * NX + i] === 'w' && gy(j * NX + i) < 0.05, yw = (i, j) => gy(j * NX + i) - WD - 0.005;
       const quad = (pts) => { [0, 1, 2, 0, 2, 3].forEach((q) => { P.push(pts[q][0], pts[q][1], pts[q][2]); A.push(c.r, c.g, c.b, pts[q][3]); }); };
       const side = (n, cell, mk) => {
         const f = []; for (let q = 0; q < n; q++) f.push(sea(...cell(q)) ? 1 : 0);
@@ -1710,10 +1727,10 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     bridges.forEach(([x, z, yb, i, j]) => {
       const tAt = (a, b) => (a >= 0 && b >= 0 && a < NX && b < NZ ? G.t[b * NX + a] : '');
       let h = 1, v = 1; for (let a = i - 1; tAt(a, j) === 'x' && h < 12; a--) h++; for (let a = i + 1; tAt(a, j) === 'x' && h < 12; a++) h++; for (let a = j - 1; tAt(i, a) === 'x' && v < 12; a--) v++; for (let a = j + 1; tAt(i, a) === 'x' && v < 12; a++) v++;
-      const ph = (h <= 2 && v <= 2 ? i + j : h >= v ? i : j) % 4, under = yb - 0.06, bot = yb - 0.44;
+      const ph = (h <= 2 && v <= 2 ? i + j : h >= v ? i : j) % 4, under = yb - 0.06 * wk, bot = yb - 0.44 * wk;
       const str = !(h <= 2 && v <= 2);
-      if (ph === 0) brx.push([x, (under + bot) / 2, z, cs * 0.78, under - bot, cs * 0.78, '#b9ad9e']); else if (str && ph === 2) arches.push([x, yb - 0.24, z, h >= v ? 0 : 1, under - (yb - 0.24)]); else if (!str && ph !== 2) brx.push([x, under - 0.035, z, cs, 0.07, cs, '#a99d90']);
-      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dz]) => { if (tAt(i + dx, j + dz) === 'w') brx.push([x + dx * cs * 0.46, yb + 0.085, z + dz * cs * 0.46, dx ? cs * 0.08 : cs, 0.05, dx ? cs : cs * 0.08, '#d3c8b8']); });
+      if (ph === 0) brx.push([x, (under + bot) / 2, z, cs * 0.78, under - bot, cs * 0.78, '#b9ad9e']); else if (str && ph === 2) arches.push([x, yb - 0.24 * wk, z, h >= v ? 0 : 1, under - (yb - 0.24 * wk)]); else if (!str && ph !== 2) brx.push([x, under - 0.035 * wk, z, cs, 0.07 * wk, cs, '#a99d90']);
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dz]) => { if (tAt(i + dx, j + dz) === 'w') brx.push([x + dx * cs * 0.46, yb + 0.085 * wk, z + dz * cs * 0.46, dx ? cs * 0.08 : cs, 0.05 * Math.max(0.5, wk), dx ? cs : cs * 0.08, '#d3c8b8']); });
     });
     if (arches.length) {
       const sh = new THREE.Shape(); sh.moveTo(-0.5, 0); sh.lineTo(-0.41, 0); sh.absellipse(0, 0, 0.41, 0.86, Math.PI, 0, true); sh.lineTo(0.5, 0); sh.lineTo(0.5, 1); sh.lineTo(-0.5, 1); sh.lineTo(-0.5, 0);
@@ -1732,7 +1749,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       for (let i = 0; i < NX; i++) cells.push([i, 0, x0 + (i + 0.5) * cs, z0]); for (let j = 0; j < NZ; j++) cells.push([NX - 1, j, x1, z0 + (j + 0.5) * cs]);
       for (let i = NX - 1; i >= 0; i--) cells.push([i, NZ - 1, x0 + (i + 0.5) * cs, z1]); for (let j = NZ - 1; j >= 0; j--) cells.push([0, j, x0, z0 + (j + 0.5) * cs]);
       const stp = Math.max(1, Math.round(cells.length / 220)), S = [];
-      for (let q = 0; q < cells.length; q += stp) { const [i, j, px, pz] = cells[q], k = j * NX + i, wat = G.t[k] === 'w', qx = Math.max(x0 + ins, Math.min(x1 - ins, px)), qz = Math.max(z0 + ins, Math.min(z1 - ins, pz)), l = Math.hypot(px - qx, pz - qz) || 1; S.push({ px, pz, nx: (px - qx) / l, nz: (pz - qz) / l, y: wat ? gy(k) - 0.125 : gy(k), wat, sea: wat && hasSea && gy(k) < 0.05 }); }
+      for (let q = 0; q < cells.length; q += stp) { const [i, j, px, pz] = cells[q], k = j * NX + i, wat = G.t[k] === 'w', qx = Math.max(x0 + ins, Math.min(x1 - ins, px)), qz = Math.max(z0 + ins, Math.min(z1 - ins, pz)), l = Math.hypot(px - qx, pz - qz) || 1; S.push({ px, pz, nx: (px - qx) / l, nz: (pz - qz) / l, y: wat ? gy(k) - WD - 0.005 : gy(k), wat, sea: wat && hasSea && gy(k) < 0.05 }); }
       const N = S.length, dw = S.map((q) => (q.wat ? 0 : 99)); for (let q = 0; q < 2 * N; q++) dw[q % N] = Math.min(dw[q % N], dw[(q + N - 1) % N] + 1); for (let q = 2 * N; q > 0; q--) dw[q % N] = Math.min(dw[q % N], dw[(q + 1) % N] + 1);
       const hh = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
       const nz2 = (x, z) => { const i = Math.floor(x), j = Math.floor(z), u = x - i, v = z - j, su = u * u * (3 - 2 * u), sv = v * v * (3 - 2 * v); return (hh(i, j) * (1 - su) + hh(i + 1, j) * su) * (1 - sv) + (hh(i, j + 1) * (1 - su) + hh(i + 1, j + 1) * su) * sv; };
@@ -1865,7 +1882,17 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const CONT = ['#d24b3a', '#3f78c4', '#e8b93a', '#3f9a6c', '#e8792e', '#9aa0a8'];
     const PORT = { genova: [44.396, 8.878, 44.4125, 8.924], marsiglia: [43.2975, 5.352, 43.302, 5.366] }[id], cranes = [];
     const inPort = (i, j) => { if (!PORT) return false; const la = G.b[2] - ((j + 0.5) / NZ) * (G.b[2] - G.b[0]), lo = G.b[1] + ((i + 0.5) / NX) * (G.b[3] - G.b[1]); return la > PORT[0] && la < PORT[2] && lo > PORT[1] && lo < PORT[3]; };
-    let moored = 0; const reeds = [];
+    let moored = 0; const reeds = [], barges = [], HU = wpm * 2;
+    const MAR = { marsiglia: [[43.2925, 5.3625, 43.2968, 5.3748]], genova: [[44.4085, 8.9215, 44.4128, 8.9275]] }[id] || [];
+    const inMar = (i, j) => { if (!MAR.length) return false; const la = G.b[2] - ((j + 0.5) / NZ) * (G.b[2] - G.b[0]), lo = G.b[1] + ((i + 0.5) / NX) * (G.b[3] - G.b[1]); return MAR.some((q) => la > q[0] && la < q[2] && lo > q[1] && lo < q[3]); };
+    const bankDir = (i, j) => { let gx = 0, gz = 0; for (let b = -2; b <= 2; b++) for (let a = -2; a <= 2; a++) { const t = T(i + a, j + b); if (t && t !== 'w' && t !== 'x') { gx += a; gz += b; } } const l = Math.hypot(gx, gz); return l > 0.5 ? [gx / l, gz / l] : null; };
+    // Banchine: bordo in pietra e bitte lungo le rive costruite (non su parchi e spiagge).
+    if (FP && corA) { const CW = NX + 1; for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const c = ct[j * NX + i]; if (!c || 'qorRbkt'.indexOf(c) < 0) continue;
+      for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { if (T(i + a, j + b) !== 'w') continue;
+        const i0 = a > 0 ? i + 1 : i, i1 = a < 0 ? i : i + 1, j0 = b > 0 ? j + 1 : j, j1 = b < 0 ? j : j + 1, ya = corA[j0 * CW + i0], yb = corA[(a ? j1 : j0) * CW + (a ? i0 : i1)], ey = Math.max(ya, yb);
+        const ex = ox + (i + 0.5 + a * 0.5) * cs - a * 0.8 * wpm, ez = oz + (j + 0.5 + b * 0.5) * cs - b * 0.8 * wpm;
+        props.push([ex, ey + 0.1 * HU, ez, a ? 1.6 * wpm : cs, 0.7 * HU, b ? 1.6 * wpm : cs, '#cfc6b8']);
+        if (!coarse) for (const t of [-0.3, 0.3]) dbox.push([ex + (a ? 0 : t * cs), ey + 0.75 * HU, ez + (b ? 0 : t * cs), 0.5 * wpm, 0.7 * HU, 0.5 * wpm, '#2a2630']); } } }
     for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
       const k = j * NX + i, c = ct[k], x = ox + (i + 0.5) * cs, z = oz + (j + 0.5) * cs, y = top[k];
       if ((c === 'q' || c === 'o') && inPort(i, j)) {
@@ -1874,9 +1901,26 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         else if (!w && r() < 0.07) { const n = 1 + ((r() * 3) | 0), ax = r() < 0.5; for (let q = 0; q < n; q++) box(x, y + q * cs * 0.3, z, cs * (ax ? 0.85 : 0.36), cs * 0.3, cs * (ax ? 0.36 : 0.85), CONT[(r() * CONT.length) | 0]); }
       } else if (c === 'w' && wdp[k] === 1 && id === 'mantova' && r() < 0.85 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => T(i + a, j + b) === 'p' || T(i + a, j + b) === 'o')) {
         for (let q = 0; q < 3; q++) reeds.push([x + (r() - 0.5) * cs * 0.7, z + (r() - 0.5) * cs * 0.7, y, cs * (0.5 + r() * 0.4)]);
-      } else if (c === 'w' && wdp[k] === 1 && moored < 160 && r() < 0.12) {
+      } else if (FP && c === 'w' && wdp[k] === 1 && inMar(i, j)) {
+        // porticciolo: pontile galleggiante perpendicolare alla banchina, barche a vela ormeggiate sui due lati
+        const q = [[0, 1], [0, -1], [1, 0], [-1, 0]].find(([a, b]) => { const t = T(i + a, j + b); return t && t !== 'w' && t !== 'x'; });
+        if (q) { const da = -q[0], db = -q[1]; let run = 1; while (run < 12 && T(i + da * run, j + db * run) === 'w') run++;
+          const Lm = Math.min(85, (run * cs / wpm) * 0.36); if (run >= 3 && Lm > 20) {
+            const ex = x - da * cs * 0.5, ez = z - db * cs * 0.5, L = Lm * wpm; props.push([ex + da * L / 2, y + 0.3 * HU, ez + db * L / 2, da ? L : 2.4 * wpm, 0.6 * HU, db ? L : 2.4 * wpm, '#b9b2a6']);
+            for (let t = 7; t < Lm - 3; t += 4.3) for (const sd of [-1, 1]) { if (r() > 0.82) continue; const off = (1.2 + 4.4) * wpm * sd, bx = ex + da * t * wpm + (da ? 0 : off), bz = ez + db * t * wpm + (db ? 0 : off), hc = r() < 0.82 ? '#f4f2ec' : r() < 0.5 ? '#2d3e63' : '#c9453a', bl = (7 + r() * 3) * wpm;
+              props.push([bx, y + 0.35 * HU, bz, da ? 2.6 * wpm : bl, 0.9 * HU, db ? 2.6 * wpm : bl, hc]); dbox.push([bx, y + 1.1 * HU, bz, da ? 1.7 * wpm : bl * 0.35, 0.6 * HU, db ? 1.7 * wpm : bl * 0.35, '#e9e6de']); if (r() < 0.75) dbox.push([bx, y + 5.5 * HU, bz, 0.28 * wpm, 9.5 * HU, 0.28 * wpm, '#d8d4cc']); }
+          } }
+      } else if (FP && c === 'w' && wdp[k] === 1 && id === 'lione' && barges.length < 90 && r() < 0.16 && !barges.some((q) => Math.abs(q[0] - i) + Math.abs(q[1] - j) < 4)) {
+        // chiatta (péniche) ormeggiata lungo la riva, orientata come la sponda
+        const n = bankDir(i, j); if (n) { barges.push([i, j]); const ax = -n[1], az = n[0], ry = Math.atan2(-az, ax), Wm = 5.2, Lm = 30 + r() * 8, px = x + n[0] * (cs * 0.5 - (Wm / 2 + 2.5) * wpm), pz = z + n[1] * (cs * 0.5 - (Wm / 2 + 2.5) * wpm);
+          const pb = (t, y0, len, h, wid, col) => props.push([px + ax * t * wpm, y + (y0 + h / 2) * HU, pz + az * t * wpm, len * wpm, h * HU, wid * wpm, col, ry]);
+          const hull = ['#23212b', '#1f3147', '#2f4a3a', '#6e2b25'][(r() * 4) | 0], hold = ['#8a8d92', '#b5523b', '#3f6f8a', '#c9b98a', '#e9e6de'][(r() * 5) | 0], fw = r() < 0.5 ? 1 : -1;
+          pb(0, -0.4, Lm, 1.7, Wm, hull); pb(fw * (Lm / 2 + 1.2), -0.3, 3, 1.5, Wm * 0.62, hull); pb(fw * Lm * 0.08, 1.3, Lm * 0.56, 0.6, Wm * 0.84, hold); pb(-fw * Lm * 0.34, 1.3, 5.2, 2.3, Wm * 0.8, '#f1eee6'); pb(-fw * Lm * 0.34, 3.6, 5.8, 0.25, Wm * 0.9, '#3a3640'); pb(-fw * (Lm * 0.34 + 1.6), 3.85, 0.5, 1.2, 0.5, '#23212b'); }
+      } else if (c === 'w' && wdp[k] === 1 && moored < 220 && r() < 0.12 && id !== 'lione') {
         const q = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([a, b]) => T(i + a, j + b) === 'q');
-        if (q) { moored++; const ax = q[0] === 0; box(x, y - 0.01, z, cs * (ax ? 0.7 : 0.26), cs * 0.16, cs * (ax ? 0.26 : 0.7), r() < 0.7 ? '#f2efe8' : CONT[(r() * 3) | 0]); }
+        if (q && FP) { const n = bankDir(i, j) || q; moored++; const ax = -n[1], az = n[0], ry = Math.atan2(-az, ax), Lm = 9 + r() * 5, px = x + n[0] * (cs * 0.5 - 4.5 * wpm), pz = z + n[1] * (cs * 0.5 - 4.5 * wpm), hc = r() < 0.7 ? '#f2efe8' : CONT[(r() * 3) | 0];
+          props.push([px, y + 0.35 * HU, pz, Lm * wpm, 1.1 * HU, 3.3 * wpm, hc, ry]); props.push([px - ax * Lm * 0.2 * wpm, y + 1.5 * HU, pz - az * Lm * 0.2 * wpm, Lm * 0.3 * wpm, 1.3 * HU, 2.4 * wpm, '#e9e6de', ry]); }
+        else if (q) { moored++; const ax = q[0] === 0; box(x, y - 0.01, z, cs * (ax ? 0.7 : 0.26), cs * 0.16, cs * (ax ? 0.26 : 0.7), r() < 0.7 ? '#f2efe8' : CONT[(r() * 3) | 0]); }
       } else if (c === 'o' && r() < 0.035 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => T(i + a, j + b) === 'b')) {
         umb.push([x, y, z, ['#f1eff5', '#d24b3a', '#3f9a6c'][(r() * 3) | 0]]); dbox.push([x, y + cs * 0.2, z, cs * 0.05, cs * 0.4, cs * 0.05, '#d9d4c8']); dbox.push([x, y + cs * 0.13, z, cs * 0.3, cs * 0.04, cs * 0.3, '#6b4a35']);
       } else if (c === 's' && r() < 0.22) { umb.push([x, y, z, CONT[(r() * 5) | 0]]); dbox.push([x, y + cs * 0.2, z, cs * 0.05, cs * 0.4, cs * 0.05, '#d9d4c8']); }
@@ -1943,9 +1987,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       smokeM.instanceMatrix.needsUpdate = true;
     };
     life(0);
-    const propM = inst(B(1, 1, 1), white(), props, (o, [x, y, z, sx, sy, sz, c], col) => { o.position.set(x, y, z); o.scale.set(sx, sy, sz); col.set(c); });
+    const propM = inst(B(1, 1, 1), white(), props, (o, [x, y, z, sx, sy, sz, c, ry], col) => { o.position.set(x, y, z); o.rotation.set(0, ry || 0, 0); o.scale.set(sx, sy, sz); col.set(c); });
     propM.frustumCulled = false; g.add(propM);
-    det.add(quiet(inst(B(1, 1, 1), white(), dbox, (o, [x, y, z, sx, sy, sz, c], col) => { o.position.set(x, y, z); o.scale.set(sx, sy, sz); col.set(c); })));
+    det.add(quiet(inst(B(1, 1, 1), white(), dbox, (o, [x, y, z, sx, sy, sz, c, ry], col) => { o.position.set(x, y, z); o.rotation.set(0, ry || 0, 0); o.scale.set(sx, sy, sz); col.set(c); })));
     det.add(quiet(inst(new THREE.ConeGeometry(0.5, 0.3, 8), white(), umb, (o, [x, y, z, c], col) => { o.position.set(x, y + cs * 0.45, z); o.scale.setScalar(cs * 0.75); col.set(c); })));
     add(g, B(NX * cs + 0.3, 1.4, NZ * cs + 0.3), '#1b1428', 0, BOT - 0.7, 0, { noShadow: true });
     // basamento: bordo, striscia luminosa viola e alone sotto il diorama
@@ -1993,7 +2037,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const labels = lms.map((l) => ({ it: l.it, en: l.en || l.it, x: l.x, z: l.z }));
     const spins = []; g.traverse((o) => { if (o.userData.spin) spins.push(o); });
     mark('resto'); const tms = {}; for (let k = 1; k < tm.length; k++) tms[tm[k][0]] = Math.round(tm[k][1] - tm[k - 1][1]);
-    return { wpmU: FP ? wpm : 0, mks, tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
+    return { brg: barges.map(([i, j]) => [ox + (i + 0.5) * cs, oz + (j + 0.5) * cs]), wpmU: FP ? wpm : 0, mks, tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
   }
 
   const LIGHT = {

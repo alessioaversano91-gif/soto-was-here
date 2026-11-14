@@ -184,3 +184,18 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Visto solo nel browser di prova (Genova, Marsiglia giorno; Lione, Mantova notte). Fluidità non misurata
 - [ ] Non fatto: incroci con raccordi curvi, rotatorie, parcheggi, frecce a terra; strade che seguono il terreno con scarpate
 - [ ] Notato a Genova, zona Darsena: il terreno scende all'acqua con pareti alte e irregolari (viene dai dati di quota). Da ammorbidire
+
+## Rive, incroci, banchine, porti (14 novembre)
+- [x] Banchine all'altezza giusta sull'acqua, per città (Genova 2,5 m, Marsiglia 2,2 m, Lione 6,5 m, Mantova 1,8 m): prima la misura era fissa e a Genova e Marsiglia l'acqua stava 14–15 m sotto le rive
+- [x] Pendenza limitata vicino all'acqua: sparite le pareti «da cava» (Darsena di Genova, Vieux-Port)
+- [x] Ponti riproporzionati alla nuova altezza dell'acqua
+- [x] Bordo in pietra e bitte lungo le rive costruite
+- [x] Lione: 90 chiatte ormeggiate, orientate come la sponda (scafo, stiva colorata, timoneria)
+- [x] Marsiglia Vieux-Port e Genova Porto Antico: pontili galleggianti con barche a vela e alberi
+- [x] Barche da pesca ormeggiate con scafo e cabina, orientate come la banchina (Genova, Marsiglia, Mantova)
+- [x] Marciapiedi anche sulle vie minori; testate arrotondate anche per i marciapiedi
+- [x] Rotatorie: isola verde col cordolo dove i dati contengono l'anello intero
+- [x] Frecce a terra sulle strade principali; auto in sosta lungo le vie minori
+- [ ] Rotatorie spezzate in più tratti nei dati non riconosciute; incroci ancora senza raccordi curvi veri
+- [ ] Visto solo nel browser di prova. Non rivisti: ponti di Genova e Mantova, banchine di Lione lungo il Rodano, auto in sosta da vicino
+- [ ] Posizione dei porticcioli impostata a mano (due riquadri); altri porti turistici non hanno pontili
