@@ -211,3 +211,10 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Provato con punti finti: bozze escluse, foto copiate, punti visibili sul sito, Editor nascosto
 - [ ] Non provato con una foto vera caricata nell'artifact: oggi l'artifact non ne contiene
 - [ ] La pubblicazione non è automatica: va chiesta a Claude ogni volta
+
+## Più personaggi nello stesso punto (14 novembre)
+- [x] Nell'Editor, alla voce «Chi», si possono selezionare più personaggi (almeno uno resta sempre scelto)
+- [x] Sulla mappa i volti compaiono affiancati; nelle liste e nella scheda a mosaico, con tutti i nomi
+- [x] Il filtro per personaggio mostra il punto per ciascuno dei presenti
+- [x] I punti già salvati con un solo personaggio continuano a funzionare
+- [x] Provato in locale con punti finti da due e tre personaggi (marcatori, scheda, Editor); nell'artifact vero non ancora

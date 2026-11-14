@@ -2485,8 +2485,8 @@ const CREW_BASE = [
   { id: 'alecio', name: 'Alecio', color: '#ef6b4a' }
 ];
 const STR = {
-  it: { tagline: 'La mappa dei luoghi dove è passata SOTO.', choose: 'SELEZIONA STAGE', crew: 'LA CREW', europe: 'Europa', explore: 'Esplora', editor: 'Editor', all: 'Tutti', empty: 'Nessun punto pubblicato in questa città.', clickToAdd: 'Clicca su un punto del diorama per aggiungere un elemento.', zoomHint: 'Zooma o doppio clic per scoprire i luoghi · Spazio + trascina per spostarti', zoomHintTouch: 'Trascina per spostarti · due dita per ruotare e zoomare', textLang: 'Testi in', moveHint: 'Clicca altrove sul diorama per spostare il punto.', who: 'Chi', title: 'Titolo', date: 'Data', text: 'Racconto', upload: 'Carica foto', change: 'Cambia foto', draft: 'BOZZA', pub: 'Pubblicato', save: 'Salva', saving: 'Salvo…', cancel: 'Annulla', edit: 'Modifica', del: 'Elimina', confirmDel: 'Eliminare questo punto?', needPos: 'Posiziona il punto cliccando sul diorama.', needTitle: 'Inserisci almeno un titolo.', creating: 'Nuovo punto', editing: 'Modifica punto', hide: 'Riduci', show: 'Apri', one: 'punto', many: 'punti', saveErr: 'Salvataggio non riuscito: ', login: 'Accesso Editor', loginSub: 'Solo la crew può aggiungere o modificare i punti.', email: 'Email', password: 'Password', enter: 'Entra', logout: 'Esci', loginErr: 'Credenziali non valide.', data: 'Dati', exportT: 'Esporta JSON', importT: 'Importa JSON', exportSub: 'Copia questo testo per salvare i punti.', importSub: 'Incolla qui un JSON esportato. Sostituisce i punti attuali.', copy: 'Copia', copied: 'Copiato', download: 'Scarica', doImport: 'Importa', close: 'Chiudi', badJson: 'JSON non valido.', loadingPts: 'Carico i punti…' },
-  en: { tagline: 'A map of the places SOTO has been.', choose: 'SELECT STAGE', crew: 'THE CREW', europe: 'Europe', explore: 'Explore', editor: 'Editor', all: 'All', empty: 'No published points in this city yet.', clickToAdd: 'Click anywhere on the diorama to add an entry.', zoomHint: 'Zoom or double-click to discover places · Space + drag to pan', zoomHintTouch: 'Drag to pan · two fingers to rotate and zoom', textLang: 'Texts in', moveHint: 'Click elsewhere on the diorama to move the point.', who: 'Who', title: 'Title', date: 'Date', text: 'Story', upload: 'Upload photo', change: 'Change photo', draft: 'DRAFT', pub: 'Published', save: 'Save', saving: 'Saving…', cancel: 'Cancel', edit: 'Edit', del: 'Delete', confirmDel: 'Delete this point?', needPos: 'Place the point by clicking the diorama.', needTitle: 'Add at least one title.', creating: 'New point', editing: 'Edit point', hide: 'Collapse', show: 'Open', one: 'point', many: 'points', saveErr: 'Save failed: ', login: 'Editor login', loginSub: 'Only the crew can add or edit points.', email: 'Email', password: 'Password', enter: 'Sign in', logout: 'Sign out', loginErr: 'Invalid credentials.', data: 'Data', exportT: 'Export JSON', importT: 'Import JSON', exportSub: 'Copy this text to back up the points.', importSub: 'Paste an exported JSON here. It replaces the current points.', copy: 'Copy', copied: 'Copied', download: 'Download', doImport: 'Import', close: 'Close', badJson: 'Invalid JSON.', loadingPts: 'Loading points…' }
+  it: { tagline: 'La mappa dei luoghi dove è passata SOTO.', choose: 'SELEZIONA STAGE', crew: 'LA CREW', europe: 'Europa', explore: 'Esplora', editor: 'Editor', all: 'Tutti', empty: 'Nessun punto pubblicato in questa città.', clickToAdd: 'Clicca su un punto del diorama per aggiungere un elemento.', zoomHint: 'Zooma o doppio clic per scoprire i luoghi · Spazio + trascina per spostarti', zoomHintTouch: 'Trascina per spostarti · due dita per ruotare e zoomare', textLang: 'Testi in', moveHint: 'Clicca altrove sul diorama per spostare il punto.', who: 'Chi (anche più di uno)', title: 'Titolo', date: 'Data', text: 'Racconto', upload: 'Carica foto', change: 'Cambia foto', draft: 'BOZZA', pub: 'Pubblicato', save: 'Salva', saving: 'Salvo…', cancel: 'Annulla', edit: 'Modifica', del: 'Elimina', confirmDel: 'Eliminare questo punto?', needPos: 'Posiziona il punto cliccando sul diorama.', needTitle: 'Inserisci almeno un titolo.', creating: 'Nuovo punto', editing: 'Modifica punto', hide: 'Riduci', show: 'Apri', one: 'punto', many: 'punti', saveErr: 'Salvataggio non riuscito: ', login: 'Accesso Editor', loginSub: 'Solo la crew può aggiungere o modificare i punti.', email: 'Email', password: 'Password', enter: 'Entra', logout: 'Esci', loginErr: 'Credenziali non valide.', data: 'Dati', exportT: 'Esporta JSON', importT: 'Importa JSON', exportSub: 'Copia questo testo per salvare i punti.', importSub: 'Incolla qui un JSON esportato. Sostituisce i punti attuali.', copy: 'Copia', copied: 'Copiato', download: 'Scarica', doImport: 'Importa', close: 'Chiudi', badJson: 'JSON non valido.', loadingPts: 'Carico i punti…' },
+  en: { tagline: 'A map of the places SOTO has been.', choose: 'SELECT STAGE', crew: 'THE CREW', europe: 'Europe', explore: 'Explore', editor: 'Editor', all: 'All', empty: 'No published points in this city yet.', clickToAdd: 'Click anywhere on the diorama to add an entry.', zoomHint: 'Zoom or double-click to discover places · Space + drag to pan', zoomHintTouch: 'Drag to pan · two fingers to rotate and zoom', textLang: 'Texts in', moveHint: 'Click elsewhere on the diorama to move the point.', who: 'Who (one or more)', title: 'Title', date: 'Date', text: 'Story', upload: 'Upload photo', change: 'Change photo', draft: 'DRAFT', pub: 'Published', save: 'Save', saving: 'Saving…', cancel: 'Cancel', edit: 'Edit', del: 'Delete', confirmDel: 'Delete this point?', needPos: 'Place the point by clicking the diorama.', needTitle: 'Add at least one title.', creating: 'New point', editing: 'Edit point', hide: 'Collapse', show: 'Open', one: 'point', many: 'points', saveErr: 'Save failed: ', login: 'Editor login', loginSub: 'Only the crew can add or edit points.', email: 'Email', password: 'Password', enter: 'Sign in', logout: 'Sign out', loginErr: 'Invalid credentials.', data: 'Data', exportT: 'Export JSON', importT: 'Import JSON', exportSub: 'Copy this text to back up the points.', importSub: 'Paste an exported JSON here. It replaces the current points.', copy: 'Copy', copied: 'Copied', download: 'Download', doImport: 'Import', close: 'Close', badJson: 'Invalid JSON.', loadingPts: 'Loading points…' }
 };
 const LOAD = {
   it: { osm: 'Scarico strade ed edifici da OpenStreetMap…', build: 'Disegno la pianta della città…', terrain: 'Aggiungo colline e altimetria…', sub: 'Solo al primo accesso, poi la città resta salvata.', fb: 'Dati reali non raggiungibili: versione stilizzata.' },
@@ -2498,6 +2498,8 @@ const readImg = (file) => new Promise((res) => {
   r.onload = () => { const im = new Image(); im.onload = () => { const s = Math.min(1, 1200 / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.8)); }; im.src = r.result; };
   r.readAsDataURL(file);
 });
+// Un punto puo avere piu personaggi: `members` e l'elenco, `member` resta il primo (per i punti salvati prima).
+const memIds = (p) => (p && Array.isArray(p.members) && p.members.length ? p.members : [(p && p.member) || 'albi']);
 const safeGet = (k) => { try { return JSON.parse(window.localStorage.getItem(k)); } catch (e) { return null; } };
 const safeSet = (k, v) => { try { window.localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const UIKEY = 'soto-was-here:ui';
@@ -2553,7 +2555,7 @@ class SotoWasHere extends React.Component {
     if (this.state.mode === 'editor') this.setState((s) => ({ draft: { ...(s.draft || this.blank()), x, z, lat: ll.lat, lon: ll.lon }, pop: { x: sx, y: sy }, draftLang: s.draft ? s.draftLang : s.lang }));
     else if (this.state.sel) this.setState({ sel: null });
   }
-  blank() { return { id: null, city: this.state.city, member: 'albi', titleIt: '', titleEn: '', textIt: '', textEn: '', date: new Date().toISOString().slice(0, 10), photo: '', photoFile: null, status: 'draft', x: null, z: null }; }
+  blank() { return { id: null, city: this.state.city, member: 'albi', members: ['albi'], titleIt: '', titleEn: '', textIt: '', textEn: '', date: new Date().toISOString().slice(0, 10), photo: '', photoFile: null, status: 'draft', x: null, z: null }; }
   enterCity(id) {
     if (SotoEngine.prefetch) SotoEngine.prefetch(id); // i dati della citta partono subito, mentre la mappa si ingrandisce
     const go = () => this.setState({ view: 'city', city: id, sel: null, draft: null, filter: null });
@@ -2571,7 +2573,7 @@ class SotoWasHere extends React.Component {
   setHd(v) { this.setState({ hd: v }); if (this.eng) this.eng.setOptions({ pixel: v ? 1 : (this.props.options || {}).pixelSize ?? 2 }); }
   isNarrow() { const el = this.rootRef.current; return (el ? el.clientWidth : typeof innerWidth === 'undefined' ? 1200 : innerWidth) <= 860; }
   select(p) { const w = this.pos(p); this.setState({ sel: p.id }); if (this.eng) this.eng.flyTo(w.x, w.z, 11); }
-  edit(p) { const w = this.pos(p); this.setState((s) => ({ draft: { id: p.id, city: p.city, member: p.member, titleIt: p.title.it || '', titleEn: p.title.en || '', textIt: p.text.it || '', textEn: p.text.en || '', date: p.date, photo: p.photo, photoFile: null, status: p.status, x: w.x, z: w.z, lat: p.lat, lon: p.lon }, pop: null, draftLang: s.lang })); if (this.eng) this.eng.flyTo(w.x, w.z, 16); }
+  edit(p) { const w = this.pos(p); this.setState((s) => ({ draft: { id: p.id, city: p.city, member: memIds(p)[0], members: memIds(p).slice(), titleIt: p.title.it || '', titleEn: p.title.en || '', textIt: p.text.it || '', textEn: p.text.en || '', date: p.date, photo: p.photo, photoFile: null, status: p.status, x: w.x, z: w.z, lat: p.lat, lon: p.lon }, pop: null, draftLang: s.lang })); if (this.eng) this.eng.flyTo(w.x, w.z, 16); }
   setDraft(patch) { this.setState((s) => ({ draft: { ...s.draft, ...patch } })); }
   toEditor() { if (this.api.readOnly) return; if (this.canEdit()) this.setState({ mode: 'editor', sel: null }); else this.setState({ login: { email: '', password: '', err: '' } }); }
   async save() {
@@ -2582,7 +2584,7 @@ class SotoWasHere extends React.Component {
     try {
       let photo = d.photo;
       if (d.photoFile && this.api.uploadPhoto) photo = await this.api.uploadPhoto(d.photoFile);
-      const rec = { id: d.id, city: d.city, member: d.member, title: { it: d.titleIt.trim(), en: d.titleEn.trim() }, text: { it: d.textIt, en: d.textEn }, date: d.date, photo, status: d.status, lat: d.lat, lon: d.lon };
+      const rec = { id: d.id, city: d.city, member: memIds(d)[0], members: memIds(d), title: { it: d.titleIt.trim(), en: d.titleEn.trim() }, text: { it: d.textIt, en: d.textEn }, date: d.date, photo, status: d.status, lat: d.lat, lon: d.lon };
       const saved = (this.api.save ? await this.api.save(rec) : null) || { ...rec, id: rec.id || 'p' + Date.now().toString(36) };
       this.setState((s) => ({ points: s.points.some((p) => p.id === saved.id) ? s.points.map((p) => (p.id === saved.id ? saved : p)) : [...s.points, saved], draft: null, pop: null, saving: false }));
     } catch (e) { this.setState({ saving: false }); alert(S.saveErr + (e && e.message ? e.message : e)); }
@@ -2628,7 +2630,7 @@ class SotoWasHere extends React.Component {
     const pubIn = (cid) => s.points.filter((p) => p.city === cid && p.status === 'published');
     const isCity = s.view === 'city', isEditor = isCity && s.mode === 'editor';
     const inCity = s.points.filter((p) => p.city === s.city).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const visible = isEditor ? inCity : inCity.filter((p) => p.status === 'published' && (!s.filter || p.member === s.filter));
+    const visible = isEditor ? inCity : inCity.filter((p) => p.status === 'published' && (!s.filter || memIds(p).indexOf(s.filter) >= 0));
     const d = s.draft, C = this.cityReady();
     const selP = !isEditor && s.sel && s.points.find((p) => p.id === s.sel);
     const pp = this.popPos();
@@ -2639,6 +2641,17 @@ class SotoWasHere extends React.Component {
     const loading = isCity && ['osm', 'build', 'terrain'].includes(s.cityStatus);
     const tabBtn = (on) => `border:0;padding:9px 14px;font-size:14px;cursor:pointer;background:${on ? ACC : 'transparent'};color:#f1eff5`;
     const langBtn = (on) => `border:0;padding:9px 10px;font-family:Silkscreen,monospace;font-size:12px;cursor:pointer;background:${on ? '#2e2347' : 'transparent'};color:#f1eff5`;
+    const mems = (p) => { const ids = memIds(p); return CREW.filter((m) => ids.indexOf(m.id) >= 0).concat(ids.some((q) => CREW.some((m) => m.id === q)) ? [] : [CREW[0]]); };
+    // piu volti nello stesso riquadro (liste e scheda): mosaico 2x2
+    const faceSet = (ms, size, rad, bw) => ms.length < 2 ? faceImg(ms[0].face, size, rad, `${bw}px solid ${ms[0].color}`) : (
+      <span style={st(`width:${size}px;height:${size}px;display:grid;grid-template-columns:1fr 1fr;gap:2px;align-content:center`)}>
+        {ms.slice(0, 4).map((m) => <img key={m.id} src={m.face} alt="" style={st(`width:100%;aspect-ratio:1;border-radius:${Math.max(3, rad - 4)}px;border:1px solid ${m.color};image-rendering:pixelated;object-fit:cover;display:block;background:#0b0a0f;box-sizing:border-box`)} />)}
+      </span>);
+    // piu volti affiancati sulla mappa
+    const faceRow = (ms, size, rad, border, extra = '') => { const z = ms.length > 2 ? Math.round(size * 0.8) : size; return (
+      <span style={st('display:flex;align-items:flex-end')}>
+        {ms.map((m, n) => <span key={m.id} style={st(`margin-left:${n ? -Math.round(z * 0.22) : 0}px;position:relative;z-index:${10 - n}`)}>{faceImg(m.face, z, rad, border(m), extra)}</span>)}
+      </span>); };
     const faceImg = (src, size, rad, border, extra = '') => <img src={src} alt="" style={st(`width:${size}px;height:${size}px;border-radius:${rad}px;border:${border};image-rendering:pixelated;object-fit:cover;display:block;background:#0b0a0f;${extra}`)} />;
 
     return (
@@ -2707,12 +2720,12 @@ class SotoWasHere extends React.Component {
               </div>
             ))}
             {C && visible.filter((p) => !(d && d.id === p.id)).map((p) => {
-              const m = mem(p.member), w = this.pos(p), dr = p.status === 'draft';
+              const ms = mems(p), m = ms[0], w = this.pos(p), dr = p.status === 'draft';
               return (
                 <div key={p.id} data-wx={w.x} data-wz={w.z} data-bob="1" style={st('position:absolute;left:0;top:0;visibility:hidden')}>
                   <button className="soto-mk" onClick={() => (isEditor ? this.edit(p) : this.select(p))} title={tx(p.title)} style={st(`position:absolute;left:0;bottom:0;transform:translateX(-50%) scale(${s.sel === p.id ? 1.25 : 1});transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;opacity:${dr ? 0.7 : 1}`)}>
                     {dr && <span style={st('font-family:Silkscreen,monospace;font-size:10px;background:#0b0a0f;color:#f1eff5;border:1px dashed #a374f0;border-radius:4px;padding:1px 5px;margin-bottom:3px')}>{S.draft}</span>}
-                    {faceImg(m.face, 44, 9, `3px solid ${m.color}`, 'box-shadow:3px 3px 0 #000')}
+                    {faceRow(ms, 44, 9, (q) => `3px solid ${q.color}`, 'box-shadow:3px 3px 0 #000')}
                     <span style={st(`width:3px;height:16px;background:${m.color}`)}></span>
                     <span className="soto-ring" style={st(`width:10px;height:5px;border-radius:50%;background:rgba(0,0,0,0.55);color:${m.color}`)}></span>
                   </button>
@@ -2722,7 +2735,7 @@ class SotoWasHere extends React.Component {
             {isEditor && d && d.x != null && (
               <div data-wx={d.x} data-wz={d.z} style={st('position:absolute;left:0;top:0;visibility:hidden')}>
                 <div style={st('position:absolute;left:0;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center')}>
-                  {faceImg(mem(d.member).face, 50, 10, '3px dashed #a374f0', 'box-shadow:0 0 0 4px rgba(163,116,240,0.3)')}
+                  {faceRow(mems(d), 50, 10, () => '3px dashed #a374f0', 'box-shadow:0 0 0 4px rgba(163,116,240,0.3)')}
                   <span style={st('width:3px;height:18px;background:#a374f0')}></span>
                   <span style={st('width:14px;height:6px;border-radius:50%;background:#a374f0')}></span>
                 </div>
@@ -2782,12 +2795,12 @@ class SotoWasHere extends React.Component {
                     ))}
                   </div>
                   <div style={st('overflow:auto;flex:1')}>
-                    {visible.map((p) => { const m = mem(p.member); return (
+                    {visible.map((p) => { const ms = mems(p), m = ms[0]; return (
                       <button key={p.id} className="soto-h3" onClick={() => this.select(p)} style={st(`display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;width:100%;padding:12px 18px;border:0;border-bottom:1px solid #1f1930;background:${s.sel === p.id ? '#231b38' : 'transparent'};color:#f1eff5;text-align:left;cursor:pointer`)}>
-                        {faceImg(m.face, 40, 8, `2px solid ${m.color}`)}
+                        {faceSet(ms, 40, 8, 2)}
                         <span style={st('display:flex;flex-direction:column;gap:3px;min-width:0')}>
                           <span style={st('font-weight:700;font-size:15px;line-height:1.25;text-wrap:pretty')}>{tx(p.title)}</span>
-                          <span style={st('font-size:12px;color:#9a96a6')}>{m.name} · {fmt(p.date)}</span>
+                          <span style={st('font-size:12px;color:#9a96a6')}>{ms.map((q) => q.name).join(', ')} · {fmt(p.date)}</span>
                         </span>
                       </button>
                     ); })}
@@ -2801,9 +2814,9 @@ class SotoWasHere extends React.Component {
                     <span style={st('width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#5b3fb0;color:#fff;font-size:18px;font-weight:700')}>+</span>
                     <span style={st('font-size:14px;line-height:1.4;color:#f1eff5;text-wrap:pretty')}>{S.clickToAdd}</span>
                   </div>
-                  {inCity.map((p) => { const m = mem(p.member), pub = p.status === 'published'; return (
+                  {inCity.map((p) => { const ms = mems(p), m = ms[0], pub = p.status === 'published'; return (
                     <div key={p.id} style={st(`display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 18px;border-top:1px solid #1f1930;background:${d && d.id === p.id ? '#231b38' : 'transparent'}`)}>
-                      {faceImg(m.face, 36, 8, `2px solid ${m.color}`)}
+                      {faceSet(ms, 36, 8, 2)}
                       <span style={st('display:flex;flex-direction:column;gap:3px;min-width:0')}>
                         <span style={st('font-weight:700;font-size:14px;line-height:1.25')}>{tx(p.title)}</span>
                         <span style={st('display:flex;gap:6px;align-items:center;font-size:12px;color:#9a96a6')}><span style={st(`font-family:Silkscreen,monospace;font-size:10px;padding:1px 5px;border-radius:4px;border:1px ${pub ? 'solid' : 'dashed'} #a374f0;color:${pub ? '#c4a3ff' : '#9a96a6'}`)}>{pub ? S.pub.toUpperCase() : S.draft}</span>{fmt(p.date)}</span>
@@ -2823,7 +2836,7 @@ class SotoWasHere extends React.Component {
             </aside>
 
             {selP && (() => {
-              const m = mem(selP.member), idx = visible.findIndex((q) => q.id === selP.id), go = (dl) => { const q = visible[(idx + dl + visible.length) % visible.length]; if (q) this.select(q); };
+              const ms = mems(selP), m = ms[0], idx = visible.findIndex((q) => q.id === selP.id), go = (dl) => { const q = visible[(idx + dl + visible.length) % visible.length]; if (q) this.select(q); };
               const nb = 'width:36px;height:36px;border-radius:9px;border:1px solid #2e2347;background:none;color:#f1eff5;font-size:18px;cursor:pointer';
               return (
                 <article key={selP.id} className="soto-card" style={st((narrow ? 'position:absolute;left:12px;right:12px;bottom:12px;max-height:56%;z-index:3;' : 'position:absolute;top:72px;right:clamp(72px,7vw,96px);width:min(380px, calc(100% - 24px));max-height:calc(100% - 96px);') + 'overflow:auto;background:rgba(17,14,25,0.96);border:1px solid #2e2347;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.45)')}>
@@ -2837,9 +2850,9 @@ class SotoWasHere extends React.Component {
                   <div style={st('padding:14px 18px 20px;display:flex;flex-direction:column;gap:10px')}>
                     <div style={st('font-family:Silkscreen,monospace;font-size:11px;color:#a374f0;letter-spacing:0.04em;line-height:1.5')}>STAGE {cN} · {city.name[L].toUpperCase()}{selP.lat != null && selP.lon != null ? ` · ${Math.abs(selP.lat).toFixed(4)}°${selP.lat >= 0 ? 'N' : 'S'} ${Math.abs(selP.lon).toFixed(4)}°${selP.lon >= 0 ? 'E' : 'W'}` : ''}</div>
                     <div style={st('display:flex;align-items:center;gap:10px')}>
-                      {faceImg(m.face, 40, 8, `2px solid ${m.color}`)}
+                      {faceSet(ms, 40, 8, 2)}
                       <div style={st('display:flex;flex-direction:column;gap:2px;flex:1;min-width:0')}>
-                        <span style={st('font-weight:700;font-size:14px')}>{m.name}</span>
+                        <span style={st('font-weight:700;font-size:14px')}>{ms.map((q) => q.name).join(' · ')}</span>
                         <span style={st('font-size:12px;color:#9a96a6')}>{fmt(selP.date)}</span>
                       </div>
                       {visible.length > 1 && <button onClick={() => go(-1)} aria-label={L === 'it' ? 'Punto precedente' : 'Previous point'} style={st(nb)}>‹</button>}
@@ -2863,8 +2876,8 @@ class SotoWasHere extends React.Component {
                   <div style={st('display:flex;flex-direction:column;gap:6px')}>
                     <span style={st('font-size:12px;color:#9a96a6;font-weight:500')}>{S.who}</span>
                     <div style={st('display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px')}>
-                      {CREW.map((m) => { const on = d.member === m.id; return (
-                        <button key={m.id} onClick={() => this.setDraft({ member: m.id })} style={st(`display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:10px;border:2px solid ${on ? m.color : '#2e2347'};background:${on ? '#1d1530' : 'transparent'};color:#f1eff5;cursor:pointer;font-size:12px;font-weight:500`)}>
+                      {CREW.map((m) => { const cur = memIds(d), on = cur.indexOf(m.id) >= 0, nx = on ? cur.filter((q) => q !== m.id) : CREW.map((q) => q.id).filter((q) => q === m.id || cur.indexOf(q) >= 0); return (
+                        <button key={m.id} aria-pressed={on} onClick={() => { if (nx.length) this.setDraft({ members: nx, member: nx[0] }); }} style={st(`display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:10px;border:2px solid ${on ? m.color : '#2e2347'};background:${on ? '#1d1530' : 'transparent'};color:#f1eff5;cursor:pointer;font-size:12px;font-weight:500`)}>
                           {faceImg(m.face, 44, 7, '0')}{m.name}
                         </button>
                       ); })}

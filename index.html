@@ -6327,7 +6327,7 @@ const STR = {
     zoomHintTouch: 'Trascina per spostarti · due dita per ruotare e zoomare',
     textLang: 'Testi in',
     moveHint: 'Clicca altrove sul diorama per spostare il punto.',
-    who: 'Chi',
+    who: 'Chi (anche più di uno)',
     title: 'Titolo',
     date: 'Data',
     text: 'Racconto',
@@ -6384,7 +6384,7 @@ const STR = {
     zoomHintTouch: 'Drag to pan · two fingers to rotate and zoom',
     textLang: 'Texts in',
     moveHint: 'Click elsewhere on the diorama to move the point.',
-    who: 'Who',
+    who: 'Who (one or more)',
     title: 'Title',
     date: 'Date',
     text: 'Story',
@@ -6461,6 +6461,8 @@ const readImg = file => new Promise(res => {
   };
   r.readAsDataURL(file);
 });
+// Un punto puo avere piu personaggi: `members` e l'elenco, `member` resta il primo (per i punti salvati prima).
+const memIds = p => p && Array.isArray(p.members) && p.members.length ? p.members : [p && p.member || 'albi'];
 const safeGet = k => {
   try {
     return JSON.parse(window.localStorage.getItem(k));
@@ -6629,6 +6631,7 @@ class SotoWasHere extends React.Component {
       id: null,
       city: this.state.city,
       member: 'albi',
+      members: ['albi'],
       titleIt: '',
       titleEn: '',
       textIt: '',
@@ -6720,7 +6723,8 @@ class SotoWasHere extends React.Component {
       draft: {
         id: p.id,
         city: p.city,
-        member: p.member,
+        member: memIds(p)[0],
+        members: memIds(p).slice(),
         titleIt: p.title.it || '',
         titleEn: p.title.en || '',
         textIt: p.text.it || '',
@@ -6780,7 +6784,8 @@ class SotoWasHere extends React.Component {
       const rec = {
         id: d.id,
         city: d.city,
-        member: d.member,
+        member: memIds(d)[0],
+        members: memIds(d),
         title: {
           it: d.titleIt.trim(),
           en: d.titleEn.trim()
@@ -6948,7 +6953,7 @@ class SotoWasHere extends React.Component {
     const isCity = s.view === 'city',
       isEditor = isCity && s.mode === 'editor';
     const inCity = s.points.filter(p => p.city === s.city).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const visible = isEditor ? inCity : inCity.filter(p => p.status === 'published' && (!s.filter || p.member === s.filter));
+    const visible = isEditor ? inCity : inCity.filter(p => p.status === 'published' && (!s.filter || memIds(p).indexOf(s.filter) >= 0));
     const d = s.draft,
       C = this.cityReady();
     const selP = !isEditor && s.sel && s.points.find(p => p.id === s.sel);
@@ -6961,6 +6966,29 @@ class SotoWasHere extends React.Component {
     const loading = isCity && ['osm', 'build', 'terrain'].includes(s.cityStatus);
     const tabBtn = on => `border:0;padding:9px 14px;font-size:14px;cursor:pointer;background:${on ? ACC : 'transparent'};color:#f1eff5`;
     const langBtn = on => `border:0;padding:9px 10px;font-family:Silkscreen,monospace;font-size:12px;cursor:pointer;background:${on ? '#2e2347' : 'transparent'};color:#f1eff5`;
+    const mems = p => {
+      const ids = memIds(p);
+      return CREW.filter(m => ids.indexOf(m.id) >= 0).concat(ids.some(q => CREW.some(m => m.id === q)) ? [] : [CREW[0]]);
+    };
+    // piu volti nello stesso riquadro (liste e scheda): mosaico 2x2
+    const faceSet = (ms, size, rad, bw) => ms.length < 2 ? faceImg(ms[0].face, size, rad, `${bw}px solid ${ms[0].color}`) : /*#__PURE__*/React.createElement("span", {
+      style: st(`width:${size}px;height:${size}px;display:grid;grid-template-columns:1fr 1fr;gap:2px;align-content:center`)
+    }, ms.slice(0, 4).map(m => /*#__PURE__*/React.createElement("img", {
+      key: m.id,
+      src: m.face,
+      alt: "",
+      style: st(`width:100%;aspect-ratio:1;border-radius:${Math.max(3, rad - 4)}px;border:1px solid ${m.color};image-rendering:pixelated;object-fit:cover;display:block;background:#0b0a0f;box-sizing:border-box`)
+    })));
+    // piu volti affiancati sulla mappa
+    const faceRow = (ms, size, rad, border, extra = '') => {
+      const z = ms.length > 2 ? Math.round(size * 0.8) : size;
+      return /*#__PURE__*/React.createElement("span", {
+        style: st('display:flex;align-items:flex-end')
+      }, ms.map((m, n) => /*#__PURE__*/React.createElement("span", {
+        key: m.id,
+        style: st(`margin-left:${n ? -Math.round(z * 0.22) : 0}px;position:relative;z-index:${10 - n}`)
+      }, faceImg(m.face, z, rad, border(m), extra))));
+    };
     const faceImg = (src, size, rad, border, extra = '') => /*#__PURE__*/React.createElement("img", {
       src: src,
       alt: "",
@@ -7083,7 +7111,8 @@ class SotoWasHere extends React.Component {
     }), /*#__PURE__*/React.createElement("span", {
       style: st('width:5px;height:5px;background:#a374f0')
     })))), C && visible.filter(p => !(d && d.id === p.id)).map(p => {
-      const m = mem(p.member),
+      const ms = mems(p),
+        m = ms[0],
         w = this.pos(p),
         dr = p.status === 'draft';
       return /*#__PURE__*/React.createElement("div", {
@@ -7099,7 +7128,7 @@ class SotoWasHere extends React.Component {
         style: st(`position:absolute;left:0;bottom:0;transform:translateX(-50%) scale(${s.sel === p.id ? 1.25 : 1});transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;opacity:${dr ? 0.7 : 1}`)
       }, dr && /*#__PURE__*/React.createElement("span", {
         style: st('font-family:Silkscreen,monospace;font-size:10px;background:#0b0a0f;color:#f1eff5;border:1px dashed #a374f0;border-radius:4px;padding:1px 5px;margin-bottom:3px')
-      }, S.draft), faceImg(m.face, 44, 9, `3px solid ${m.color}`, 'box-shadow:3px 3px 0 #000'), /*#__PURE__*/React.createElement("span", {
+      }, S.draft), faceRow(ms, 44, 9, q => `3px solid ${q.color}`, 'box-shadow:3px 3px 0 #000'), /*#__PURE__*/React.createElement("span", {
         style: st(`width:3px;height:16px;background:${m.color}`)
       }), /*#__PURE__*/React.createElement("span", {
         className: "soto-ring",
@@ -7111,7 +7140,7 @@ class SotoWasHere extends React.Component {
       style: st('position:absolute;left:0;top:0;visibility:hidden')
     }, /*#__PURE__*/React.createElement("div", {
       style: st('position:absolute;left:0;bottom:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center')
-    }, faceImg(mem(d.member).face, 50, 10, '3px dashed #a374f0', 'box-shadow:0 0 0 4px rgba(163,116,240,0.3)'), /*#__PURE__*/React.createElement("span", {
+    }, faceRow(mems(d), 50, 10, () => '3px dashed #a374f0', 'box-shadow:0 0 0 4px rgba(163,116,240,0.3)'), /*#__PURE__*/React.createElement("span", {
       style: st('width:3px;height:18px;background:#a374f0')
     }), /*#__PURE__*/React.createElement("span", {
       style: st('width:14px;height:6px;border-radius:50%;background:#a374f0')
@@ -7213,19 +7242,20 @@ class SotoWasHere extends React.Component {
     })))), /*#__PURE__*/React.createElement("div", {
       style: st('overflow:auto;flex:1')
     }, visible.map(p => {
-      const m = mem(p.member);
+      const ms = mems(p),
+        m = ms[0];
       return /*#__PURE__*/React.createElement("button", {
         key: p.id,
         className: "soto-h3",
         onClick: () => this.select(p),
         style: st(`display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;width:100%;padding:12px 18px;border:0;border-bottom:1px solid #1f1930;background:${s.sel === p.id ? '#231b38' : 'transparent'};color:#f1eff5;text-align:left;cursor:pointer`)
-      }, faceImg(m.face, 40, 8, `2px solid ${m.color}`), /*#__PURE__*/React.createElement("span", {
+      }, faceSet(ms, 40, 8, 2), /*#__PURE__*/React.createElement("span", {
         style: st('display:flex;flex-direction:column;gap:3px;min-width:0')
       }, /*#__PURE__*/React.createElement("span", {
         style: st('font-weight:700;font-size:15px;line-height:1.25;text-wrap:pretty')
       }, tx(p.title)), /*#__PURE__*/React.createElement("span", {
         style: st('font-size:12px;color:#9a96a6')
-      }, m.name, " \xB7 ", fmt(p.date))));
+      }, ms.map(q => q.name).join(', '), " \xB7 ", fmt(p.date))));
     }), s.loaded && !visible.length && /*#__PURE__*/React.createElement("div", {
       style: st('padding:20px 18px;font-size:14px;color:#9a96a6;line-height:1.45;text-wrap:pretty')
     }, S.empty))), panelOn && isEditor && /*#__PURE__*/React.createElement("div", {
@@ -7237,12 +7267,13 @@ class SotoWasHere extends React.Component {
     }, "+"), /*#__PURE__*/React.createElement("span", {
       style: st('font-size:14px;line-height:1.4;color:#f1eff5;text-wrap:pretty')
     }, S.clickToAdd)), inCity.map(p => {
-      const m = mem(p.member),
+      const ms = mems(p),
+        m = ms[0],
         pub = p.status === 'published';
       return /*#__PURE__*/React.createElement("div", {
         key: p.id,
         style: st(`display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 18px;border-top:1px solid #1f1930;background:${d && d.id === p.id ? '#231b38' : 'transparent'}`)
-      }, faceImg(m.face, 36, 8, `2px solid ${m.color}`), /*#__PURE__*/React.createElement("span", {
+      }, faceSet(ms, 36, 8, 2), /*#__PURE__*/React.createElement("span", {
         style: st('display:flex;flex-direction:column;gap:3px;min-width:0')
       }, /*#__PURE__*/React.createElement("span", {
         style: st('font-weight:700;font-size:14px;line-height:1.25')
@@ -7279,7 +7310,8 @@ class SotoWasHere extends React.Component {
       }),
       style: st('flex:1;height:36px;border-radius:9px;border:1px solid #2e2347;background:none;color:#9a96a6;font-size:12px;cursor:pointer')
     }, S.importT)))), selP && (() => {
-      const m = mem(selP.member),
+      const ms = mems(selP),
+        m = ms[0],
         idx = visible.findIndex(q => q.id === selP.id),
         go = dl => {
           const q = visible[(idx + dl + visible.length) % visible.length];
@@ -7304,11 +7336,11 @@ class SotoWasHere extends React.Component {
         style: st('font-family:Silkscreen,monospace;font-size:11px;color:#a374f0;letter-spacing:0.04em;line-height:1.5')
       }, "STAGE ", cN, " \xB7 ", city.name[L].toUpperCase(), selP.lat != null && selP.lon != null ? ` · ${Math.abs(selP.lat).toFixed(4)}°${selP.lat >= 0 ? 'N' : 'S'} ${Math.abs(selP.lon).toFixed(4)}°${selP.lon >= 0 ? 'E' : 'W'}` : ''), /*#__PURE__*/React.createElement("div", {
         style: st('display:flex;align-items:center;gap:10px')
-      }, faceImg(m.face, 40, 8, `2px solid ${m.color}`), /*#__PURE__*/React.createElement("div", {
+      }, faceSet(ms, 40, 8, 2), /*#__PURE__*/React.createElement("div", {
         style: st('display:flex;flex-direction:column;gap:2px;flex:1;min-width:0')
       }, /*#__PURE__*/React.createElement("span", {
         style: st('font-weight:700;font-size:14px')
-      }, m.name), /*#__PURE__*/React.createElement("span", {
+      }, ms.map(q => q.name).join(' · ')), /*#__PURE__*/React.createElement("span", {
         style: st('font-size:12px;color:#9a96a6')
       }, fmt(selP.date))), visible.length > 1 && /*#__PURE__*/React.createElement("button", {
         onClick: () => go(-1),
@@ -7351,12 +7383,18 @@ class SotoWasHere extends React.Component {
     }, S.who), /*#__PURE__*/React.createElement("div", {
       style: st('display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px')
     }, CREW.map(m => {
-      const on = d.member === m.id;
+      const cur = memIds(d),
+        on = cur.indexOf(m.id) >= 0,
+        nx = on ? cur.filter(q => q !== m.id) : CREW.map(q => q.id).filter(q => q === m.id || cur.indexOf(q) >= 0);
       return /*#__PURE__*/React.createElement("button", {
         key: m.id,
-        onClick: () => this.setDraft({
-          member: m.id
-        }),
+        "aria-pressed": on,
+        onClick: () => {
+          if (nx.length) this.setDraft({
+            members: nx,
+            member: nx[0]
+          });
+        },
         style: st(`display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:10px;border:2px solid ${on ? m.color : '#2e2347'};background:${on ? '#1d1530' : 'transparent'};color:#f1eff5;cursor:pointer;font-size:12px;font-weight:500`)
       }, faceImg(m.face, 44, 7, '0'), m.name);
     }))), /*#__PURE__*/React.createElement("div", {
