@@ -66,7 +66,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     return m;
   }
   /* Rifinitura grafica: piccoli innesti negli shader Lambert (finestre sugli edifici, strati di terra, profondità dell'acqua). */
-  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 }, uSky: { value: new THREE.Color('#c7b2ff') }, uSunDir: { value: new THREE.Vector3(0.6, 0.7, 0.3) }, uSunCol: { value: new THREE.Color('#ffc283') }, uCl: { value: new THREE.Vector2(0.2, 0.2) }, uFine: { value: 0 } };
+  const SOTO_U = { uWin: { value: 0 }, uRow: { value: 0.1 }, uNight: { value: 0 }, uT: { value: 0 }, uSky: { value: new THREE.Color('#c7b2ff') }, uSunDir: { value: new THREE.Vector3(0.6, 0.7, 0.3) }, uSunCol: { value: new THREE.Color('#ffc283') }, uCl: { value: new THREE.Vector2(0.2, 0.2) }, uFine: { value: 0 }, uRd: { value: 0 } };
   // Ombre di nuvole che scorrono su terreno, strade ed edifici (stessa formula in tutti i materiali).
   const CLOUD = '\nuniform vec2 uCl;\nfloat cH(vec2 p) { return fract(sin(dot(p, vec2(91.7, 283.3))) * 43758.5453); }\nfloat cN(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(cH(i), cH(i + vec2(1.0, 0.0)), f.x), mix(cH(i + vec2(0.0, 1.0)), cH(i + vec2(1.0, 1.0)), f.x), f.y); }\nfloat clSh(vec2 w) { vec2 p = w * uCl.x + vec2(uT * 0.03, uT * 0.011); return 1.0 - uCl.y * smoothstep(0.5, 0.74, cN(p) * 0.62 + cN(p * 2.3 + 7.0) * 0.38); }';
   const SHADE = {
@@ -160,7 +160,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       diffuseColor.rgb *= clSh(vWc);
       if (vW.w < 0.5) {
         // Facciata: tutto disegnato dal materiale (nessuna geometria in piu). Il dettaglio fine si accende solo da vicino.
-        float sty = floor(vW.z + 0.0001), bz = vW.z - sty, rows = max(1.0, floor(-vW.w * 64.0 + 0.5));
+        float sty = floor(vW.z + 0.0001), bz = (floor((vW.z - sty) * 256.0) + 0.5) / 256.0, rows = max(1.0, floor(-vW.w * 64.0 + 0.5));
         vec2 sg = vW.xy, sf = fract(sg), sid = floor(sg);
         float gf = step(sg.y, 1.0), fl = 1.0 - gf, ab = step(0.0, sg.y), body = ab * step(sg.y, rows), old = step(sty, 1.5);
         float hw = sH(sid + bz * 17.0), h2 = sH(sid * 1.7 + bz * 91.0);
@@ -241,14 +241,14 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         diffuseColor.rgb = mix(base, wall, uWin);
         totalEmissiveRadiance += em * uWin * (0.8 + 0.9 * uNight) + vec3(1.0, 0.74, 0.38) * step(mix(0.9, 0.62, uNight), bz) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5)));
       } else if (vW.w < 1.5) {
-        float ty = floor(vW.z + 0.0001), bz = vW.z - ty; vec2 rp = vW.xy;
+        float ty = floor(vW.z + 0.0001), bz = (floor((vW.z - ty) * 256.0) + 0.5) / 256.0; vec2 rp = vW.xy;
         diffuseColor.rgb *= 0.9 + 0.2 * sNz(rp * 0.7 + bz * 50.0) * uWin;
         if (ty < 0.5) diffuseColor.rgb *= 1.0 - 0.1 * uWin * min(1.0, step(0.9, fract(rp.x / 4.0)) + step(0.9, fract(rp.y / 4.0)));
         else if (ty < 1.5) { vec2 tf = fract(rp / 1.5); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.74, 0.5, 0.4), 0.6 * uWin); diffuseColor.rgb *= 1.0 - 0.14 * uWin * min(1.0, step(0.88, tf.x) + step(0.88, tf.y)); }
         else diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.36, 0.52, 0.3) * (0.8 + 0.4 * sNz(rp * 0.35 + bz * 9.0)), 0.75);
       } else if (vW.w > 1.5) {
         // Falde: tegole a file sfalsate, linea di gronda; lucernari sui tetti a padiglione, abbaini sulle mansarde.
-        float rt = floor(vW.z + 0.0001), bz = vW.z - rt; vec2 ru = vW.xy;
+        float rt = floor(vW.z + 0.0001), bz = (floor((vW.z - rt) * 256.0) + 0.5) / 256.0; vec2 ru = vW.xy;
         float tr = fract(ru.y * 5.0), tc = fract(ru.x / 0.9 + step(0.5, fract(ru.y * 2.5)) * 0.5);
         diffuseColor.rgb *= 1.0 - uWin * (0.16 * smoothstep(0.7, 1.0, tr) + 0.08 * step(0.88, tc));
         diffuseColor.rgb *= 0.94 + 0.12 * sH(floor(vec2(ru.x / 0.9, ru.y * 5.0)) + bz);
@@ -1434,7 +1434,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
         const k = j * NX + i; if (isW(k)) continue;
         const x0 = ox + i * cs, x1 = x0 + cs, z0 = oz + j * cs, z1 = z0 + cs, a = cor[j * CW + i], b = cor[(j + 1) * CW + i], c2 = cor[(j + 1) * CW + i + 1], d = cor[j * CW + i + 1];
-        const tc = RD && (ct[k] === 'r' || ct[k] === 'R') ? 'P' : RD && G.rl && ct[k] === 't' ? 'o' : ct[k]; tcol(col, tc, pkA[k]);
+        const tc = RD && (ct[k] === 'r' || ct[k] === 'R') ? 'o' : RD && G.rl && ct[k] === 't' ? 'o' : ct[k]; tcol(col, tc, pkA[k]);
         if (G.t[k] !== 'b') { const nb = (i > 0 && G.t[k - 1] === 'b') + (i < NX - 1 && G.t[k + 1] === 'b') + (j > 0 && G.t[k - NX] === 'b') + (j < NZ - 1 && G.t[k + NX] === 'b'); if (nb) col.multiplyScalar(1 - 0.065 * nb); }
         const cr = Math.round(col.r * 255), cg = Math.round(col.g * 255), cb = Math.round(col.b * 255);
         v(x0, a, z0, cr, cg, cb); v(x0, b, z1, cr, cg, cb); v(x1, c2, z1, cr, cg, cb); v(x0, a, z0, cr, cg, cb); v(x1, c2, z1, cr, cg, cb); v(x1, d, z0, cr, cg, cb);
@@ -1474,7 +1474,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         if (models.some((l) => hyp(l.x - cx, l.z - cz) < clearR * l.sc || (hyp(l.x - cx, l.z - cz) < clearR * 4 && pip(l.x, l.z, O)))) continue;
         let g0 = gy(cellK(cx, cz)), g1 = g0, wet = isWk(cellK(cx, cz)) ? 1 : 0; O.forEach((pt) => { const k = cellK(pt[0], pt[1]), y = gy(k); if (y < g0) g0 = y; if (y > g1) g1 = y; });
         if (wet) { g0 = Math.max(g0, 0); g1 = Math.max(g1, 0.02); }
-        const rows = Math.max(1, Math.round(hm / 3.5)), bh = Math.max(0.02, hm * hU), yB = g0 - 0.015, yR = g1 + bh, sd = r(), tall = hm >= 40;
+        const rows = Math.max(1, Math.round(hm / 3.5)), bh = Math.max(0.02, hm * hU), yB = g0 - 0.015, yR = g1 + bh, sd = (Math.floor(r() * 256) + 0.5) / 256, tall = hm >= 40; // seme a scatti: il materiale lo arrotonda e resta identico su tutta la facciata
         const fk = r() < 0.3 ? r() : hash(id + ':' + ((cx / (cs * 2.4)) | 0) + ':' + ((cz / (cs * 2.4)) | 0));
         const tn = tints.find((q) => cx > q[0] && cx < q[2] && cz > q[1] && cz < q[3]), FACE = tn ? tn[4] : p.face;
         jit(col.copy(cc(tall ? tallC : FACE[(fk * FACE.length) | 0])), (r() - 0.5) * 0.07);
@@ -1564,7 +1564,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const head = D[q], n = D[q + 1]; q += 2; const cl = head & 3, pts = []; let px = 0, pz = 0;
         for (let a = 0; a < n; a++) { const x = ox + D[q] * sxm, z = oz + D[q + 1] * szm; q += 2; if (a) { const L = hyp(x - px, z - pz), m = Math.max(1, Math.ceil(L / step)); for (let b = 1; b <= m; b++) pts.push([px + ((x - px) * b) / m, pz + ((z - pz) * b) / m]); } else pts.push([x, z]); px = x; pz = z; }
         if (pts.length < 2 || models.some((l) => hyp(l.x - pts[0][0], l.z - pts[0][1]) < clearR * l.sc * 0.6)) continue;
-        lines.push([cl, pts, head & 4]); np += pts.length * (cl >= 2 ? 3.1 : 1);
+        lines.push([cl, pts, head & 4]); np += pts.length * (cl >= 2 ? 2.4 : 1) + 8;
       }
       const TN = G.tn || [], tuns = [];
       for (let q = 0; q < TN.length;) {
@@ -1579,17 +1579,33 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         if (pts.length > 1) { lines.push([3 + (head & 3), pts, head & 4]); np += pts.length * 2; }
       }
       np = Math.ceil(np) + 16;
-      const P = new Float32Array(np * 6), Cc = new Uint8Array(np * 6), IX = new Uint32Array(np * 6); let nv = 0, ni = 0;
+      const P = new Float32Array(np * 6), Cc = new Uint8Array(np * 6), AR = new Float32Array(np * 8), IX = new Uint32Array(np * 6); let nv = 0, ni = 0;
       // un nastro: coppie di vertici ai lati del tracciato, appoggiate al terreno
-      const emit = (pts, a0, a1, hw, c, lift, vl) => {
+      // Profilo livellato: la strada e piana di traverso (stessa quota ai due bordi) e addolcita lungo il percorso.
+      const profile = (pts, hw) => {
+        const N = pts.length, m = new Float32Array(N), t = new Float32Array(N), Y = new Float32Array(N);
+        for (let a = 0; a < N; a++) { const A = pts[Math.max(0, a - 1)], Bp = pts[Math.min(N - 1, a + 1)]; let dx = Bp[0] - A[0], dz = Bp[1] - A[1]; const L = hyp(dx, dz) || 1; dx /= L; dz /= L; const x = pts[a][0], z = pts[a][1]; m[a] = Math.max(hAt(x, z), Math.max(hAt(x - dz * hw, z + dx * hw), hAt(x + dz * hw, z - dx * hw)) - 0.004); }
+        const W5 = [1, 2, 3, 2, 1], sm = (src, dst) => { for (let a = 0; a < N; a++) { let v = 0, w = 0; for (let k = -2; k <= 2; k++) { const b = a + k; if (b < 0 || b >= N) continue; v += src[b] * W5[k + 2]; w += W5[k + 2]; } dst[a] = v / w; } };
+        sm(m, t); sm(t, Y); for (let a = 0; a < N; a++) Y[a] = Math.max(Y[a], m[a] - 0.006);
+        return Y;
+      };
+      // un nastro: coppie di vertici ai lati del tracciato. ty dice al materiale cosa disegnare (segnaletica, lastricato, cordolo).
+      const emit = (pts, a0, a1, hw, c, lift, vl, Y, ty) => {
+        let run = 0;
         for (let a = a0; a <= a1; a++) {
           const A = pts[Math.max(0, a - 1)], Bp = pts[Math.min(pts.length - 1, a + 1)]; let dx = Bp[0] - A[0], dz = Bp[1] - A[1]; const L = hyp(dx, dz) || 1; dx /= L; dz /= L;
           const x = pts[a][0], z = pts[a][1], lx = x - dz * hw, lz = z + dx * hw, rx = x + dz * hw, rz = z - dx * hw, o = nv * 3, up = lift + (vl ? vl[a] : 0);
-          P[o] = lx; P[o + 1] = hAt(lx, lz) + up; P[o + 2] = lz; P[o + 3] = rx; P[o + 4] = hAt(rx, rz) + up; P[o + 5] = rz;
-          for (let e = 0; e < 2; e++) { Cc[o + e * 3] = c.r * 255; Cc[o + e * 3 + 1] = c.g * 255; Cc[o + e * 3 + 2] = c.b * 255; }
+          if (a > a0) run += hyp(x - pts[a - 1][0], z - pts[a - 1][1]) / wpm;
+          P[o] = lx; P[o + 1] = (Y ? Y[a] : hAt(lx, lz)) + up; P[o + 2] = lz; P[o + 3] = rx; P[o + 4] = (Y ? Y[a] : hAt(rx, rz)) + up; P[o + 5] = rz;
+          for (let e = 0; e < 2; e++) { Cc[o + e * 3] = c.r * 255; Cc[o + e * 3 + 1] = c.g * 255; Cc[o + e * 3 + 2] = c.b * 255; const q = (nv + e) * 4; AR[q] = e ? 1 : -1; AR[q + 1] = run; AR[q + 2] = ty === undefined ? 9 : ty; AR[q + 3] = hw / wpm; }
           if (a > a0) { IX[ni++] = nv - 2; IX[ni++] = nv; IX[ni++] = nv - 1; IX[ni++] = nv - 1; IX[ni++] = nv; IX[ni++] = nv + 1; }
           nv += 2;
         }
+      };
+      // testata arrotondata: chiude i tronchi e riempie i giunti tra un tratto e il successivo
+      const cap = (x, z, dx, dz, hw, c, y) => {
+        const b = nv; for (let k = 0; k < 7; k++) { const an = k ? (-Math.PI / 2) + ((k - 1) * Math.PI) / 5 : 0, rr = k ? hw : 0, ca = Math.cos(an), sa = Math.sin(an), o = nv * 3, q = nv * 4; P[o] = x + (dx * ca - dz * sa) * rr; P[o + 1] = y; P[o + 2] = z + (dz * ca + dx * sa) * rr; Cc[o] = c.r * 255; Cc[o + 1] = c.g * 255; Cc[o + 2] = c.b * 255; AR[q] = 0; AR[q + 1] = 0; AR[q + 2] = 9; AR[q + 3] = 1; nv++; }
+        for (let k = 1; k < 6; k++) { IX[ni++] = b; IX[ni++] = b + k; IX[ni++] = b + k + 1; }
       };
       // gallerie: tracciato tratteggiato in superficie e imbocchi alle due estremita
       tuns.forEach(([cl, pts]) => {
@@ -1598,26 +1614,55 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         [pts[0], pts[N - 1]].forEach((q) => { const y = hAt(q[0], q[1]); if (cellT(q[0], q[1]) === 'w') return; dbox.push([q[0], y + cs * 0.13, q[1], cs * 0.3, cs * 0.26, cs * 0.3, '#2a2630']); dbox.push([q[0], y + cs * 0.29, q[1], cs * 0.4, cs * 0.07, cs * 0.4, '#b3a798']); });
       });
       lines.forEach(([cl, pts, br]) => {
-        const hw = (WID[cl] * wpm) / 2, lift = 0.012 + cl * 0.003, R3 = [], N = pts.length;
+        const hw = (WID[cl] * wpm) / 2, lift = 0.012 + cl * 0.003, R3 = [], N = pts.length, Y = profile(pts, cl === 2 || cl === 3 ? hw + 1.7 * wpm : hw);
         // viadotti: i tratti segnati come ponte ma su terra si alzano su piloni
         const vl = br ? pts.map((q, a) => { const c = cellT(q[0], q[1]); return c === 'w' || c === 'x' ? 0 : 0.085 * Math.min(1, a / 4, (N - 1 - a) / 4); }) : null;
-        if (cl === 2 || cl === 3) emit(pts, 0, N - 1, hw + 1.7 * wpm, SIDE, lift - 0.005, vl);
-        emit(pts, 0, N - 1, hw, COL[cl], lift, vl);
-        if (cl > 3) { emit(pts, 0, N - 1, hw * 0.34, RAILC, lift + 0.004, vl); if (N >= 10) railRoutes.push({ kind: cl, P: pts.map((q, a) => { const A = pts[Math.max(0, a - 1)], Bp = pts[Math.min(N - 1, a + 1)], L = hyp(Bp[0] - A[0], Bp[1] - A[1]) || 1; return [q[0], hAt(q[0], q[1]) + (vl ? vl[a] : 0), q[1], (Bp[0] - A[0]) / L, (Bp[1] - A[1]) / L]; }) }); return; }
-        if ((cl === 2 || cl === 3) && !br) for (let a = 18; a + 1 < N; a += 36) { const A = pts[a], Bp = pts[a + 1], L = hyp(Bp[0] - A[0], Bp[1] - A[1]) || 1, nx = -(Bp[1] - A[1]) / L, nz = (Bp[0] - A[0]) / L; for (let k = -2; k <= 2; k++) emit([[A[0] + nx * k * hw * 0.36, A[1] + nz * k * hw * 0.36], [Bp[0] + nx * k * hw * 0.36, Bp[1] + nz * k * hw * 0.36]], 0, 1, hw * 0.1, LINE, lift + 0.005, null); }
-        if (cl === 3) for (let a = 1; a + 2 < N; a += 5) emit(pts, a, a + 2, Math.max(0.3 * wpm, cs * 0.012), LINE, lift + 0.004, vl);
+        if (cl === 2 || cl === 3) emit(pts, 0, N - 1, hw + 1.7 * wpm, SIDE, lift - 0.005, vl, Y, 4);
+        emit(pts, 0, N - 1, hw, COL[cl], lift, vl, Y, cl > 3 ? 9 : cl);
+        if (cl >= 1 && cl <= 3 && N > 1) [[0, 1], [N - 1, N - 2]].forEach(([e, f]) => { const L = hyp(pts[e][0] - pts[f][0], pts[e][1] - pts[f][1]) || 1; cap(pts[e][0], pts[e][1], (pts[e][0] - pts[f][0]) / L, (pts[e][1] - pts[f][1]) / L, hw, COL[cl], Y[e] + lift + (vl ? vl[e] : 0)); });
+        if (cl > 3) { emit(pts, 0, N - 1, hw * 0.34, RAILC, lift + 0.004, vl, Y); if (N >= 10) railRoutes.push({ kind: cl, P: pts.map((q, a) => { const A = pts[Math.max(0, a - 1)], Bp = pts[Math.min(N - 1, a + 1)], L = hyp(Bp[0] - A[0], Bp[1] - A[1]) || 1; return [q[0], Y[a] + (vl ? vl[a] : 0), q[1], (Bp[0] - A[0]) / L, (Bp[1] - A[1]) / L]; }) }); return; }
+        if ((cl === 2 || cl === 3) && !br) for (let a = 18; a + 1 < N; a += 36) { const A = pts[a], Bp = pts[a + 1], L = hyp(Bp[0] - A[0], Bp[1] - A[1]) || 1, nx = -(Bp[1] - A[1]) / L, nz = (Bp[0] - A[0]) / L; for (let k = -2; k <= 2; k++) emit([[A[0] + nx * k * hw * 0.36, A[1] + nz * k * hw * 0.36], [Bp[0] + nx * k * hw * 0.36, Bp[1] + nz * k * hw * 0.36]], 0, 1, hw * 0.1, LINE, lift + 0.005, null, [Y[a], Y[a + 1]]); }
         for (let a = 0; a < N; a++) {
           const A = pts[Math.max(0, a - 1)], Bp = pts[Math.min(N - 1, a + 1)]; let dx = Bp[0] - A[0], dz = Bp[1] - A[1]; const L = hyp(dx, dz) || 1; dx /= L; dz /= L;
           const x = pts[a][0], z = pts[a][1], up = vl ? vl[a] : 0;
           if (up > 0.05 && a % 6 === 0) dbox.push([x, hAt(x, z) + up / 2, z, cs * 0.14, up, cs * 0.14, '#8d8794']);
           if (cl === 0 && (id === 'genova' || id === 'marsiglia') && a % 7 === 3 && r() < 0.5) { const yy = hAt(x, z) + cs * (0.3 + r() * 0.2); for (let k = -2; k <= 2; k++) dbox.push([x - dz * k * hw * 0.45, yy, z + dx * k * hw * 0.45, cs * 0.07, cs * 0.08, cs * 0.07, ['#f1eff5', '#d24b3a', '#3f78c4', '#e0b23a', '#f1eff5'][(r() * 5) | 0]]); }
-          if (cl === 0 && a % 4 === 2 && r() < 0.45) peop.push([x + (r() - 0.5) * hw, hAt(x, z), z + (r() - 0.5) * hw]);
-          if (cl === 2 || cl === 3) { const y = hAt(x, z) + up; R3.push([x, y, z, dx, dz]); if (a % 6 === 3 && !up) { const sd = (a / 6) % 2 < 1 ? 1 : -1, off = hw + 1.6 * wpm; if (a % 12 === 3) rLamps.push([x - dz * off * sd, hAt(x - dz * off * sd, z + dx * off * sd), z + dx * off * sd]); else if (r() < 0.5) av.push([x + dz * off * sd * 1.3, z - dx * off * sd * 1.3, hAt(x + dz * off * sd * 1.3, z - dx * off * sd * 1.3), cs * 0.45]); } }
+          if (cl === 0 && a % 4 === 2 && r() < 0.45) peop.push([x + (r() - 0.5) * hw, Y[a], z + (r() - 0.5) * hw]);
+          if (cl === 2 || cl === 3) { const y = Y[a] + up; R3.push([x, y, z, dx, dz]); if (a % 6 === 3 && !up) { const sd = (a / 6) % 2 < 1 ? 1 : -1, off = hw + 1.6 * wpm; if (a % 12 === 3) rLamps.push([x - dz * off * sd, hAt(x - dz * off * sd, z + dx * off * sd), z + dx * off * sd]); else if (r() < 0.5) av.push([x + dz * off * sd * 1.3, z - dx * off * sd * 1.3, hAt(x + dz * off * sd * 1.3, z - dx * off * sd * 1.3), cs * 0.45]); } }
         }
         if (R3.length >= 12) routes.push({ P: R3, hw });
       });
-      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P.slice(0, nv * 3), 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc.slice(0, nv * 3), 3, true)); geo.setIndex(new THREE.BufferAttribute(IX.slice(0, ni), 1)); fastNormals(geo);
-      const m = new THREE.Mesh(geo, shadeW(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), 'road', 1 / cs)); m.receiveShadow = true; return m;
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(P.slice(0, nv * 3), 3)); geo.setAttribute('color', new THREE.BufferAttribute(Cc.slice(0, nv * 3), 3, true)); geo.setAttribute('aR', new THREE.BufferAttribute(AR.slice(0, nv * 4), 4)); geo.setIndex(new THREE.BufferAttribute(IX.slice(0, ni), 1)); fastNormals(geo);
+      const mt = shadeW(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), 'road', 1 / cs), ob = mt.onBeforeCompile;
+      // Segnaletica, lastricato, cordoli e rappezzi: disegnati dal materiale, compaiono solo da vicino.
+      mt.onBeforeCompile = (sh) => {
+        ob(sh); sh.uniforms.uRd = SOTO_U.uRd;
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aR;\nvarying vec4 vR;').replace('#include <begin_vertex>', '#include <begin_vertex>\n        vR = aR;');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uRd;\nvarying vec4 vR;\nfloat rH(vec2 p) { return fract(sin(dot(p, vec2(63.7, 157.3))) * 24634.63); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        if (uRd > 0.004 && vR.z < 8.5) {
+          float ty = vR.z, hwm = vR.w, x = vR.x * hwm, v = vR.y, ax = abs(x), ln = 0.0; vec3 rc = diffuseColor.rgb;
+          if (ty > 3.5) {
+            float kx = ax - (hwm - 1.7);
+            rc *= 1.0 - 0.1 * step(0.35, kx) * max(step(0.9, fract(v / 1.6)), step(0.85, fract(kx / 1.3)) * 0.0);
+            rc = mix(rc, rc * 1.22 + 0.03, step(0.0, kx) * step(kx, 0.38));
+          } else if (ty > 2.5) {
+            ln = max(step(ax, 0.24), max(step(abs(ax - hwm * 0.5), 0.2) * step(0.5, fract(v / 9.0)), step(abs(ax - (hwm - 0.55)), 0.18)));
+            rc *= 1.0 - 0.07 * step(0.8, rH(floor(vec2(x / 3.0 + 40.0, v / 7.0))));
+          } else if (ty > 1.5) {
+            ln = step(ax, 0.22) * step(0.45, fract(v / 7.0));
+            rc *= 1.0 - 0.07 * step(0.8, rH(floor(vec2(x / 3.0 + 40.0, v / 7.0))));
+          } else if (ty > 0.5) {
+            rc *= 1.0 - 0.08 * step(0.82, rH(floor(vec2(x / 2.5 + 40.0, v / 6.0))));
+            rc *= 1.0 - 0.1 * step(hwm - 0.3, ax);
+          } else {
+            vec2 sl = vec2(x / 1.1 + 30.0, v / 1.7 + step(0.5, fract(x / 2.2 + 15.0)) * 0.5), sf = fract(sl);
+            rc *= (1.0 - 0.13 * max(step(0.88, sf.x), step(0.92, sf.y))) * (0.93 + 0.14 * rH(floor(sl)));
+          }
+          rc = mix(rc, vec3(0.9, 0.88, 0.93), ln * 0.8);
+          diffuseColor.rgb = mix(diffuseColor.rgb, rc, uRd);
+        }`);
+      };
+      const m = new THREE.Mesh(geo, mt); m.receiveShadow = true; return m;
     };
     const rdM = RD ? roadMesh() : null; mark('strade'); yield 4;
     const watTop = new THREE.PlaneGeometry(1, 1); watTop.rotateX(-Math.PI / 2); watTop.translate(0, 0.5, 0);
@@ -1948,7 +1993,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const labels = lms.map((l) => ({ it: l.it, en: l.en || l.it, x: l.x, z: l.z }));
     const spins = []; g.traverse((o) => { if (o.userData.spin) spins.push(o); });
     mark('resto'); const tms = {}; for (let k = 1; k < tm.length; k++) tms[tm[k][0]] = Math.round(tm[k][1] - tm[k - 1][1]);
-    return { mks, tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
+    return { wpmU: FP ? wpm : 0, mks, tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
   }
 
   const LIGHT = {
@@ -2124,6 +2169,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         // finestre: compaiono solo quando un edificio occupa abbastanza pixel
         const ppb = (c.cs * this.renderer.domElement.height) / (2 * cd * 0.2493), fdt = this.reduce ? 0 : Math.min(0.1, (t - (this.pt || t)) / 1000); this.pt = t;
         SOTO_U.uWin.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 2) / 1.5) : cl01((ppb - 4) / 3);
+        SOTO_U.uRd.value = c.wpmU ? cl01(((c.wpmU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 0.9) / 1.1) : 0; // pixel per metro: la segnaletica si vede solo quando ha senso
         SOTO_U.uFine.value = c.winU ? cl01(((c.winU * this.renderer.domElement.height) / (2 * cd * 0.2493) - 10) / 6) : 0; // tratti finissimi (stecche, ringhiere) solo quando un piano occupa abbastanza pixel
         if (this.opts.light === 'auto' && t - (this.autoT || 0) > 22000) { if (this.autoT) { this.autoI = ((this.autoI || 0) + 1) % 4; this.autoL = ['tramonto', 'notte', 'alba', 'giorno'][this.autoI]; this.applyOpts(); } this.autoT = t; }
         if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; this.scene.fog.color.lerp(G2.fog, q); }

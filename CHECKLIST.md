@@ -173,3 +173,14 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Tegole con passo reale (prima erano stirate sulla lunghezza del lato) e linea di gronda
 - [ ] Sono disegnati sulla falda, non sporgono: visti molto da vicino e di lato risultano piatti
 - [ ] Visto solo nel browser di prova (Lione giorno e notte, Mantova giorno); Marsiglia e Genova non riviste
+
+## Strade (14 novembre)
+- [x] Strade livellate: piane di traverso (stessa quota ai due bordi) e addolcite lungo il percorso, senza più inclinazioni laterali né gobbe ogni 25 m; auto, tram e persone seguono la nuova quota
+- [x] Segnaletica disegnata dal materiale: mezzeria continua, corsie tratteggiate e linee di margine sulle strade principali; mezzeria tratteggiata sulle secondarie
+- [x] Lastricato a lastre sfalsate sulle vie pedonali; cordolo chiaro e giunti sui marciapiedi; rappezzi d'asfalto
+- [x] Testate arrotondate: i tronchi non finiscono più a taglio netto e i giunti tra un tratto e l'altro sono chiusi
+- [x] Suolo urbano di un solo colore: sparita la scacchiera lilla/beige a quadrati di 25 m sotto le strade
+- [x] Corretto un difetto delle facciate: finestre accese «a grana» (soprattutto sulle torri, di notte). Ora sono pulite
+- [ ] Visto solo nel browser di prova (Genova, Marsiglia giorno; Lione, Mantova notte). Fluidità non misurata
+- [ ] Non fatto: incroci con raccordi curvi, rotatorie, parcheggi, frecce a terra; strade che seguono il terreno con scarpate
+- [ ] Notato a Genova, zona Darsena: il terreno scende all'acqua con pareti alte e irregolari (viene dai dati di quota). Da ammorbidire
