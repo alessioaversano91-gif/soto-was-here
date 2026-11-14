@@ -199,3 +199,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [ ] Rotatorie spezzate in più tratti nei dati non riconosciute; incroci ancora senza raccordi curvi veri
 - [ ] Visto solo nel browser di prova. Non rivisti: ponti di Genova e Mantova, banchine di Lione lungo il Rodano, auto in sosta da vicino
 - [ ] Posizione dei porticcioli impostata a mano (due riquadri); altri porti turistici non hanno pontili
+
+## Mappa esterna oscurata (14 novembre)
+- [x] Campagna, colline e mare oltre il bordo della città sono in ombra: il rilievo si intravede, ma l'attenzione resta sulla città
+- [ ] Visto solo di giorno nel browser di prova; l'ultima schiarita leggera non è stata rivista in immagine

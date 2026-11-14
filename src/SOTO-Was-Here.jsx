@@ -1701,7 +1701,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const coneM = inst(new THREE.ConeGeometry(0.32, 1, 6), FP ? shadeW(white(), 'tree', 1 / cs) : white(), cones, (o, [x, z, y, q], col) => { o.position.set(x, y + 0.62 * q, z); o.scale.set(q, q * 1.25, q); col.set(['#2f5a34', '#3a6b3c', '#2a4f3a'][(r() * 3) | 0]); });
     (FP ? [terrM, watM, brM, fpM, treeM, coneM] : [terrM, watM, brM, bldM, roofM, gabM, treeM, coneM]).forEach((m) => g.add(m)); if (rdM) g.add(rdM);
     if (FP && (id === 'genova' || id === 'marsiglia')) {
-      const D = Math.max(NX, NZ) * cs * 0.16, P = [], A = [], c = WDEP[5], sea = (i, j) => G.t[j * NX + i] === 'w' && gy(j * NX + i) < 0.05, yw = (i, j) => gy(j * NX + i) - WD - 0.005;
+      const D = Math.max(NX, NZ) * cs * 0.16, P = [], A = [], c = WDEP[5].clone().multiplyScalar(0.3).lerp(new THREE.Color('#151022'), 0.45), sea = (i, j) => G.t[j * NX + i] === 'w' && gy(j * NX + i) < 0.05, yw = (i, j) => gy(j * NX + i) - WD - 0.005;
       const quad = (pts) => { [0, 1, 2, 0, 2, 3].forEach((q) => { P.push(pts[q][0], pts[q][1], pts[q][2]); A.push(c.r, c.g, c.b, pts[q][3]); }); };
       const side = (n, cell, mk) => {
         const f = []; for (let q = 0; q < n; q++) f.push(sea(...cell(q)) ? 1 : 0);
@@ -1743,7 +1743,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     if (FP) {
       const W = NX * cs, H = NZ * cs, x0 = ox, z0 = oz, x1 = ox + W, z1 = oz + H, K = 14, Dm = Math.max(W, H) * 0.95, ins = Math.min(W, H) * 0.3, c01 = (v) => Math.max(0, Math.min(1, v));
       const AMP = { genova: [1, 0.9, 0.55, 0.2, 0, 0.15, 0.5, 0.9], lione: [0.45, 0.25, 0.12, 0.15, 0.25, 0.5, 0.7, 0.6], mantova: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], marsiglia: [0.6, 0.8, 0.85, 0.9, 0.7, 0.2, 0, 0.3] }[id] || [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4];
-      const HM = ({ genova: 700, lione: 280, mantova: 14, marsiglia: 480 }[id] || 200) * wpm * 1.3, WH = new THREE.Color('#948a5c'), HZC = new THREE.Color('#8f8ca8'), col = new THREE.Color();
+      const HM = ({ genova: 700, lione: 280, mantova: 14, marsiglia: 480 }[id] || 200) * wpm * 1.3, WH = new THREE.Color('#948a5c'), HZC = new THREE.Color('#8f8ca8'), DARKC = new THREE.Color('#151022'), col = new THREE.Color();
       const PAL = ({ genova: ['#56704a', '#3c5a3c', '#6f746c'], lione: ['#6f7d54', '#4a6440', '#666f62'], mantova: ['#74834f', '#66794a', '#66794a'], marsiglia: ['#857f66', '#6b7556', '#a39d8c'] }[id] || ['#66794a', '#4a6440', '#6f746c']).map((q) => new THREE.Color(q));
       const hasSea = id === 'genova' || id === 'marsiglia', cells = [];
       for (let i = 0; i < NX; i++) cells.push([i, 0, x0 + (i + 0.5) * cs, z0]); for (let j = 0; j < NZ; j++) cells.push([NX - 1, j, x1, z0 + (j + 0.5) * cs]);
@@ -1757,7 +1757,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const Vt = S.map((q, qn) => { const am = amp(q.nx, q.nz) * Math.min(1, dw[qn] / 7), row = []; for (let k = 0; k <= K; k++) {
         const d = Dm * Math.pow(k / K, 1.35), x = q.px + q.nx * d, z = q.pz + q.nz * d, f = 9 / Dm, n = 0.55 * nz2(x * f + 31, z * f + 17) + 0.3 * nz2(x * f * 2.3, z * f * 2.3) + 0.15 * nz2(x * f * 5.1 + 9, z * f * 5.1), t = c01((k / K - 0.04) / 0.7);
         const wk = q.wat ? c01((k - 2) / 3) : 1, rise = wk * (t * t * (3 - 2 * t) * am * HM * (0.12 + 1.9 * n * n) + (k ? (n - 0.5) * HM * 0.06 * am : 0)), hv = nz2(x * f * 3.1 + 5, z * f * 3.1 + 2);
-        col.copy(PAL[0]).lerp(PAL[1], c01(rise / (HM * 0.45))).lerp(PAL[2], c01((rise / HM - 0.75) / 0.4)); if (rise < HM * 0.12) col.lerp(WH, 0.6 * c01((hv - 0.5) * 4)); col.multiplyScalar(0.8 + 0.12 * nz2(x * f * 6.3, z * f * 6.3)); if (q.wat) col.lerp(WDEP[3], 1 - wk); col.lerp(HZC, 0.6 * Math.pow(k / K, 1.2));
+        col.copy(PAL[0]).lerp(PAL[1], c01(rise / (HM * 0.45))).lerp(PAL[2], c01((rise / HM - 0.75) / 0.4)); if (rise < HM * 0.12) col.lerp(WH, 0.6 * c01((hv - 0.5) * 4)); col.multiplyScalar(0.8 + 0.12 * nz2(x * f * 6.3, z * f * 6.3)); if (q.wat) col.lerp(WDEP[3], 1 - wk); col.lerp(HZC, 0.35 * Math.pow(k / K, 1.2)); col.multiplyScalar(k ? 0.36 : 0.55).lerp(DARKC, k ? 0.4 : 0.2); // fuori mappa: all'oscuro, si intravede soltanto
         row.push([x, q.y - (k ? 0 : 0.02) + rise, z, col.r, col.g, col.b, q.sea ? 0 : Math.min(1, (K - k) / 5)]); } return row; });
       const P = [], A = [], put = (v) => { P.push(v[0], v[1], v[2]); A.push(v[3], v[4], v[5], v[6]); };
       for (let q = 0; q < N; q++) { const a = Vt[q], b = Vt[(q + 1) % N]; for (let k = 0; k < K; k++) { if (a[k][6] + b[k][6] + a[k + 1][6] + b[k + 1][6] <= 0) continue; [a[k], a[k + 1], b[k + 1], a[k], b[k + 1], b[k]].forEach(put); } }
