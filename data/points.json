@@ -16,5 +16,29 @@
    "en": "Boccadasse",
    "it": "Boccadasse"
   }
+ },
+ {
+  "city": "marsiglia",
+  "date": "2025-02-01",
+  "id": "pmwgh2nsozm2o",
+  "lat": 43.293294,
+  "lon": 5.371795,
+  "member": "albi",
+  "members": [
+   "albi",
+   "seba",
+   "lollo",
+   "alecio"
+  ],
+  "photo": "",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "Sbirrati da Trevor"
+  }
  }
 ]
