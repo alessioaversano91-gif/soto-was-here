@@ -14,5 +14,6 @@ Il sito della crew SOTO (Albi, Seba, Lollo, Alecio): mappa pixel dell'Europa e d
 ## Note
 
 - Le mappe delle città sono già incluse nel codice (dati OpenStreetMap / OpenFreeMap e altimetrie Terrarium), quindi si aprono senza scaricare nulla.
-- Su GitHub Pages i punti dell'Editor restano nel browser e si perdono ricaricando la pagina. Per salvarli si usa Editor → Esporta JSON; i punti da mostrare a tutti vanno inseriti nel codice.
+- **Punti SOTO:** si aggiungono e si modificano nell'Editor dell'artifact su claude.ai, dove si salvano con le foto. Il sito pubblico li legge da `data/points.json` (foto in `data/photos/`) e non mostra l'Editor. Per aggiornare il sito: chiedere a Claude «pubblica i punti»; vengono pubblicati solo quelli con stato «pubblicato».
+- `tools/publish_points.py`: script usato per la pubblicazione (prende i punti esportati dall'artifact e scrive `data/points.json`).
 - Mappe © OpenStreetMap contributors. Terreno: Mapzen / AWS Terrain Tiles.

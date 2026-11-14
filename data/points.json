@@ -1,0 +1,20 @@
+[
+ {
+  "city": "genova",
+  "date": "2025-06-14",
+  "id": "p1",
+  "lat": 44.3906,
+  "lon": 8.9737,
+  "member": "albi",
+  "photo": "",
+  "status": "published",
+  "text": {
+   "en": "Sample point: edit or delete it from the Editor.",
+   "it": "Punto di esempio: modificalo o eliminalo dall'Editor."
+  },
+  "title": {
+   "en": "Boccadasse",
+   "it": "Boccadasse"
+  }
+ }
+]

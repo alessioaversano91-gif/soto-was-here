@@ -17,7 +17,7 @@
 (function (React, THREE_UMD) {
   try {
 // SOTO WAS HERE — Claude artifact (React). Single file: engine + Europe data + UI + in-memory data.
-// Points live in memory: use Editor > "Esporta JSON" to save them and "Importa JSON" to restore them.
+// Points: saved in the artifact database on claude.ai; the public site reads data/points.json (written on each publish).
 
 window.THREE = Object.assign({}, THREE_UMD);
 window.SOTO_EURO = {
@@ -6748,6 +6748,7 @@ class SotoWasHere extends React.Component {
     }));
   }
   toEditor() {
+    if (this.api.readOnly) return;
     if (this.canEdit()) this.setState({
       mode: 'editor',
       sel: null
@@ -7155,7 +7156,7 @@ class SotoWasHere extends React.Component {
         draft: null
       }),
       style: st(tabBtn(!isEditor))
-    }, S.explore), /*#__PURE__*/React.createElement("button", {
+    }, S.explore), !this.api.readOnly && /*#__PURE__*/React.createElement("button", {
       onClick: () => this.toEditor(),
       style: st(tabBtn(isEditor))
     }, S.editor)), hasAuth && s.user && /*#__PURE__*/React.createElement("button", {
@@ -7634,8 +7635,24 @@ const SEED = [{
   lat: 44.3906,
   lon: 8.9737
 }];
+/* Sito pubblico (GitHub): i punti arrivano dal file data/points.json del repository, scritto a ogni «pubblica i punti».
+   Li si modifica nell'artifact su claude.ai; qui l'Editor resta nascosto (per provarlo in locale: ?edit=1, senza salvataggio). */
+const ON_CLAUDE = typeof window !== 'undefined' && !!(window.claude && window.claude.use);
 const memoryApi = {
-  load: async () => SEED,
+  readOnly: !ON_CLAUDE && !(typeof location !== 'undefined' && /[?&]edit=1/.test(location.search)),
+  load: async () => {
+    if (ON_CLAUDE) return SEED;
+    try {
+      const q = await fetch('data/points.json', {
+        cache: 'no-cache'
+      });
+      if (!q.ok) throw new Error(q.status);
+      const pts = await q.json();
+      return Array.isArray(pts) ? pts : SEED;
+    } catch (e) {
+      return SEED;
+    }
+  },
   save: async p => ({
     ...p,
     id: p.id || 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
@@ -7659,6 +7676,7 @@ const claudeApi = (() => {
     throw new Error(e && (e.message || e.code) || String(e));
   };
   return {
+    readOnly: memoryApi.readOnly,
     async load() {
       const D = await db();
       if (!D) return memoryApi.load();

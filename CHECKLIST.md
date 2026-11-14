@@ -203,3 +203,11 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 ## Mappa esterna oscurata (14 novembre)
 - [x] Campagna, colline e mare oltre il bordo della città sono in ombra: il rilievo si intravede, ma l'attenzione resta sulla città
 - [ ] Visto solo di giorno nel browser di prova; l'ultima schiarita leggera non è stata rivista in immagine
+
+## Punti: dall'artifact al sito (14 novembre)
+- [x] Il sito pubblico legge i punti da `data/points.json` e le foto da `data/photos/`
+- [x] Sul sito pubblico l'Editor è nascosto (lì non salverebbe); per provarlo senza salvataggio: aggiungere `?edit=1` all'indirizzo
+- [x] `tools/publish_points.py`: tiene solo i punti «pubblicato», copia le foto, scrive il file
+- [x] Provato con punti finti: bozze escluse, foto copiate, punti visibili sul sito, Editor nascosto
+- [ ] Non provato con una foto vera caricata nell'artifact: oggi l'artifact non ne contiene
+- [ ] La pubblicazione non è automatica: va chiesta a Claude ogni volta
