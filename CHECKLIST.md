@@ -234,3 +234,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Fiumi fuori mappa in ombra come il resto
 - [!] Per circa 5 minuti (08:19–08:24 GMT del 15 novembre) il sito pubblico non apriva le città per un errore introdotto con le luci delle barche; corretto
 - [ ] Mantova non rivista sul computer reale; il controllo a schermo intero non è stato fatto (solo nel riquadro)
+
+## Versione definitiva (15 novembre 2026)
+- Grafica e motore chiusi a questa versione. Da qui in poi si aggiornano solo i punti: Alessio li modifica nell'artifact e chiede «pubblica i punti».
+- Punti pubblicati oggi: 1 (Sbirrati da Trevor, Marsiglia). Tolto il punto di esempio Boccadasse.
