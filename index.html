@@ -2852,6 +2852,7 @@ window.SOTO_EURO = {
       ONZ = 0,
       oc = 0,
       mks = [];
+    const glows = []; // lucine di barche e pontili, accese di notte
     initCol();
     const p = PAL[id],
       r = rng(p.seed + 99),
@@ -4522,20 +4523,6 @@ window.SOTO_EURO = {
       o.scale.setScalar(cs * 0.16);
       col.set('#ffffff');
     })));
-    const glowMat = new THREE.MeshBasicMaterial({
-      color: '#ffd08a',
-      transparent: true,
-      opacity: 0,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      fog: false
-    });
-    if (glows.length) g.add(quiet(inst(B(1, 1, 1), glowMat, glows, (o, [x, y, z, sz], col) => {
-      o.position.set(x, y, z);
-      o.rotation.set(0, 0, 0);
-      o.scale.setScalar(sz);
-      col.set('#ffffff');
-    })));
     const poolMat = new THREE.MeshBasicMaterial({
       color: '#ffae52',
       transparent: true,
@@ -4762,7 +4749,6 @@ window.SOTO_EURO = {
     let moored = 0;
     const reeds = [],
       barges = [],
-      glows = [],
       HU = wpm * 2;
     const MAR = {
       marsiglia: [[43.2925, 5.3625, 43.2968, 5.3748]],
@@ -5261,6 +5247,20 @@ window.SOTO_EURO = {
     mark('resto');
     const tms = {};
     for (let k = 1; k < tm.length; k++) tms[tm[k][0]] = Math.round(tm[k][1] - tm[k - 1][1]);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: '#ffd08a',
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false
+    });
+    if (glows.length) g.add(quiet(inst(B(1, 1, 1), glowMat, glows, (o, [x, y, z, sz], col) => {
+      o.position.set(x, y, z);
+      o.rotation.set(0, 0, 0);
+      o.scale.setScalar(sz);
+      col.set('#ffffff');
+    })));
     return {
       glowMat,
       brg: barges.map(([i, j]) => [ox + (i + 0.5) * cs, oz + (j + 0.5) * cs]),

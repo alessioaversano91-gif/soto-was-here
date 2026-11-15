@@ -1324,6 +1324,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   // Costruzione a tappe: tra una tappa e l'altra la pagina respira (niente blocco lungo su telefono).
   function* buildReal(id, G) {
     let occ = null, ONX = 0, ONZ = 0, oc = 0, mks = [];
+    const glows = []; // lucine di barche e pontili, accese di notte
     initCol();
     const p = PAL[id], r = rng(p.seed + 99), g = new THREE.Group(), NX = G.NX, NZ = G.NZ;
     const RD = !!(G.fp && G.rd); let corA = null;
@@ -1821,8 +1822,6 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     det.add(quiet(inst(B(1, 1, 1), white(), lamps, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.3, z); o.scale.set(cs * 0.06, cs * 0.6, cs * 0.06); col.set('#2a2436'); })));
     const lampMat = new THREE.MeshLambertMaterial({ color: '#cfc8d6', emissive: '#ffc35e', emissiveIntensity: 0.3, flatShading: true });
     det.add(quiet(inst(B(1, 1, 1), lampMat, lamps, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.64, z); o.scale.setScalar(cs * 0.16); col.set('#ffffff'); })));
-    const glowMat = new THREE.MeshBasicMaterial({ color: '#ffd08a', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
-    if (glows.length) g.add(quiet(inst(B(1, 1, 1), glowMat, glows, (o, [x, y, z, sz], col) => { o.position.set(x, y, z); o.rotation.set(0, 0, 0); o.scale.setScalar(sz); col.set('#ffffff'); })));
     const poolMat = new THREE.MeshBasicMaterial({ color: '#ffae52', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
     const poolG = new THREE.CircleGeometry(1, 10); poolG.rotateX(-Math.PI / 2);
     if (lamps.length) det.add(quiet(inst(poolG, poolMat, lamps, (o, [x, y, z], col) => { o.position.set(x, y + 0.014, z); o.scale.setScalar(cs * 1.1); col.set('#ffffff'); })));
@@ -1894,7 +1893,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const CONT = ['#d24b3a', '#3f78c4', '#e8b93a', '#3f9a6c', '#e8792e', '#9aa0a8'];
     const PORT = { genova: [44.396, 8.878, 44.4125, 8.924], marsiglia: [43.2975, 5.352, 43.302, 5.366] }[id], cranes = [];
     const inPort = (i, j) => { if (!PORT) return false; const la = G.b[2] - ((j + 0.5) / NZ) * (G.b[2] - G.b[0]), lo = G.b[1] + ((i + 0.5) / NX) * (G.b[3] - G.b[1]); return la > PORT[0] && la < PORT[2] && lo > PORT[1] && lo < PORT[3]; };
-    let moored = 0; const reeds = [], barges = [], glows = [], HU = wpm * 2;
+    let moored = 0; const reeds = [], barges = [], HU = wpm * 2;
     const MAR = { marsiglia: [[43.2925, 5.3625, 43.2968, 5.3748]], genova: [[44.4085, 8.9215, 44.4128, 8.9275]] }[id] || [];
     const inMar = (i, j) => { if (!MAR.length) return false; const la = G.b[2] - ((j + 0.5) / NZ) * (G.b[2] - G.b[0]), lo = G.b[1] + ((i + 0.5) / NX) * (G.b[3] - G.b[1]); return MAR.some((q) => la > q[0] && la < q[2] && lo > q[1] && lo < q[3]); };
     const bankDir = (i, j) => { let gx = 0, gz = 0; for (let b = -2; b <= 2; b++) for (let a = -2; a <= 2; a++) { const t = T(i + a, j + b); if (t && t !== 'w' && t !== 'x') { gx += a; gz += b; } } const l = Math.hypot(gx, gz); return l > 0.5 ? [gx / l, gz / l] : null; };
@@ -2049,6 +2048,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const labels = lms.map((l) => ({ it: l.it, en: l.en || l.it, x: l.x, z: l.z }));
     const spins = []; g.traverse((o) => { if (o.userData.spin) spins.push(o); });
     mark('resto'); const tms = {}; for (let k = 1; k < tm.length; k++) tms[tm[k][0]] = Math.round(tm[k][1] - tm[k - 1][1]);
+    const glowMat = new THREE.MeshBasicMaterial({ color: '#ffd08a', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+    if (glows.length) g.add(quiet(inst(B(1, 1, 1), glowMat, glows, (o, [x, y, z, sz], col) => { o.position.set(x, y, z); o.rotation.set(0, 0, 0); o.scale.setScalar(sz); col.set('#ffffff'); })));
     return { glowMat, brg: barges.map(([i, j]) => [ox + (i + 0.5) * cs, oz + (j + 0.5) * cs]), wpmU: FP ? wpm : 0, mks, tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
   }
 
