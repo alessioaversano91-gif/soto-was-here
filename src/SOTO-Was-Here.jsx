@@ -2482,7 +2482,9 @@ const CREW_BASE = [
   { id: 'albi', name: 'Albi', color: '#f5b82e' },
   { id: 'seba', name: 'Seba', color: '#9bbf4f' },
   { id: 'lollo', name: 'Lollo', color: '#6fa3e0' },
-  { id: 'alecio', name: 'Alecio', color: '#ef6b4a' }
+  { id: 'alecio', name: 'Alecio', color: '#ef6b4a' },
+  // SOTO come gruppo: si sceglie nell'Editor e nei filtri, ma non compare tra i volti de «La crew» in home.
+  { id: 'soto', name: 'SOTO', color: '#a374f0', brand: true, face: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%230b0a0f'/%3E%3Crect x='3' y='3' width='90' height='90' rx='10' fill='none' stroke='%23a374f0' stroke-width='2' stroke-dasharray='5 4'/%3E%3Ctext x='48' y='50' text-anchor='middle' font-family='Arial Black,Arial,Helvetica,sans-serif' font-weight='900' font-size='27' fill='%23f1eff5'%3ESOTO%3C/text%3E%3Crect x='17' y='58' width='62' height='17' rx='8.5' fill='%23f1eff5'/%3E%3Crect x='19' y='60' width='62' height='17' rx='8.5' fill='%23000' opacity='0'/%3E%3Ctext x='48' y='70.5' text-anchor='middle' font-family='Arial,Helvetica,sans-serif' font-weight='700' font-size='10.5' letter-spacing='0.6' fill='%230b0a0f'%3EWAS HERE%3C/text%3E%3C/svg%3E" }
 ];
 const STR = {
   it: { tagline: 'La mappa dei luoghi dove è passata SOTO.', choose: 'SELEZIONA STAGE', crew: 'LA CREW', europe: 'Europa', explore: 'Esplora', editor: 'Editor', all: 'Tutti', empty: 'Nessun punto pubblicato in questa città.', clickToAdd: 'Clicca su un punto del diorama per aggiungere un elemento.', zoomHint: 'Zooma o doppio clic per scoprire i luoghi · Spazio + trascina per spostarti', zoomHintTouch: 'Trascina per spostarti · due dita per ruotare e zoomare', textLang: 'Testi in', moveHint: 'Clicca altrove sul diorama per spostare il punto.', who: 'Chi (anche più di uno)', title: 'Titolo', date: 'Data', text: 'Racconto', upload: 'Carica foto', change: 'Cambia foto', draft: 'BOZZA', pub: 'Pubblicato', save: 'Salva', saving: 'Salvo…', cancel: 'Annulla', edit: 'Modifica', del: 'Elimina', confirmDel: 'Eliminare questo punto?', needPos: 'Posiziona il punto cliccando sul diorama.', needTitle: 'Inserisci almeno un titolo.', creating: 'Nuovo punto', editing: 'Modifica punto', hide: 'Riduci', show: 'Apri', one: 'punto', many: 'punti', saveErr: 'Salvataggio non riuscito: ', login: 'Accesso Editor', loginSub: 'Solo la crew può aggiungere o modificare i punti.', email: 'Email', password: 'Password', enter: 'Entra', logout: 'Esci', loginErr: 'Credenziali non valide.', data: 'Dati', exportT: 'Esporta JSON', importT: 'Importa JSON', exportSub: 'Copia questo testo per salvare i punti.', importSub: 'Incolla qui un JSON esportato. Sostituisce i punti attuali.', copy: 'Copia', copied: 'Copiato', download: 'Scarica', doImport: 'Importa', close: 'Chiudi', badJson: 'JSON non valido.', loadingPts: 'Carico i punti…' },
@@ -2621,7 +2623,7 @@ class SotoWasHere extends React.Component {
 
   render() {
     const s = this.state, L = s.lang, S = STR[L], LD = LOAD[L], A = this.props.assets || {};
-    const CREW = CREW_BASE.map((m) => ({ ...m, face: A[m.id] || '' }));
+    const CREW = CREW_BASE.map((m) => ({ ...m, face: m.face || A[m.id] || '' }));
     const city = CITIES.find((c) => c.id === s.city) || CITIES[0], cN = CITIES.indexOf(city) + 1;
     const mem = (id) => CREW.find((m) => m.id === id) || CREW[0];
     const tx = (o) => (o && (o[L] || o.it || o.en)) || '—';
@@ -2696,7 +2698,7 @@ class SotoWasHere extends React.Component {
               <div className="soto-in" style={st('display:flex;flex-direction:column;gap:10px;pointer-events:auto;animation-delay:.3s')}>
                 <div style={st('font-family:Silkscreen,monospace;font-size:12px;color:#a374f0;letter-spacing:0.06em')}>{S.crew}</div>
                 <div style={st('display:flex;gap:14px;flex-wrap:wrap')}>
-                  {CREW.map((m) => (
+                  {CREW.filter((m) => !m.brand).map((m) => (
                     <div key={m.id} className="soto-face" style={st('display:flex;flex-direction:column;align-items:center;gap:6px')}>
                       {faceImg(m.face, narrow ? 40 : 52, 10, `3px solid ${m.color}`, 'box-shadow:3px 3px 0 #000')}
                       <span style={st('font-size:13px;font-weight:700')}>{m.name}</span>
@@ -2875,10 +2877,10 @@ class SotoWasHere extends React.Component {
                 <div style={st('padding:0 16px 16px;display:flex;flex-direction:column;gap:14px')}>
                   <div style={st('display:flex;flex-direction:column;gap:6px')}>
                     <span style={st('font-size:12px;color:#9a96a6;font-weight:500')}>{S.who}</span>
-                    <div style={st('display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px')}>
+                    <div style={st('display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px')}>
                       {CREW.map((m) => { const cur = memIds(d), on = cur.indexOf(m.id) >= 0, nx = on ? cur.filter((q) => q !== m.id) : CREW.map((q) => q.id).filter((q) => q === m.id || cur.indexOf(q) >= 0); return (
                         <button key={m.id} aria-pressed={on} onClick={() => { if (nx.length) this.setDraft({ members: nx, member: nx[0] }); }} style={st(`display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:10px;border:2px solid ${on ? m.color : '#2e2347'};background:${on ? '#1d1530' : 'transparent'};color:#f1eff5;cursor:pointer;font-size:12px;font-weight:500`)}>
-                          {faceImg(m.face, 44, 7, '0')}{m.name}
+                          {faceImg(m.face, 40, 7, '0')}{m.name}
                         </button>
                       ); })}
                     </div>

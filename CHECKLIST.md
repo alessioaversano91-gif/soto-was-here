@@ -218,3 +218,9 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Il filtro per personaggio mostra il punto per ciascuno dei presenti
 - [x] I punti già salvati con un solo personaggio continuano a funzionare
 - [x] Provato in locale con punti finti da due e tre personaggi (marcatori, scheda, Editor); nell'artifact vero non ancora
+
+## Personaggio SOTO (15 novembre)
+- [x] Aggiunto «SOTO» tra i personaggi, con il logo SOTO Was Here come immagine: si sceglie nell'Editor e nei filtri della città
+- [x] Non compare tra i volti de «La crew» in home
+- [x] Provato in locale: home con quattro volti, Editor con cinque, marcatori e liste col logo
+- [ ] Il logo è ridisegnato come immagine quadrata (il carattere del titolo in home non è disponibile dentro un'immagine)
