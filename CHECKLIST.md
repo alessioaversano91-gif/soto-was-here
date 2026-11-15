@@ -224,3 +224,13 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Non compare tra i volti de «La crew» in home
 - [x] Provato in locale: home con quattro volti, Editor con cinque, marcatori e liste col logo
 - [ ] Il logo è ridisegnato come immagine quadrata (il carattere del titolo in home non è disponibile dentro un'immagine)
+
+## Ultimo giorno: controllo sul computer reale, notte, punti SOTO (15 novembre)
+- [x] Controllo sul computer di Alessio (Intel Iris Xe, riquadro 718×806): Lione giorno e notte, Marsiglia notte (Vieux-Port, Notre-Dame de la Garde), Genova giorno (Darsena) e notte (centro)
+- [x] Tempi misurati lì: apertura città 2,1 s Genova, 3,9 s Marsiglia, 4,3 s Lione; un fotogramma da vicino a Lione 20–28 ms (prima delle ultime aggiunte era circa 17)
+- [x] Notte: chiazze di luce dei lampioni lungo tutte le strade, monumenti illuminati, lucine su pontili, chiatte e barche, vetrine meno accecanti
+- [x] Acqua di notte: tolti i quadrati arancio e lilla grandi una cella; restano come accenni
+- [x] Punti SOTO: fascio di luce sopra il punto, alone attorno ai volti, anello più ampio
+- [x] Fiumi fuori mappa in ombra come il resto
+- [!] Per circa 5 minuti (08:19–08:24 GMT del 15 novembre) il sito pubblico non apriva le città per un errore introdotto con le luci delle barche; corretto
+- [ ] Mantova non rivista sul computer reale; il controllo a schermo intero non è stato fatto (solo nel riquadro)

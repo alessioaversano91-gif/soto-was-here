@@ -284,7 +284,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
   // Unisce le parti fisse di un monumento in due sole mesh (con e senza ombra), per poter aggiungere dettagli senza appesantire.
   // Di notte i monumenti sono illuminati dal basso con una luce calda.
   function litLM(m) {
-    m.onBeforeCompile = (sh) => { sh.uniforms.uNight = SOTO_U.uNight; sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      totalEmissiveRadiance += diffuseColor.rgb * vec3(1.0, 0.78, 0.5) * 0.62 * clamp(uNight, 0.0, 1.0);'); };
+    m.onBeforeCompile = (sh) => { sh.uniforms.uNight = SOTO_U.uNight; sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      totalEmissiveRadiance += mix(diffuseColor.rgb, vec3(dot(diffuseColor.rgb, vec3(0.333))), 0.35) * vec3(1.0, 0.8, 0.56) * 0.44 * clamp(uNight, 0.0, 1.0);'); };
     return m;
   }
   function bakeLM(lg) {
@@ -1338,6 +1338,12 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const top = new Float32Array(NX * NZ), terr = [], wat = [], bridges = [], bld = [], roofs = [], trees = [];
     // Altezza delle banchine sull'acqua, in metri reali per citta (prima era una misura fissa: 14 m a Genova, 15 a Marsiglia).
     const wk = FP ? Math.max(0.25, Math.min(1, (({ genova: 2.5, marsiglia: 2.2, lione: 6.5, mantova: 1.8 }[id] || 4) * 2 * wpm) / 0.12)) : 1, WD = 0.12 * wk;
+    // Scogli di banchina: celle di molo isolate in mezzo all'acqua (residui dei dati) tornano acqua.
+    if (FP && !G.qDone) {
+      G.qDone = 1; const T0 = Array.from(G.t), T1 = T0.slice();
+      for (let j = 1; j < NZ - 1; j++) for (let i = 1; i < NX - 1; i++) { const k = j * NX + i; if (T0[k] !== 'q') continue; let land = 0, qn = 0, wk2 = -1; for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) { if (!a && !b) continue; const n = k + b * NX + a, t = T0[n]; if (t === 'q') qn++; else if (t === 'w' || t === 'x') wk2 = n; else land++; } if (!land && qn < 3 && wk2 >= 0) { T1[k] = 'w'; G.e[k] = G.e[wk2]; } }
+      G.t = T1;
+    }
     // Rive: vicino all'acqua il terreno non puo salire a strapiombo (i dati di quota, a maglia larga, creavano pareti da cava).
     if (FP && !G.shoreDone) {
       G.shoreDone = 1; const E = G.e, N = NX * NZ, seen = new Uint8Array(N), hw = new Float32Array(N); let fr = [];
@@ -2246,7 +2252,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
             const perp = Math.abs(x * gz - z * gx), glit = dp >= 2 && perp < 1.4 && Math.sin(x * 9.1 + z * 6.7 + T * 2.6) > 0.5 + perp * 0.32;
             const lampR = nite && q[4] && dp <= 4 && Math.sin(x * 23.7 + z * 17.3) > 0.25 && Math.sin(x * 5.3 - z * 3.1 + T * 1.4) > -0.5;
             const col = dp === 1 && Math.sin(x * 3.1 + z * 2.3 + T * 1.6) > 0.8 ? WFOAM : lampR ? WLAMP : !nite && q[4] && dp <= 1 && Math.sin(x * 31.0 + z * 3.0) > 0.7 && Math.sin(z * 9.0 + T * 0.8) > -0.2 ? WREF : glit ? GL : crest ? (dp <= 3 ? WHI : WDEP[dp - 2]) : WDEP[dp];
-            A[n * 3] = col.r; A[n * 3 + 1] = col.g; A[n * 3 + 2] = col.b;
+            // nelle citta reali le celle d'acqua sono grandi (25-30 m): riflessi e creste restano accenni, non quadrati pieni
+            const bs = WDEP[dp], kk = c.wpmU ? (col === WLAMP ? 0.26 : col === bs ? 0 : 0.34) : 1;
+            A[n * 3] = bs.r + (col.r - bs.r) * kk; A[n * 3 + 1] = bs.g + (col.g - bs.g) * kk; A[n * 3 + 2] = bs.b + (col.b - bs.b) * kk;
           }
           c.water.instanceColor.needsUpdate = true;
         }
