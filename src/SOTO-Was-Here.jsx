@@ -235,11 +235,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
           gg = mix(gg, vec3(0.1), grate * max(step(0.6, fract(sf.x * 8.0)), step(0.7, fract(sf.y * 5.0))) * 0.9 * uFine);
           float gl = lit * (1.0 - grate);
           wall = mix(wall, mix(gg * (1.0 - gl), frameC, step(abs(sf.x - 0.5), 0.015) * (1.0 - grate) * 0.8), gwin * gz);
-          em += vec3(1.0, 0.86, 0.62) * gwin * gz * gl * 0.9;
+          em += vec3(1.0, 0.8, 0.52) * gwin * gz * gl * 0.5;
           wall *= 1.0 - 0.3 * old * ab * step(0.95, sf.x) * step(0.8, sH(vec2(sid.x, bz * 77.0)));
         }
         diffuseColor.rgb = mix(base, wall, uWin);
-        totalEmissiveRadiance += em * uWin * (0.8 + 0.9 * uNight) + vec3(1.0, 0.74, 0.38) * step(mix(0.9, 0.62, uNight), bz) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5)));
+        totalEmissiveRadiance += em * uWin * (0.75 + 0.7 * uNight) + vec3(1.0, 0.74, 0.38) * step(mix(0.9, 0.62, uNight), bz) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5)));
       } else if (vW.w < 1.5) {
         float ty = floor(vW.z + 0.0001), bz = (floor((vW.z - ty) * 256.0) + 0.5) / 256.0; vec2 rp = vW.xy;
         diffuseColor.rgb *= 0.9 + 0.2 * sNz(rp * 0.7 + bz * 50.0) * uWin;
@@ -282,6 +282,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     m.castShadow = !o.noShadow; m.receiveShadow = true; g.add(m); return m;
   }
   // Unisce le parti fisse di un monumento in due sole mesh (con e senza ombra), per poter aggiungere dettagli senza appesantire.
+  // Di notte i monumenti sono illuminati dal basso con una luce calda.
+  function litLM(m) {
+    m.onBeforeCompile = (sh) => { sh.uniforms.uNight = SOTO_U.uNight; sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      totalEmissiveRadiance += diffuseColor.rgb * vec3(1.0, 0.78, 0.5) * 0.62 * clamp(uNight, 0.0, 1.0);'); };
+    return m;
+  }
   function bakeLM(lg) {
     const bk = [[], []], col = new THREE.Color();
     lg.children.slice().forEach((m) => {
@@ -294,7 +299,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       if (!b.length) return; const N = b.length / 6, P = new Float32Array(N * 3), Cc = new Float32Array(N * 3);
       for (let k = 0; k < N; k++) { P[k * 3] = b[k * 6]; P[k * 3 + 1] = b[k * 6 + 1]; P[k * 3 + 2] = b[k * 6 + 2]; Cc[k * 3] = b[k * 6 + 3]; Cc[k * 3 + 1] = b[k * 6 + 4]; Cc[k * 3 + 2] = b[k * 6 + 5]; }
       const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.BufferAttribute(P, 3)); ge.setAttribute('color', new THREE.BufferAttribute(Cc, 3)); ge.computeVertexNormals();
-      const me = new THREE.Mesh(ge, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })); me.castShadow = !n; me.receiveShadow = true; lg.add(me);
+      const me = new THREE.Mesh(ge, litLM(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }))); me.castShadow = !n; me.receiveShadow = true; lg.add(me);
     });
   }
   const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
@@ -1651,9 +1656,9 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const mt = shadeW(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), 'road', 1 / cs), ob = mt.onBeforeCompile;
       // Segnaletica, lastricato, cordoli e rappezzi: disegnati dal materiale, compaiono solo da vicino.
       mt.onBeforeCompile = (sh) => {
-        ob(sh); sh.uniforms.uRd = SOTO_U.uRd;
+        ob(sh); sh.uniforms.uRd = SOTO_U.uRd; sh.uniforms.uNight = SOTO_U.uNight;
         sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aR;\nvarying vec4 vR;').replace('#include <begin_vertex>', '#include <begin_vertex>\n        vR = aR;');
-        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uRd;\nvarying vec4 vR;\nfloat rH(vec2 p) { return fract(sin(dot(p, vec2(63.7, 157.3))) * 24634.63); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uRd;\nuniform float uNight;\nvarying vec4 vR;\nfloat rH(vec2 p) { return fract(sin(dot(p, vec2(63.7, 157.3))) * 24634.63); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         if (uRd > 0.004 && vR.z < 8.5) {
           float ty = vR.z, hwm = vR.w, x = vR.x * hwm, v = vR.y, ax = abs(x), ln = 0.0; vec3 rc = diffuseColor.rgb;
           if (ty > 3.5) {
@@ -1677,6 +1682,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
           }
           rc = mix(rc, vec3(0.9, 0.88, 0.93), ln * 0.8);
           diffuseColor.rgb = mix(diffuseColor.rgb, rc, uRd);
+        }
+        if (vR.z < 8.5 && uNight > 0.02) {
+          // lampioni: una chiazza di luce calda ogni 26 m, alternata sui due lati
+          float lv = vR.y / 26.0, sdl = mod(floor(lv), 2.0) * 2.0 - 1.0, d1 = fract(lv) - 0.5, d2 = vR.x - sdl * 0.75;
+          totalEmissiveRadiance += vec3(1.0, 0.7, 0.36) * diffuseColor.rgb * 1.5 * clamp(uNight, 0.0, 1.0) * exp(-d1 * d1 * 30.0 - d2 * d2 * 1.3);
         }`);
       };
       const m = new THREE.Mesh(geo, mt); m.receiveShadow = true; return m;
@@ -1757,7 +1767,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const Vt = S.map((q, qn) => { const am = amp(q.nx, q.nz) * Math.min(1, dw[qn] / 7), row = []; for (let k = 0; k <= K; k++) {
         const d = Dm * Math.pow(k / K, 1.35), x = q.px + q.nx * d, z = q.pz + q.nz * d, f = 9 / Dm, n = 0.55 * nz2(x * f + 31, z * f + 17) + 0.3 * nz2(x * f * 2.3, z * f * 2.3) + 0.15 * nz2(x * f * 5.1 + 9, z * f * 5.1), t = c01((k / K - 0.04) / 0.7);
         const wk = q.wat ? c01((k - 2) / 3) : 1, rise = wk * (t * t * (3 - 2 * t) * am * HM * (0.12 + 1.9 * n * n) + (k ? (n - 0.5) * HM * 0.06 * am : 0)), hv = nz2(x * f * 3.1 + 5, z * f * 3.1 + 2);
-        col.copy(PAL[0]).lerp(PAL[1], c01(rise / (HM * 0.45))).lerp(PAL[2], c01((rise / HM - 0.75) / 0.4)); if (rise < HM * 0.12) col.lerp(WH, 0.6 * c01((hv - 0.5) * 4)); col.multiplyScalar(0.8 + 0.12 * nz2(x * f * 6.3, z * f * 6.3)); if (q.wat) col.lerp(WDEP[3], 1 - wk); col.lerp(HZC, 0.35 * Math.pow(k / K, 1.2)); col.multiplyScalar(k ? 0.36 : 0.55).lerp(DARKC, k ? 0.4 : 0.2); // fuori mappa: all'oscuro, si intravede soltanto
+        col.copy(PAL[0]).lerp(PAL[1], c01(rise / (HM * 0.45))).lerp(PAL[2], c01((rise / HM - 0.75) / 0.4)); if (rise < HM * 0.12) col.lerp(WH, 0.6 * c01((hv - 0.5) * 4)); col.multiplyScalar(0.8 + 0.12 * nz2(x * f * 6.3, z * f * 6.3)); if (q.wat) col.lerp(WDEP[3], (1 - wk) * 0.5); col.lerp(HZC, 0.35 * Math.pow(k / K, 1.2)); col.multiplyScalar(k ? 0.36 : 0.55).lerp(DARKC, k ? 0.4 : 0.2); // fuori mappa: all'oscuro, si intravede soltanto
         row.push([x, q.y - (k ? 0 : 0.02) + rise, z, col.r, col.g, col.b, q.sea ? 0 : Math.min(1, (K - k) / 5)]); } return row; });
       const P = [], A = [], put = (v) => { P.push(v[0], v[1], v[2]); A.push(v[3], v[4], v[5], v[6]); };
       for (let q = 0; q < N; q++) { const a = Vt[q], b = Vt[(q + 1) % N]; for (let k = 0; k < K; k++) { if (a[k][6] + b[k][6] + a[k + 1][6] + b[k + 1][6] <= 0) continue; [a[k], a[k + 1], b[k + 1], a[k], b[k + 1], b[k]].forEach(put); } }
@@ -1811,6 +1821,8 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     det.add(quiet(inst(B(1, 1, 1), white(), lamps, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.3, z); o.scale.set(cs * 0.06, cs * 0.6, cs * 0.06); col.set('#2a2436'); })));
     const lampMat = new THREE.MeshLambertMaterial({ color: '#cfc8d6', emissive: '#ffc35e', emissiveIntensity: 0.3, flatShading: true });
     det.add(quiet(inst(B(1, 1, 1), lampMat, lamps, (o, [x, y, z], col) => { o.position.set(x, y + cs * 0.64, z); o.scale.setScalar(cs * 0.16); col.set('#ffffff'); })));
+    const glowMat = new THREE.MeshBasicMaterial({ color: '#ffd08a', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+    if (glows.length) g.add(quiet(inst(B(1, 1, 1), glowMat, glows, (o, [x, y, z, sz], col) => { o.position.set(x, y, z); o.rotation.set(0, 0, 0); o.scale.setScalar(sz); col.set('#ffffff'); })));
     const poolMat = new THREE.MeshBasicMaterial({ color: '#ffae52', transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
     const poolG = new THREE.CircleGeometry(1, 10); poolG.rotateX(-Math.PI / 2);
     if (lamps.length) det.add(quiet(inst(poolG, poolMat, lamps, (o, [x, y, z], col) => { o.position.set(x, y + 0.014, z); o.scale.setScalar(cs * 1.1); col.set('#ffffff'); })));
@@ -1882,7 +1894,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const CONT = ['#d24b3a', '#3f78c4', '#e8b93a', '#3f9a6c', '#e8792e', '#9aa0a8'];
     const PORT = { genova: [44.396, 8.878, 44.4125, 8.924], marsiglia: [43.2975, 5.352, 43.302, 5.366] }[id], cranes = [];
     const inPort = (i, j) => { if (!PORT) return false; const la = G.b[2] - ((j + 0.5) / NZ) * (G.b[2] - G.b[0]), lo = G.b[1] + ((i + 0.5) / NX) * (G.b[3] - G.b[1]); return la > PORT[0] && la < PORT[2] && lo > PORT[1] && lo < PORT[3]; };
-    let moored = 0; const reeds = [], barges = [], HU = wpm * 2;
+    let moored = 0; const reeds = [], barges = [], glows = [], HU = wpm * 2;
     const MAR = { marsiglia: [[43.2925, 5.3625, 43.2968, 5.3748]], genova: [[44.4085, 8.9215, 44.4128, 8.9275]] }[id] || [];
     const inMar = (i, j) => { if (!MAR.length) return false; const la = G.b[2] - ((j + 0.5) / NZ) * (G.b[2] - G.b[0]), lo = G.b[1] + ((i + 0.5) / NX) * (G.b[3] - G.b[1]); return MAR.some((q) => la > q[0] && la < q[2] && lo > q[1] && lo < q[3]); };
     const bankDir = (i, j) => { let gx = 0, gz = 0; for (let b = -2; b <= 2; b++) for (let a = -2; a <= 2; a++) { const t = T(i + a, j + b); if (t && t !== 'w' && t !== 'x') { gx += a; gz += b; } } const l = Math.hypot(gx, gz); return l > 0.5 ? [gx / l, gz / l] : null; };
@@ -1906,7 +1918,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const q = [[0, 1], [0, -1], [1, 0], [-1, 0]].find(([a, b]) => { const t = T(i + a, j + b); return t && t !== 'w' && t !== 'x'; });
         if (q) { const da = -q[0], db = -q[1]; let run = 1; while (run < 12 && T(i + da * run, j + db * run) === 'w') run++;
           const Lm = Math.min(85, (run * cs / wpm) * 0.36); if (run >= 3 && Lm > 20) {
-            const ex = x - da * cs * 0.5, ez = z - db * cs * 0.5, L = Lm * wpm; props.push([ex + da * L / 2, y + 0.3 * HU, ez + db * L / 2, da ? L : 2.4 * wpm, 0.6 * HU, db ? L : 2.4 * wpm, '#b9b2a6']);
+            const ex = x - da * cs * 0.5, ez = z - db * cs * 0.5, L = Lm * wpm; props.push([ex + da * L / 2, y + 0.3 * HU, ez + db * L / 2, da ? L : 2.4 * wpm, 0.6 * HU, db ? L : 2.4 * wpm, '#b9b2a6']); for (let t = 4; t < Lm; t += 18) glows.push([ex + da * t * wpm, y + 1.3 * HU, ez + db * t * wpm, 0.9 * wpm]);
             for (let t = 7; t < Lm - 3; t += 4.3) for (const sd of [-1, 1]) { if (r() > 0.82) continue; const off = (1.2 + 4.4) * wpm * sd, bx = ex + da * t * wpm + (da ? 0 : off), bz = ez + db * t * wpm + (db ? 0 : off), hc = r() < 0.82 ? '#f4f2ec' : r() < 0.5 ? '#2d3e63' : '#c9453a', bl = (7 + r() * 3) * wpm;
               props.push([bx, y + 0.35 * HU, bz, da ? 2.6 * wpm : bl, 0.9 * HU, db ? 2.6 * wpm : bl, hc]); dbox.push([bx, y + 1.1 * HU, bz, da ? 1.7 * wpm : bl * 0.35, 0.6 * HU, db ? 1.7 * wpm : bl * 0.35, '#e9e6de']); if (r() < 0.75) dbox.push([bx, y + 5.5 * HU, bz, 0.28 * wpm, 9.5 * HU, 0.28 * wpm, '#d8d4cc']); }
           } }
@@ -1915,11 +1927,11 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         const n = bankDir(i, j); if (n) { barges.push([i, j]); const ax = -n[1], az = n[0], ry = Math.atan2(-az, ax), Wm = 5.2, Lm = 30 + r() * 8, px = x + n[0] * (cs * 0.5 - (Wm / 2 + 2.5) * wpm), pz = z + n[1] * (cs * 0.5 - (Wm / 2 + 2.5) * wpm);
           const pb = (t, y0, len, h, wid, col) => props.push([px + ax * t * wpm, y + (y0 + h / 2) * HU, pz + az * t * wpm, len * wpm, h * HU, wid * wpm, col, ry]);
           const hull = ['#23212b', '#1f3147', '#2f4a3a', '#6e2b25'][(r() * 4) | 0], hold = ['#8a8d92', '#b5523b', '#3f6f8a', '#c9b98a', '#e9e6de'][(r() * 5) | 0], fw = r() < 0.5 ? 1 : -1;
-          pb(0, -0.4, Lm, 1.7, Wm, hull); pb(fw * (Lm / 2 + 1.2), -0.3, 3, 1.5, Wm * 0.62, hull); pb(fw * Lm * 0.08, 1.3, Lm * 0.56, 0.6, Wm * 0.84, hold); pb(-fw * Lm * 0.34, 1.3, 5.2, 2.3, Wm * 0.8, '#f1eee6'); pb(-fw * Lm * 0.34, 3.6, 5.8, 0.25, Wm * 0.9, '#3a3640'); pb(-fw * (Lm * 0.34 + 1.6), 3.85, 0.5, 1.2, 0.5, '#23212b'); }
+          pb(0, -0.4, Lm, 1.7, Wm, hull); pb(fw * (Lm / 2 + 1.2), -0.3, 3, 1.5, Wm * 0.62, hull); pb(fw * Lm * 0.08, 1.3, Lm * 0.56, 0.6, Wm * 0.84, hold); pb(-fw * Lm * 0.34, 1.3, 5.2, 2.3, Wm * 0.8, '#f1eee6'); pb(-fw * Lm * 0.34, 3.6, 5.8, 0.25, Wm * 0.9, '#3a3640'); pb(-fw * (Lm * 0.34 + 1.6), 3.85, 0.5, 1.2, 0.5, '#23212b'); glows.push([px - ax * fw * Lm * 0.34 * wpm, y + 2.6 * HU, pz - az * fw * Lm * 0.34 * wpm, 2.6 * wpm]); glows.push([px + ax * fw * Lm * 0.45 * wpm, y + 1.9 * HU, pz + az * fw * Lm * 0.45 * wpm, 0.8 * wpm]); }
       } else if (c === 'w' && wdp[k] === 1 && moored < 220 && r() < 0.12 && id !== 'lione') {
         const q = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([a, b]) => T(i + a, j + b) === 'q');
         if (q && FP) { const n = bankDir(i, j) || q; moored++; const ax = -n[1], az = n[0], ry = Math.atan2(-az, ax), Lm = 9 + r() * 5, px = x + n[0] * (cs * 0.5 - 4.5 * wpm), pz = z + n[1] * (cs * 0.5 - 4.5 * wpm), hc = r() < 0.7 ? '#f2efe8' : CONT[(r() * 3) | 0];
-          props.push([px, y + 0.35 * HU, pz, Lm * wpm, 1.1 * HU, 3.3 * wpm, hc, ry]); props.push([px - ax * Lm * 0.2 * wpm, y + 1.5 * HU, pz - az * Lm * 0.2 * wpm, Lm * 0.3 * wpm, 1.3 * HU, 2.4 * wpm, '#e9e6de', ry]); }
+          props.push([px, y + 0.35 * HU, pz, Lm * wpm, 1.1 * HU, 3.3 * wpm, hc, ry]); props.push([px - ax * Lm * 0.2 * wpm, y + 1.5 * HU, pz - az * Lm * 0.2 * wpm, Lm * 0.3 * wpm, 1.3 * HU, 2.4 * wpm, '#e9e6de', ry]); if (r() < 0.5) glows.push([px - ax * Lm * 0.2 * wpm, y + 1.7 * HU, pz - az * Lm * 0.2 * wpm, 1.8 * wpm]); }
         else if (q) { moored++; const ax = q[0] === 0; box(x, y - 0.01, z, cs * (ax ? 0.7 : 0.26), cs * 0.16, cs * (ax ? 0.26 : 0.7), r() < 0.7 ? '#f2efe8' : CONT[(r() * 3) | 0]); }
       } else if (c === 'o' && r() < 0.035 && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => T(i + a, j + b) === 'b')) {
         umb.push([x, y, z, ['#f1eff5', '#d24b3a', '#3f9a6c'][(r() * 3) | 0]]); dbox.push([x, y + cs * 0.2, z, cs * 0.05, cs * 0.4, cs * 0.05, '#d9d4c8']); dbox.push([x, y + cs * 0.13, z, cs * 0.3, cs * 0.04, cs * 0.3, '#6b4a35']);
@@ -2037,7 +2049,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
     const labels = lms.map((l) => ({ it: l.it, en: l.en || l.it, x: l.x, z: l.z }));
     const spins = []; g.traverse((o) => { if (o.userData.spin) spins.push(o); });
     mark('resto'); const tms = {}; for (let k = 1; k < tm.length; k++) tms[tm[k][0]] = Math.round(tm[k][1] - tm[k - 1][1]);
-    return { brg: barges.map(([i, j]) => [ox + (i + 0.5) * cs, oz + (j + 0.5) * cs]), wpmU: FP ? wpm : 0, mks, tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
+    return { glowMat, brg: barges.map(([i, j]) => [ox + (i + 0.5) * cs, oz + (j + 0.5) * cs]), wpmU: FP ? wpm : 0, mks, tms, spins, group: g, top, NX, NZ, cs, ox, oz, toWorld: M.toWorld, toLatLon: M.toLatLon, labels, pick: FP ? [terrM, watM, brM, fpM] : [terrM, watM, brM, bldM, roofM, gabM], half: Math.hypot(NX * cs, NZ * cs) / 2, sizeK: SK, winU: FP ? fpM.userData.pitch : 0, water: watM, nWater: wat.length, wave: wat, lampMat, poolMat, clouds, boats, detail: det, cars: { mesh: carM, tick: tickCars }, life };
   }
 
   const LIGHT = {
@@ -2219,7 +2231,7 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
         if (this.tg) { const q = fdt ? 1 - Math.exp(-fdt * 1.4) : 1, G2 = this.tg; this.hemi.color.lerp(G2.sky, q); this.hemi.groundColor.lerp(G2.gnd, q); this.sun.color.lerp(G2.sun, q); this.hemi.intensity += (G2.hi - this.hemi.intensity) * q; this.sun.intensity += (G2.si - this.sun.intensity) * q; this.sun.position.lerp(G2.sp, q); SOTO_U.uNight.value += (G2.n - SOTO_U.uNight.value) * q; this.scene.fog.color.lerp(G2.fog, q); }
         SOTO_U.uT.value = this.reduce ? 0 : (t / 1000) % 1000; SOTO_U.uCl.value.y = 0.24 * cl01(1 - SOTO_U.uNight.value); SOTO_U.uSky.value.copy(this.hemi.color); SOTO_U.uSunDir.value.copy(this.sun.position).normalize(); SOTO_U.uSunCol.value.copy(this.sun.color).multiplyScalar(Math.min(1, this.sun.intensity));
         this.scene.fog.near = cd; this.scene.fog.far = cd + (c.half || 20) * 4;
-        if (c.lampMat) { const nv = SOTO_U.uNight.value; c.lampMat.emissiveIntensity = Math.max(0, 0.3 + 0.9 * nv); c.poolMat.opacity = 0.3 * cl01(0.12 + nv); }
+        if (c.lampMat) { const nv = SOTO_U.uNight.value; c.lampMat.emissiveIntensity = Math.max(0, 0.3 + 0.9 * nv); c.poolMat.opacity = 0.3 * cl01(0.12 + nv); if (c.glowMat) c.glowMat.opacity = 0.95 * cl01(nv * 1.4); }
         if (c.life && !this.reduce) c.life(t);
         if (c.spins && fdt) c.spins.forEach((o) => { o.rotation.y += o.userData.spin * fdt; });
         if (c.cars) { c.cars.mesh.visible = ppb > 2.4; if (c.cars.mesh.visible && fdt) c.cars.tick(fdt); }
@@ -2467,8 +2479,10 @@ const SOTO_CSS = `@import url('https://fonts.googleapis.com/css2?family=Fira+San
 @keyframes soto-card{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
 .soto-card{animation:soto-card .28s cubic-bezier(.2,.8,.2,1)}
 .soto-nav::-webkit-scrollbar{display:none}
+.soto-beam{position:absolute;left:50%;bottom:2px;width:30px;height:170px;margin-left:-15px;background:linear-gradient(to top,currentColor 0%,transparent 88%);opacity:.5;filter:blur(4px);border-radius:15px 15px 0 0;pointer-events:none;z-index:-1;mix-blend-mode:screen;animation:soto-beam 2.6s ease-in-out infinite alternate}
+@keyframes soto-beam{from{opacity:.28}to{opacity:.62}}
 .soto-ring{position:relative}
-.soto-ring::after{content:'';position:absolute;inset:-3px -9px;border:2px solid currentColor;border-radius:50%;animation:soto-ring 2.4s steps(10) infinite}
+.soto-ring::after{content:'';position:absolute;inset:-5px -15px;border:2px solid currentColor;border-radius:50%;animation:soto-ring 2.4s steps(10) infinite}
 .soto-root button:focus-visible{outline:2px solid #c4a3ff;outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.soto-root *,.soto-root *::after{animation:none !important;transition:none !important}}`;
 
@@ -2727,8 +2741,9 @@ class SotoWasHere extends React.Component {
                 <div key={p.id} data-wx={w.x} data-wz={w.z} data-bob="1" style={st('position:absolute;left:0;top:0;visibility:hidden')}>
                   <button className="soto-mk" onClick={() => (isEditor ? this.edit(p) : this.select(p))} title={tx(p.title)} style={st(`position:absolute;left:0;bottom:0;transform:translateX(-50%) scale(${s.sel === p.id ? 1.25 : 1});transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;opacity:${dr ? 0.7 : 1}`)}>
                     {dr && <span style={st('font-family:Silkscreen,monospace;font-size:10px;background:#0b0a0f;color:#f1eff5;border:1px dashed #a374f0;border-radius:4px;padding:1px 5px;margin-bottom:3px')}>{S.draft}</span>}
-                    {faceRow(ms, 44, 9, (q) => `3px solid ${q.color}`, 'box-shadow:3px 3px 0 #000')}
-                    <span style={st(`width:3px;height:16px;background:${m.color}`)}></span>
+                    <span className="soto-beam" style={st(`color:${m.color}`)}></span>
+                    {faceRow(ms, 44, 9, (q) => `3px solid ${q.color}`, `box-shadow:3px 3px 0 #000,0 0 16px ${m.color}`)}
+                    <span style={st(`width:3px;height:16px;background:${m.color};box-shadow:0 0 8px ${m.color}`)}></span>
                     <span className="soto-ring" style={st(`width:10px;height:5px;border-radius:50%;background:rgba(0,0,0,0.55);color:${m.color}`)}></span>
                   </button>
                 </div>

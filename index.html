@@ -385,11 +385,11 @@ window.SOTO_EURO = {
           gg = mix(gg, vec3(0.1), grate * max(step(0.6, fract(sf.x * 8.0)), step(0.7, fract(sf.y * 5.0))) * 0.9 * uFine);
           float gl = lit * (1.0 - grate);
           wall = mix(wall, mix(gg * (1.0 - gl), frameC, step(abs(sf.x - 0.5), 0.015) * (1.0 - grate) * 0.8), gwin * gz);
-          em += vec3(1.0, 0.86, 0.62) * gwin * gz * gl * 0.9;
+          em += vec3(1.0, 0.8, 0.52) * gwin * gz * gl * 0.5;
           wall *= 1.0 - 0.3 * old * ab * step(0.95, sf.x) * step(0.8, sH(vec2(sid.x, bz * 77.0)));
         }
         diffuseColor.rgb = mix(base, wall, uWin);
-        totalEmissiveRadiance += em * uWin * (0.8 + 0.9 * uNight) + vec3(1.0, 0.74, 0.38) * step(mix(0.9, 0.62, uNight), bz) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5)));
+        totalEmissiveRadiance += em * uWin * (0.75 + 0.7 * uNight) + vec3(1.0, 0.74, 0.38) * step(mix(0.9, 0.62, uNight), bz) * (1.0 - uWin) * max(0.0, mix(0.12, 0.3, uNight)) * (0.55 + 0.45 * step(0.5, fract(sg.y * 0.5)));
       } else if (vW.w < 1.5) {
         float ty = floor(vW.z + 0.0001), bz = (floor((vW.z - ty) * 256.0) + 0.5) / 256.0; vec2 rp = vW.xy;
         diffuseColor.rgb *= 0.9 + 0.2 * sNz(rp * 0.7 + bz * 50.0) * uWin;
@@ -439,6 +439,14 @@ window.SOTO_EURO = {
     return m;
   }
   // Unisce le parti fisse di un monumento in due sole mesh (con e senza ombra), per poter aggiungere dettagli senza appesantire.
+  // Di notte i monumenti sono illuminati dal basso con una luce calda.
+  function litLM(m) {
+    m.onBeforeCompile = sh => {
+      sh.uniforms.uNight = SOTO_U.uNight;
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uNight;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n      totalEmissiveRadiance += diffuseColor.rgb * vec3(1.0, 0.78, 0.5) * 0.62 * clamp(uNight, 0.0, 1.0);');
+    };
+    return m;
+  }
   function bakeLM(lg) {
     const bk = [[], []],
       col = new THREE.Color();
@@ -469,10 +477,10 @@ window.SOTO_EURO = {
       ge.setAttribute('position', new THREE.BufferAttribute(P, 3));
       ge.setAttribute('color', new THREE.BufferAttribute(Cc, 3));
       ge.computeVertexNormals();
-      const me = new THREE.Mesh(ge, new THREE.MeshLambertMaterial({
+      const me = new THREE.Mesh(ge, litLM(new THREE.MeshLambertMaterial({
         vertexColors: true,
         flatShading: true
-      }));
+      })));
       me.castShadow = !n;
       me.receiveShadow = true;
       lg.add(me);
@@ -4015,8 +4023,9 @@ window.SOTO_EURO = {
       mt.onBeforeCompile = sh => {
         ob(sh);
         sh.uniforms.uRd = SOTO_U.uRd;
+        sh.uniforms.uNight = SOTO_U.uNight;
         sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aR;\nvarying vec4 vR;').replace('#include <begin_vertex>', '#include <begin_vertex>\n        vR = aR;');
-        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uRd;\nvarying vec4 vR;\nfloat rH(vec2 p) { return fract(sin(dot(p, vec2(63.7, 157.3))) * 24634.63); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uRd;\nuniform float uNight;\nvarying vec4 vR;\nfloat rH(vec2 p) { return fract(sin(dot(p, vec2(63.7, 157.3))) * 24634.63); }').replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         if (uRd > 0.004 && vR.z < 8.5) {
           float ty = vR.z, hwm = vR.w, x = vR.x * hwm, v = vR.y, ax = abs(x), ln = 0.0; vec3 rc = diffuseColor.rgb;
           if (ty > 3.5) {
@@ -4040,6 +4049,11 @@ window.SOTO_EURO = {
           }
           rc = mix(rc, vec3(0.9, 0.88, 0.93), ln * 0.8);
           diffuseColor.rgb = mix(diffuseColor.rgb, rc, uRd);
+        }
+        if (vR.z < 8.5 && uNight > 0.02) {
+          // lampioni: una chiazza di luce calda ogni 26 m, alternata sui due lati
+          float lv = vR.y / 26.0, sdl = mod(floor(lv), 2.0) * 2.0 - 1.0, d1 = fract(lv) - 0.5, d2 = vR.x - sdl * 0.75;
+          totalEmissiveRadiance += vec3(1.0, 0.7, 0.36) * diffuseColor.rgb * 1.5 * clamp(uNight, 0.0, 1.0) * exp(-d1 * d1 * 30.0 - d2 * d2 * 1.3);
         }`);
       };
       const m = new THREE.Mesh(geo, mt);
@@ -4345,7 +4359,7 @@ window.SOTO_EURO = {
           col.copy(PAL[0]).lerp(PAL[1], c01(rise / (HM * 0.45))).lerp(PAL[2], c01((rise / HM - 0.75) / 0.4));
           if (rise < HM * 0.12) col.lerp(WH, 0.6 * c01((hv - 0.5) * 4));
           col.multiplyScalar(0.8 + 0.12 * nz2(x * f * 6.3, z * f * 6.3));
-          if (q.wat) col.lerp(WDEP[3], 1 - wk);
+          if (q.wat) col.lerp(WDEP[3], (1 - wk) * 0.5);
           col.lerp(HZC, 0.35 * Math.pow(k / K, 1.2));
           col.multiplyScalar(k ? 0.36 : 0.55).lerp(DARKC, k ? 0.4 : 0.2); // fuori mappa: all'oscuro, si intravede soltanto
           row.push([x, q.y - (k ? 0 : 0.02) + rise, z, col.r, col.g, col.b, q.sea ? 0 : Math.min(1, (K - k) / 5)]);
@@ -4506,6 +4520,20 @@ window.SOTO_EURO = {
     det.add(quiet(inst(B(1, 1, 1), lampMat, lamps, (o, [x, y, z], col) => {
       o.position.set(x, y + cs * 0.64, z);
       o.scale.setScalar(cs * 0.16);
+      col.set('#ffffff');
+    })));
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: '#ffd08a',
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false
+    });
+    if (glows.length) g.add(quiet(inst(B(1, 1, 1), glowMat, glows, (o, [x, y, z, sz], col) => {
+      o.position.set(x, y, z);
+      o.rotation.set(0, 0, 0);
+      o.scale.setScalar(sz);
       col.set('#ffffff');
     })));
     const poolMat = new THREE.MeshBasicMaterial({
@@ -4734,6 +4762,7 @@ window.SOTO_EURO = {
     let moored = 0;
     const reeds = [],
       barges = [],
+      glows = [],
       HU = wpm * 2;
     const MAR = {
       marsiglia: [[43.2925, 5.3625, 43.2968, 5.3748]],
@@ -4819,6 +4848,7 @@ window.SOTO_EURO = {
               ez = z - db * cs * 0.5,
               L = Lm * wpm;
             props.push([ex + da * L / 2, y + 0.3 * HU, ez + db * L / 2, da ? L : 2.4 * wpm, 0.6 * HU, db ? L : 2.4 * wpm, '#b9b2a6']);
+            for (let t = 4; t < Lm; t += 18) glows.push([ex + da * t * wpm, y + 1.3 * HU, ez + db * t * wpm, 0.9 * wpm]);
             for (let t = 7; t < Lm - 3; t += 4.3) for (const sd of [-1, 1]) {
               if (r() > 0.82) continue;
               const off = (1.2 + 4.4) * wpm * sd,
@@ -4854,6 +4884,8 @@ window.SOTO_EURO = {
           pb(-fw * Lm * 0.34, 1.3, 5.2, 2.3, Wm * 0.8, '#f1eee6');
           pb(-fw * Lm * 0.34, 3.6, 5.8, 0.25, Wm * 0.9, '#3a3640');
           pb(-fw * (Lm * 0.34 + 1.6), 3.85, 0.5, 1.2, 0.5, '#23212b');
+          glows.push([px - ax * fw * Lm * 0.34 * wpm, y + 2.6 * HU, pz - az * fw * Lm * 0.34 * wpm, 2.6 * wpm]);
+          glows.push([px + ax * fw * Lm * 0.45 * wpm, y + 1.9 * HU, pz + az * fw * Lm * 0.45 * wpm, 0.8 * wpm]);
         }
       } else if (c === 'w' && wdp[k] === 1 && moored < 220 && r() < 0.12 && id !== 'lione') {
         const q = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([a, b]) => T(i + a, j + b) === 'q');
@@ -4869,6 +4901,7 @@ window.SOTO_EURO = {
             hc = r() < 0.7 ? '#f2efe8' : CONT[r() * 3 | 0];
           props.push([px, y + 0.35 * HU, pz, Lm * wpm, 1.1 * HU, 3.3 * wpm, hc, ry]);
           props.push([px - ax * Lm * 0.2 * wpm, y + 1.5 * HU, pz - az * Lm * 0.2 * wpm, Lm * 0.3 * wpm, 1.3 * HU, 2.4 * wpm, '#e9e6de', ry]);
+          if (r() < 0.5) glows.push([px - ax * Lm * 0.2 * wpm, y + 1.7 * HU, pz - az * Lm * 0.2 * wpm, 1.8 * wpm]);
         } else if (q) {
           moored++;
           const ax = q[0] === 0;
@@ -5229,6 +5262,7 @@ window.SOTO_EURO = {
     const tms = {};
     for (let k = 1; k < tm.length; k++) tms[tm[k][0]] = Math.round(tm[k][1] - tm[k - 1][1]);
     return {
+      glowMat,
       brg: barges.map(([i, j]) => [ox + (i + 0.5) * cs, oz + (j + 0.5) * cs]),
       wpmU: FP ? wpm : 0,
       mks,
@@ -5781,6 +5815,7 @@ window.SOTO_EURO = {
           const nv = SOTO_U.uNight.value;
           c.lampMat.emissiveIntensity = Math.max(0, 0.3 + 0.9 * nv);
           c.poolMat.opacity = 0.3 * cl01(0.12 + nv);
+          if (c.glowMat) c.glowMat.opacity = 0.95 * cl01(nv * 1.4);
         }
         if (c.life && !this.reduce) c.life(t);
         if (c.spins && fdt) c.spins.forEach(o => {
@@ -6234,8 +6269,10 @@ const SOTO_CSS = `@import url('https://fonts.googleapis.com/css2?family=Fira+San
 @keyframes soto-card{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
 .soto-card{animation:soto-card .28s cubic-bezier(.2,.8,.2,1)}
 .soto-nav::-webkit-scrollbar{display:none}
+.soto-beam{position:absolute;left:50%;bottom:2px;width:30px;height:170px;margin-left:-15px;background:linear-gradient(to top,currentColor 0%,transparent 88%);opacity:.5;filter:blur(4px);border-radius:15px 15px 0 0;pointer-events:none;z-index:-1;mix-blend-mode:screen;animation:soto-beam 2.6s ease-in-out infinite alternate}
+@keyframes soto-beam{from{opacity:.28}to{opacity:.62}}
 .soto-ring{position:relative}
-.soto-ring::after{content:'';position:absolute;inset:-3px -9px;border:2px solid currentColor;border-radius:50%;animation:soto-ring 2.4s steps(10) infinite}
+.soto-ring::after{content:'';position:absolute;inset:-5px -15px;border:2px solid currentColor;border-radius:50%;animation:soto-ring 2.4s steps(10) infinite}
 .soto-root button:focus-visible{outline:2px solid #c4a3ff;outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.soto-root *,.soto-root *::after{animation:none !important;transition:none !important}}`;
 const CITIES = [{
@@ -7136,8 +7173,11 @@ class SotoWasHere extends React.Component {
         style: st(`position:absolute;left:0;bottom:0;transform:translateX(-50%) scale(${s.sel === p.id ? 1.25 : 1});transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;opacity:${dr ? 0.7 : 1}`)
       }, dr && /*#__PURE__*/React.createElement("span", {
         style: st('font-family:Silkscreen,monospace;font-size:10px;background:#0b0a0f;color:#f1eff5;border:1px dashed #a374f0;border-radius:4px;padding:1px 5px;margin-bottom:3px')
-      }, S.draft), faceRow(ms, 44, 9, q => `3px solid ${q.color}`, 'box-shadow:3px 3px 0 #000'), /*#__PURE__*/React.createElement("span", {
-        style: st(`width:3px;height:16px;background:${m.color}`)
+      }, S.draft), /*#__PURE__*/React.createElement("span", {
+        className: "soto-beam",
+        style: st(`color:${m.color}`)
+      }), faceRow(ms, 44, 9, q => `3px solid ${q.color}`, `box-shadow:3px 3px 0 #000,0 0 16px ${m.color}`), /*#__PURE__*/React.createElement("span", {
+        style: st(`width:3px;height:16px;background:${m.color};box-shadow:0 0 8px ${m.color}`)
       }), /*#__PURE__*/React.createElement("span", {
         className: "soto-ring",
         style: st(`width:10px;height:5px;border-radius:50%;background:rgba(0,0,0,0.55);color:${m.color}`)
