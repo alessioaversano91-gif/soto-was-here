@@ -2562,7 +2562,7 @@ class SotoWasHere extends React.Component {
   boot() {
     if (!(window.THREE && window.SotoEngine && this.cityRef.current)) { this.bt = setTimeout(() => this.boot(), 100); return; }
     this.eng = new window.SotoEngine(this.rootRef.current, this.cityRef.current, this.euroRef.current, this.engOpts());
-    // Caccia ai punti: un punto si scopre solo zoomando vicino; da li in poi resta visibile e compare nell'elenco.
+    // Caccia ai punti: un punto si vede solo zoomando vicino e torna invisibile allontanandosi; una volta scoperto entra nell'elenco.
     this.eng.onFound = (id) => { if (!id || (this.foundNow || (this.foundNow = new Set(this.state.found))).has(id)) return; this.foundNow.add(id); this.setState((x) => { const f = x.found.concat([id]); safeSet('soto-found:v1', f); return { found: f }; }); };
     this.eng.onPick = (x, z, sx, sy) => this.onPick(x, z, sx, sy);
     this.eng.onStatus = (cityStatus) => this.setState({ cityStatus });
@@ -2757,7 +2757,7 @@ class SotoWasHere extends React.Component {
             {C && visible.filter((p) => !(d && d.id === p.id)).map((p) => {
               const ms = mems(p), m = ms[0], w = this.pos(p), dr = p.status === 'draft';
               return (
-                <div key={p.id} data-wx={w.x} data-wz={w.z} data-bob="1" data-pid={p.id} data-hide={!isEditor && s.found.indexOf(p.id) < 0 && s.sel !== p.id ? '1' : undefined} style={st('position:absolute;left:0;top:0;visibility:hidden')}>
+                <div key={p.id} data-wx={w.x} data-wz={w.z} data-bob="1" data-pid={p.id} data-hide={!isEditor && s.sel !== p.id ? '1' : undefined} style={st('position:absolute;left:0;top:0;visibility:hidden')}>
                   <button className="soto-mk" onClick={() => (isEditor ? this.edit(p) : this.select(p))} title={tx(p.title)} style={st(`position:absolute;left:0;bottom:0;transform:translateX(-50%) scale(${s.sel === p.id ? 1.25 : 1});transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;opacity:${dr ? 0.7 : 1}`)}>
                     {dr && <span style={st('font-family:Silkscreen,monospace;font-size:10px;background:#0b0a0f;color:#f1eff5;border:1px dashed #a374f0;border-radius:4px;padding:1px 5px;margin-bottom:3px')}>{S.draft}</span>}
                     <span className="soto-beam" style={st(`color:${m.color}`)}></span>

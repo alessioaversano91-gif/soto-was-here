@@ -241,7 +241,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 
 ## Punti nascosti: si trovano zoomando (20 novembre)
 - [x] All'apertura della città i punti non si vedono. Compaiono quando si zooma vicino (circa un doppio clic) e il punto è entro ~1 km dal centro dell'inquadratura (1,3 km a Genova, 1,4 a Marsiglia, 0,9 a Lione, 0,6 a Mantova)
-- [x] Un punto trovato resta visibile e compare nell'elenco della città; il pannello dice «x di N punti trovati» e quanti ne mancano
+- [x] Allontanandosi i punti tornano invisibili, anche quelli già trovati (resta visibile solo quello aperto nella scheda). Un punto trovato entra nell'elenco della città; il pannello dice «x di N punti trovati» e quanti ne mancano
 - [x] I punti trovati sono ricordati nel browser di chi visita (tornando sul sito restano trovati)
 - [x] Nell'Editor tutti i punti restano sempre visibili
 - [x] Provato in locale a Lione: nascosti all'apertura e a distanza 40, Matumao compare a 22, l'altro punto (1,2 km) resta nascosto

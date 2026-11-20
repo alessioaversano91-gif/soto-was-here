@@ -6666,7 +6666,7 @@ class SotoWasHere extends React.Component {
       return;
     }
     this.eng = new window.SotoEngine(this.rootRef.current, this.cityRef.current, this.euroRef.current, this.engOpts());
-    // Caccia ai punti: un punto si scopre solo zoomando vicino; da li in poi resta visibile e compare nell'elenco.
+    // Caccia ai punti: un punto si vede solo zoomando vicino e torna invisibile allontanandosi; una volta scoperto entra nell'elenco.
     this.eng.onFound = id => {
       if (!id || (this.foundNow || (this.foundNow = new Set(this.state.found))).has(id)) return;
       this.foundNow.add(id);
@@ -7233,7 +7233,7 @@ class SotoWasHere extends React.Component {
         "data-wz": w.z,
         "data-bob": "1",
         "data-pid": p.id,
-        "data-hide": !isEditor && s.found.indexOf(p.id) < 0 && s.sel !== p.id ? '1' : undefined,
+        "data-hide": !isEditor && s.sel !== p.id ? '1' : undefined,
         style: st('position:absolute;left:0;top:0;visibility:hidden')
       }, /*#__PURE__*/React.createElement("button", {
         className: "soto-mk",
