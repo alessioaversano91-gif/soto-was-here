@@ -2279,6 +2279,13 @@ window.SOTO_EURO = { nx: 440, ny: 280, lon0: -12, lat1: 62, W: 0.1, r: "0z0z0z0P
       const T = this.controls.target, cd = this.camera.position.distanceTo(T), ZD = 28, boxes = [];
       els.forEach((el) => {
         const x = +el.dataset.wx, z = +el.dataset.wz;
+        if (el.dataset.hide) {
+          // punto nascosto: compare solo con la camera vicina (doppio clic o piu) e entro circa 1 km dal centro dell'inquadratura
+          const reach = Math.max(2.5, cd * 0.3), dd = hyp(x - T.x, z - T.z), a = Math.max(0, Math.min(1, (26 - cd) / 4)) * Math.max(0, Math.min(1, (reach - dd) / 2));
+          el.style.opacity = a.toFixed(2); el.style.pointerEvents = a > 0.4 ? '' : 'none';
+          if (a > 0.6 && this.onFound) this.onFound(el.dataset.pid);
+          if (a < 0.02) { el.style.visibility = 'hidden'; return; }
+        } else if (el.dataset.pid && el.style.opacity) { el.style.opacity = ''; el.style.pointerEvents = ''; }
         if (el.dataset.lbl) {
           const reach = Math.max(3.5, cd * 0.55), dd = hyp(x - T.x, z - T.z);
           const a = Math.max(0, Math.min(1, (ZD - cd) / 6)) * Math.max(0, Math.min(1, (reach - dd) / 3));
@@ -2510,8 +2517,8 @@ const CREW_BASE = [
   { id: 'soto', name: 'SOTO', color: '#a374f0', brand: true, face: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%230b0a0f'/%3E%3Crect x='3' y='3' width='90' height='90' rx='10' fill='none' stroke='%23a374f0' stroke-width='2' stroke-dasharray='5 4'/%3E%3Ctext x='48' y='50' text-anchor='middle' font-family='Arial Black,Arial,Helvetica,sans-serif' font-weight='900' font-size='27' fill='%23f1eff5'%3ESOTO%3C/text%3E%3Crect x='17' y='58' width='62' height='17' rx='8.5' fill='%23f1eff5'/%3E%3Crect x='19' y='60' width='62' height='17' rx='8.5' fill='%23000' opacity='0'/%3E%3Ctext x='48' y='70.5' text-anchor='middle' font-family='Arial,Helvetica,sans-serif' font-weight='700' font-size='10.5' letter-spacing='0.6' fill='%230b0a0f'%3EWAS HERE%3C/text%3E%3C/svg%3E" }
 ];
 const STR = {
-  it: { tagline: 'La mappa dei luoghi dove è passata SOTO.', choose: 'SELEZIONA STAGE', crew: 'LA CREW', europe: 'Europa', explore: 'Esplora', editor: 'Editor', all: 'Tutti', empty: 'Nessun punto pubblicato in questa città.', clickToAdd: 'Clicca su un punto del diorama per aggiungere un elemento.', zoomHint: 'Zooma o doppio clic per scoprire i luoghi · Spazio + trascina per spostarti', zoomHintTouch: 'Trascina per spostarti · due dita per ruotare e zoomare', textLang: 'Testi in', moveHint: 'Clicca altrove sul diorama per spostare il punto.', who: 'Chi (anche più di uno)', title: 'Titolo', date: 'Data', text: 'Racconto', upload: 'Carica foto', change: 'Cambia foto', draft: 'BOZZA', pub: 'Pubblicato', save: 'Salva', saving: 'Salvo…', cancel: 'Annulla', edit: 'Modifica', del: 'Elimina', confirmDel: 'Eliminare questo punto?', needPos: 'Posiziona il punto cliccando sul diorama.', needTitle: 'Inserisci almeno un titolo.', creating: 'Nuovo punto', editing: 'Modifica punto', hide: 'Riduci', show: 'Apri', one: 'punto', many: 'punti', saveErr: 'Salvataggio non riuscito: ', login: 'Accesso Editor', loginSub: 'Solo la crew può aggiungere o modificare i punti.', email: 'Email', password: 'Password', enter: 'Entra', logout: 'Esci', loginErr: 'Credenziali non valide.', data: 'Dati', exportT: 'Esporta JSON', importT: 'Importa JSON', exportSub: 'Copia questo testo per salvare i punti.', importSub: 'Incolla qui un JSON esportato. Sostituisce i punti attuali.', copy: 'Copia', copied: 'Copiato', download: 'Scarica', doImport: 'Importa', close: 'Chiudi', badJson: 'JSON non valido.', loadingPts: 'Carico i punti…' },
-  en: { tagline: 'A map of the places SOTO has been.', choose: 'SELECT STAGE', crew: 'THE CREW', europe: 'Europe', explore: 'Explore', editor: 'Editor', all: 'All', empty: 'No published points in this city yet.', clickToAdd: 'Click anywhere on the diorama to add an entry.', zoomHint: 'Zoom or double-click to discover places · Space + drag to pan', zoomHintTouch: 'Drag to pan · two fingers to rotate and zoom', textLang: 'Texts in', moveHint: 'Click elsewhere on the diorama to move the point.', who: 'Who (one or more)', title: 'Title', date: 'Date', text: 'Story', upload: 'Upload photo', change: 'Change photo', draft: 'DRAFT', pub: 'Published', save: 'Save', saving: 'Saving…', cancel: 'Cancel', edit: 'Edit', del: 'Delete', confirmDel: 'Delete this point?', needPos: 'Place the point by clicking the diorama.', needTitle: 'Add at least one title.', creating: 'New point', editing: 'Edit point', hide: 'Collapse', show: 'Open', one: 'point', many: 'points', saveErr: 'Save failed: ', login: 'Editor login', loginSub: 'Only the crew can add or edit points.', email: 'Email', password: 'Password', enter: 'Sign in', logout: 'Sign out', loginErr: 'Invalid credentials.', data: 'Data', exportT: 'Export JSON', importT: 'Import JSON', exportSub: 'Copy this text to back up the points.', importSub: 'Paste an exported JSON here. It replaces the current points.', copy: 'Copy', copied: 'Copied', download: 'Download', doImport: 'Import', close: 'Close', badJson: 'Invalid JSON.', loadingPts: 'Loading points…' }
+  it: { tagline: 'La mappa dei luoghi dove è passata SOTO.', choose: 'SELEZIONA STAGE', crew: 'LA CREW', europe: 'Europa', explore: 'Esplora', editor: 'Editor', all: 'Tutti', empty: 'Nessun punto pubblicato in questa città.', hunt: 'I punti sono nascosti: zooma sulla mappa per scoprirli.', huntMore: (n) => (n === 1 ? 'Ne manca ancora 1: continua a cercare.' : `Ne mancano ancora ${n}: continua a cercare.`), foundOf: (a, b) => (b ? `${a} di ${b} ${b === 1 ? 'punto trovato' : 'punti trovati'}` : 'Nessun punto'), clickToAdd: 'Clicca su un punto del diorama per aggiungere un elemento.', zoomHint: 'Zooma o doppio clic per scoprire i luoghi · Spazio + trascina per spostarti', zoomHintTouch: 'Trascina per spostarti · due dita per ruotare e zoomare', textLang: 'Testi in', moveHint: 'Clicca altrove sul diorama per spostare il punto.', who: 'Chi (anche più di uno)', title: 'Titolo', date: 'Data', text: 'Racconto', upload: 'Carica foto', change: 'Cambia foto', draft: 'BOZZA', pub: 'Pubblicato', save: 'Salva', saving: 'Salvo…', cancel: 'Annulla', edit: 'Modifica', del: 'Elimina', confirmDel: 'Eliminare questo punto?', needPos: 'Posiziona il punto cliccando sul diorama.', needTitle: 'Inserisci almeno un titolo.', creating: 'Nuovo punto', editing: 'Modifica punto', hide: 'Riduci', show: 'Apri', one: 'punto', many: 'punti', saveErr: 'Salvataggio non riuscito: ', login: 'Accesso Editor', loginSub: 'Solo la crew può aggiungere o modificare i punti.', email: 'Email', password: 'Password', enter: 'Entra', logout: 'Esci', loginErr: 'Credenziali non valide.', data: 'Dati', exportT: 'Esporta JSON', importT: 'Importa JSON', exportSub: 'Copia questo testo per salvare i punti.', importSub: 'Incolla qui un JSON esportato. Sostituisce i punti attuali.', copy: 'Copia', copied: 'Copiato', download: 'Scarica', doImport: 'Importa', close: 'Chiudi', badJson: 'JSON non valido.', loadingPts: 'Carico i punti…' },
+  en: { tagline: 'A map of the places SOTO has been.', choose: 'SELECT STAGE', crew: 'THE CREW', europe: 'Europe', explore: 'Explore', editor: 'Editor', all: 'All', empty: 'No published points in this city yet.', hunt: 'The points are hidden: zoom in on the map to find them.', huntMore: (n) => (n === 1 ? '1 more to find: keep looking.' : `${n} more to find: keep looking.`), foundOf: (a, b) => (b ? `${a} of ${b} ${b === 1 ? 'point found' : 'points found'}` : 'No points'), clickToAdd: 'Click anywhere on the diorama to add an entry.', zoomHint: 'Zoom or double-click to discover places · Space + drag to pan', zoomHintTouch: 'Drag to pan · two fingers to rotate and zoom', textLang: 'Texts in', moveHint: 'Click elsewhere on the diorama to move the point.', who: 'Who (one or more)', title: 'Title', date: 'Date', text: 'Story', upload: 'Upload photo', change: 'Change photo', draft: 'DRAFT', pub: 'Published', save: 'Save', saving: 'Saving…', cancel: 'Cancel', edit: 'Edit', del: 'Delete', confirmDel: 'Delete this point?', needPos: 'Place the point by clicking the diorama.', needTitle: 'Add at least one title.', creating: 'New point', editing: 'Edit point', hide: 'Collapse', show: 'Open', one: 'point', many: 'points', saveErr: 'Save failed: ', login: 'Editor login', loginSub: 'Only the crew can add or edit points.', email: 'Email', password: 'Password', enter: 'Sign in', logout: 'Sign out', loginErr: 'Invalid credentials.', data: 'Data', exportT: 'Export JSON', importT: 'Import JSON', exportSub: 'Copy this text to back up the points.', importSub: 'Paste an exported JSON here. It replaces the current points.', copy: 'Copy', copied: 'Copied', download: 'Download', doImport: 'Import', close: 'Close', badJson: 'Invalid JSON.', loadingPts: 'Loading points…' }
 };
 const LOAD = {
   it: { osm: 'Scarico strade ed edifici da OpenStreetMap…', build: 'Disegno la pianta della città…', terrain: 'Aggiungo colline e altimetria…', sub: 'Solo al primo accesso, poi la città resta salvata.', fb: 'Dati reali non raggiungibili: versione stilizzata.' },
@@ -2534,7 +2541,7 @@ class SotoWasHere extends React.Component {
     super(p);
     this.rootRef = React.createRef(); this.cityRef = React.createRef(); this.euroRef = React.createRef();
     const ui = safeGet(UIKEY) || {};
-    this.state = { points: [], loaded: false, view: ui.view === 'city' ? 'city' : 'home', city: ui.city || 'genova', mode: 'explore', light: 'tramonto', hd: !(typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches), lang: ui.lang || 'it', sel: null, draft: null, filter: null, panel: true, draftLang: 'it', pop: null, cityStatus: null, user: null, login: null, dataModal: null, saving: false, tick: 0 };
+    this.state = { found: (safeGet('soto-found:v1') || []).filter((q) => typeof q === 'string'), points: [], loaded: false, view: ui.view === 'city' ? 'city' : 'home', city: ui.city || 'genova', mode: 'explore', light: 'tramonto', hd: !(typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches), lang: ui.lang || 'it', sel: null, draft: null, filter: null, panel: true, draftLang: 'it', pop: null, cityStatus: null, user: null, login: null, dataModal: null, saving: false, tick: 0 };
   }
   get api() { return this.props.api || {}; }
   componentDidMount() {
@@ -2555,6 +2562,8 @@ class SotoWasHere extends React.Component {
   boot() {
     if (!(window.THREE && window.SotoEngine && this.cityRef.current)) { this.bt = setTimeout(() => this.boot(), 100); return; }
     this.eng = new window.SotoEngine(this.rootRef.current, this.cityRef.current, this.euroRef.current, this.engOpts());
+    // Caccia ai punti: un punto si scopre solo zoomando vicino; da li in poi resta visibile e compare nell'elenco.
+    this.eng.onFound = (id) => { if (!id || (this.foundNow || (this.foundNow = new Set(this.state.found))).has(id)) return; this.foundNow.add(id); this.setState((x) => { const f = x.found.concat([id]); safeSet('soto-found:v1', f); return { found: f }; }); };
     this.eng.onPick = (x, z, sx, sy) => this.onPick(x, z, sx, sy);
     this.eng.onStatus = (cityStatus) => this.setState({ cityStatus });
     this.syncEng();
@@ -2656,6 +2665,7 @@ class SotoWasHere extends React.Component {
     const isCity = s.view === 'city', isEditor = isCity && s.mode === 'editor';
     const inCity = s.points.filter((p) => p.city === s.city).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const visible = isEditor ? inCity : inCity.filter((p) => p.status === 'published' && (!s.filter || memIds(p).indexOf(s.filter) >= 0));
+    const shown = isEditor ? visible : visible.filter((p) => s.found.indexOf(p.id) >= 0 || s.sel === p.id), nFound = pubIn(s.city).filter((p) => s.found.indexOf(p.id) >= 0).length;
     const d = s.draft, C = this.cityReady();
     const selP = !isEditor && s.sel && s.points.find((p) => p.id === s.sel);
     const pp = this.popPos();
@@ -2747,7 +2757,7 @@ class SotoWasHere extends React.Component {
             {C && visible.filter((p) => !(d && d.id === p.id)).map((p) => {
               const ms = mems(p), m = ms[0], w = this.pos(p), dr = p.status === 'draft';
               return (
-                <div key={p.id} data-wx={w.x} data-wz={w.z} data-bob="1" style={st('position:absolute;left:0;top:0;visibility:hidden')}>
+                <div key={p.id} data-wx={w.x} data-wz={w.z} data-bob="1" data-pid={p.id} data-hide={!isEditor && s.found.indexOf(p.id) < 0 && s.sel !== p.id ? '1' : undefined} style={st('position:absolute;left:0;top:0;visibility:hidden')}>
                   <button className="soto-mk" onClick={() => (isEditor ? this.edit(p) : this.select(p))} title={tx(p.title)} style={st(`position:absolute;left:0;bottom:0;transform:translateX(-50%) scale(${s.sel === p.id ? 1.25 : 1});transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;opacity:${dr ? 0.7 : 1}`)}>
                     {dr && <span style={st('font-family:Silkscreen,monospace;font-size:10px;background:#0b0a0f;color:#f1eff5;border:1px dashed #a374f0;border-radius:4px;padding:1px 5px;margin-bottom:3px')}>{S.draft}</span>}
                     <span className="soto-beam" style={st(`color:${m.color}`)}></span>
@@ -2808,7 +2818,7 @@ class SotoWasHere extends React.Component {
                   <button onClick={() => this.setState((x) => ({ panel: narrow && !x.panelTouched ? true : !x.panel, panelTouched: true }))} style={st('background:none;border:1px solid #2e2347;border-radius:8px;color:#9a96a6;font-size:12px;padding:4px 8px;cursor:pointer')}>{panelOn ? S.hide : S.show}</button>
                 </div>
                 <div style={st("font-family:'Titan One',sans-serif;font-size:40px;line-height:1;-webkit-text-stroke:5px #6d36e0;paint-order:stroke fill;filter:drop-shadow(2px 3px 0 #000)")}>{city.name[L]}</div>
-                <div style={st('font-size:14px;color:#9a96a6')}>{s.loaded ? cnt(isEditor ? inCity.length : pubIn(s.city).length) : S.loadingPts}</div>
+                <div style={st('font-size:14px;color:#9a96a6')}>{s.loaded ? (isEditor ? cnt(inCity.length) : S.foundOf(nFound, pubIn(s.city).length)) : S.loadingPts}</div>
               </div>
               {panelOn && !isEditor && (
                 <>
@@ -2821,7 +2831,7 @@ class SotoWasHere extends React.Component {
                     ))}
                   </div>
                   <div style={st('overflow:auto;flex:1')}>
-                    {visible.map((p) => { const ms = mems(p), m = ms[0]; return (
+                    {shown.map((p) => { const ms = mems(p), m = ms[0]; return (
                       <button key={p.id} className="soto-h3" onClick={() => this.select(p)} style={st(`display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;width:100%;padding:12px 18px;border:0;border-bottom:1px solid #1f1930;background:${s.sel === p.id ? '#231b38' : 'transparent'};color:#f1eff5;text-align:left;cursor:pointer`)}>
                         {faceSet(ms, 40, 8, 2)}
                         <span style={st('display:flex;flex-direction:column;gap:3px;min-width:0')}>
@@ -2830,7 +2840,8 @@ class SotoWasHere extends React.Component {
                         </span>
                       </button>
                     ); })}
-                    {s.loaded && !visible.length && <div style={st('padding:20px 18px;font-size:14px;color:#9a96a6;line-height:1.45;text-wrap:pretty')}>{S.empty}</div>}
+                    {s.loaded && !shown.length && <div style={st('padding:20px 18px;font-size:14px;color:#9a96a6;line-height:1.45;text-wrap:pretty')}>{visible.length ? S.hunt : S.empty}</div>}
+                    {s.loaded && shown.length > 0 && shown.length < visible.length && <div style={st('padding:12px 18px;font-size:13px;color:#9a96a6;line-height:1.45')}>{S.huntMore(visible.length - shown.length)}</div>}
                   </div>
                 </>
               )}
@@ -2862,7 +2873,7 @@ class SotoWasHere extends React.Component {
             </aside>
 
             {selP && (() => {
-              const ms = mems(selP), m = ms[0], idx = visible.findIndex((q) => q.id === selP.id), go = (dl) => { const q = visible[(idx + dl + visible.length) % visible.length]; if (q) this.select(q); };
+              const ms = mems(selP), m = ms[0], idx = shown.findIndex((q) => q.id === selP.id), go = (dl) => { const q = shown[(idx + dl + shown.length) % shown.length]; if (q) this.select(q); };
               const nb = 'width:36px;height:36px;border-radius:9px;border:1px solid #2e2347;background:none;color:#f1eff5;font-size:18px;cursor:pointer';
               return (
                 <article key={selP.id} className="soto-card" style={st((narrow ? 'position:absolute;left:12px;right:12px;bottom:12px;max-height:56%;z-index:3;' : 'position:absolute;top:72px;right:clamp(72px,7vw,96px);width:min(380px, calc(100% - 24px));max-height:calc(100% - 96px);') + 'overflow:auto;background:rgba(17,14,25,0.96);border:1px solid #2e2347;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.45)')}>
@@ -2881,8 +2892,8 @@ class SotoWasHere extends React.Component {
                         <span style={st('font-weight:700;font-size:14px')}>{ms.map((q) => q.name).join(' · ')}</span>
                         <span style={st('font-size:12px;color:#9a96a6')}>{fmt(selP.date)}</span>
                       </div>
-                      {visible.length > 1 && <button onClick={() => go(-1)} aria-label={L === 'it' ? 'Punto precedente' : 'Previous point'} style={st(nb)}>‹</button>}
-                      {visible.length > 1 && <button onClick={() => go(1)} aria-label={L === 'it' ? 'Punto successivo' : 'Next point'} style={st(nb)}>›</button>}
+                      {shown.length > 1 && <button onClick={() => go(-1)} aria-label={L === 'it' ? 'Punto precedente' : 'Previous point'} style={st(nb)}>‹</button>}
+                      {shown.length > 1 && <button onClick={() => go(1)} aria-label={L === 'it' ? 'Punto successivo' : 'Next point'} style={st(nb)}>›</button>}
                       <button onClick={() => this.setState({ sel: null })} aria-label={S.close} style={st(nb)}>×</button>
                     </div>
                     <h2 style={st("margin:4px 0 0;font-family:'Titan One',sans-serif;font-weight:400;font-size:26px;line-height:1.1;text-wrap:pretty")}>{tx(selP.title)}</h2>

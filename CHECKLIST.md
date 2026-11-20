@@ -238,3 +238,11 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 ## Versione definitiva (15 novembre 2026)
 - Grafica e motore chiusi a questa versione. Da qui in poi si aggiornano solo i punti: Alessio li modifica nell'artifact e chiede «pubblica i punti».
 - Punti pubblicati oggi: 1 (Sbirrati da Trevor, Marsiglia). Tolto il punto di esempio Boccadasse.
+
+## Punti nascosti: si trovano zoomando (20 novembre)
+- [x] All'apertura della città i punti non si vedono. Compaiono quando si zooma vicino (circa un doppio clic) e il punto è entro ~1 km dal centro dell'inquadratura (1,3 km a Genova, 1,4 a Marsiglia, 0,9 a Lione, 0,6 a Mantova)
+- [x] Un punto trovato resta visibile e compare nell'elenco della città; il pannello dice «x di N punti trovati» e quanti ne mancano
+- [x] I punti trovati sono ricordati nel browser di chi visita (tornando sul sito restano trovati)
+- [x] Nell'Editor tutti i punti restano sempre visibili
+- [x] Provato in locale a Lione: nascosti all'apertura e a distanza 40, Matumao compare a 22, l'altro punto (1,2 km) resta nascosto
+- [ ] Non provato dal vivo né su telefono
