@@ -106,5 +106,26 @@
    "en": "",
    "it": "Sbirrati da Trevor"
   }
+ },
+ {
+  "city": "marsiglia",
+  "date": "2025-03-02",
+  "id": "pmwrpqgf6s2g1",
+  "lat": 43.285499,
+  "lon": 5.351031,
+  "member": "soto",
+  "members": [
+   "soto"
+  ],
+  "photo": "data/photos/pmwrpqgf6s2g1.jpg?v=ad16bb92",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "SOTO Was Here"
+  }
  }
 ]
