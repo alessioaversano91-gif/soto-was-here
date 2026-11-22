@@ -22,6 +22,48 @@
  },
  {
   "city": "lione",
+  "date": "2023-10-28",
+  "id": "pmwrlbdnxjykx",
+  "lat": 45.762139,
+  "lon": 4.835136,
+  "member": "soto",
+  "members": [
+   "soto"
+  ],
+  "photo": "data/photos/pmwrlbdnxjykx.jpg?v=ee60daed",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "Lebanese food stop"
+  }
+ },
+ {
+  "city": "lione",
+  "date": "2023-10-28",
+  "id": "pmwrlfp3zh2zh",
+  "lat": 45.754378,
+  "lon": 4.84018,
+  "member": "soto",
+  "members": [
+   "soto"
+  ],
+  "photo": "data/photos/pmwrlfp3zh2zh.jpg?v=3f90becb",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "SOTO Was Here Sticker"
+  }
+ },
+ {
+  "city": "lione",
   "date": "2023-10-29",
   "id": "pmwjs30epeok5",
   "lat": 45.762639,
