@@ -246,3 +246,8 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Nell'Editor tutti i punti restano sempre visibili
 - [x] Provato in locale a Lione: nascosti all'apertura e a distanza 40, Matumao compare a 22, l'altro punto (1,2 km) resta nascosto
 - [ ] Non provato dal vivo né su telefono
+
+## Ricomincia la caccia (22 novembre)
+- [x] Nel pannello della città, quando si è trovato almeno un punto, compare «↺ Ricomincia la caccia». Chiede conferma e poi nasconde di nuovo tutti i punti trovati, in tutte le città
+- [x] Provato in locale: con 3 punti trovati (2 a Lione, 1 a Marsiglia) il contatore torna a «0 di 4», l'elenco si svuota e la memoria del browser è vuota
+- [ ] Non provato dal vivo né su telefono

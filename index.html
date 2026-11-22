@@ -6414,6 +6414,10 @@ const STR = {
     all: 'Tutti',
     empty: 'Nessun punto pubblicato in questa città.',
     hunt: 'I punti sono nascosti: zooma sulla mappa per scoprirli.',
+    resetHunt: 'Ricomincia la caccia',
+    resetAsk: 'Nascondere di nuovo tutti i punti trovati, in tutte le città?',
+    resetYes: 'Sì, ricomincia',
+    resetNo: 'Annulla',
     huntMore: n => n === 1 ? 'Ne manca ancora 1: continua a cercare.' : `Ne mancano ancora ${n}: continua a cercare.`,
     foundOf: (a, b) => b ? `${a} di ${b} ${b === 1 ? 'punto trovato' : 'punti trovati'}` : 'Nessun punto',
     clickToAdd: 'Clicca su un punto del diorama per aggiungere un elemento.',
@@ -6474,6 +6478,10 @@ const STR = {
     all: 'All',
     empty: 'No published points in this city yet.',
     hunt: 'The points are hidden: zoom in on the map to find them.',
+    resetHunt: 'Restart the hunt',
+    resetAsk: 'Hide all the points you found again, in every city?',
+    resetYes: 'Yes, restart',
+    resetNo: 'Cancel',
     huntMore: n => n === 1 ? '1 more to find: keep looking.' : `${n} more to find: keep looking.`,
     foundOf: (a, b) => b ? `${a} of ${b} ${b === 1 ? 'point found' : 'points found'}` : 'No points',
     clickToAdd: 'Click anywhere on the diorama to add an entry.',
@@ -6819,6 +6827,16 @@ class SotoWasHere extends React.Component {
   isNarrow() {
     const el = this.rootRef.current;
     return (el ? el.clientWidth : typeof innerWidth === 'undefined' ? 1200 : innerWidth) <= 860;
+  }
+  // Ricomincia la caccia: dimentica i punti trovati in tutte le citta (sono salvati solo nel browser di chi visita).
+  resetHunt() {
+    this.foundNow = new Set();
+    safeSet('soto-found:v1', []);
+    this.setState({
+      found: [],
+      sel: null,
+      askReset: false
+    });
   }
   select(p) {
     const w = this.pos(p);
@@ -7338,7 +7356,22 @@ class SotoWasHere extends React.Component {
       style: st("font-family:'Titan One',sans-serif;font-size:40px;line-height:1;-webkit-text-stroke:5px #6d36e0;paint-order:stroke fill;filter:drop-shadow(2px 3px 0 #000)")
     }, city.name[L]), /*#__PURE__*/React.createElement("div", {
       style: st('font-size:14px;color:#9a96a6')
-    }, s.loaded ? isEditor ? cnt(inCity.length) : S.foundOf(nFound, pubIn(s.city).length) : S.loadingPts)), panelOn && !isEditor && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    }, s.loaded ? isEditor ? cnt(inCity.length) : S.foundOf(nFound, pubIn(s.city).length) : S.loadingPts), s.loaded && !isEditor && s.found.length > 0 && (s.askReset ? /*#__PURE__*/React.createElement("div", {
+      style: st('display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:13px;color:#f1eff5')
+    }, S.resetAsk, /*#__PURE__*/React.createElement("button", {
+      onClick: () => this.resetHunt(),
+      style: st('height:30px;padding:0 12px;border-radius:8px;border:1px solid #a374f0;background:#6d36e0;color:#fff;font-size:13px;cursor:pointer')
+    }, S.resetYes), /*#__PURE__*/React.createElement("button", {
+      onClick: () => this.setState({
+        askReset: false
+      }),
+      style: st('height:30px;padding:0 12px;border-radius:8px;border:1px solid #2e2347;background:transparent;color:#f1eff5;font-size:13px;cursor:pointer')
+    }, S.resetNo)) : /*#__PURE__*/React.createElement("button", {
+      onClick: () => this.setState({
+        askReset: true
+      }),
+      style: st('align-self:flex-start;margin-top:6px;height:30px;padding:0 12px;border-radius:8px;border:1px solid #2e2347;background:transparent;color:#c9b8f0;font-size:13px;cursor:pointer')
+    }, "\u21BA ", S.resetHunt))), panelOn && !isEditor && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
       style: st('display:flex;gap:8px;align-items:center;padding:12px 18px;border-bottom:1px solid #2e2347;flex-wrap:wrap')
     }, /*#__PURE__*/React.createElement("button", {
       onClick: () => this.setState({
