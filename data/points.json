@@ -127,5 +127,26 @@
    "en": "",
    "it": "SOTO Was Here"
   }
+ },
+ {
+  "city": "marsiglia",
+  "date": "2025-03-03",
+  "id": "pmwrpugn14ad9",
+  "lat": 43.215437,
+  "lon": 5.345784,
+  "member": "alecio",
+  "members": [
+   "alecio"
+  ],
+  "photo": "data/photos/pmwrpugn14ad9.jpg?v=8fb16052",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "Pastis time"
+  }
  }
 ]
