@@ -2661,6 +2661,9 @@ class SotoWasHere extends React.Component {
     const city = CITIES.find((c) => c.id === s.city) || CITIES[0], cN = CITIES.indexOf(city) + 1;
     const mem = (id) => CREW.find((m) => m.id === id) || CREW[0];
     const tx = (o) => (o && (o[L] || o.it || o.en)) || '—';
+    // Titoli ripetuti nella stessa citta: «#1, #2…» in ordine di creazione (l'id cresce nel tempo), cosi un punto nuovo non sposta i numeri.
+    const dupN = {}; { const g = {}; s.points.forEach((q) => { const k = q.city + '|' + tx(q.title).trim().toLowerCase(); (g[k] = g[k] || []).push(q); }); Object.values(g).forEach((a) => { if (a.length > 1) a.slice().sort((x, y) => (x.id < y.id ? -1 : 1)).forEach((q, n) => { dupN[q.id] = n + 1; }); }); }
+    const ttl = (q) => tx(q.title) + (dupN[q.id] ? ' #' + dupN[q.id] : '');
     const fmt = (d) => { if (!d) return ''; const x = new Date(d + 'T12:00:00'); return isNaN(x) ? d : x.toLocaleDateString(L === 'it' ? 'it-IT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); };
     const cnt = (n) => `${n} ${n === 1 ? S.one : S.many}`;
     const pubIn = (cid) => s.points.filter((p) => p.city === cid && p.status === 'published');
@@ -2760,7 +2763,7 @@ class SotoWasHere extends React.Component {
               const ms = mems(p), m = ms[0], w = this.pos(p), dr = p.status === 'draft';
               return (
                 <div key={p.id} data-wx={w.x} data-wz={w.z} data-bob="1" data-pid={p.id} data-hide={!isEditor && s.sel !== p.id ? '1' : undefined} style={st('position:absolute;left:0;top:0;visibility:hidden')}>
-                  <button className="soto-mk" onClick={() => (isEditor ? this.edit(p) : this.select(p))} title={tx(p.title)} style={st(`position:absolute;left:0;bottom:0;transform:translateX(-50%) scale(${s.sel === p.id ? 1.25 : 1});transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;opacity:${dr ? 0.7 : 1}`)}>
+                  <button className="soto-mk" onClick={() => (isEditor ? this.edit(p) : this.select(p))} title={ttl(p)} style={st(`position:absolute;left:0;bottom:0;transform:translateX(-50%) scale(${s.sel === p.id ? 1.25 : 1});transform-origin:bottom center;display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;pointer-events:auto;opacity:${dr ? 0.7 : 1}`)}>
                     {dr && <span style={st('font-family:Silkscreen,monospace;font-size:10px;background:#0b0a0f;color:#f1eff5;border:1px dashed #a374f0;border-radius:4px;padding:1px 5px;margin-bottom:3px')}>{S.draft}</span>}
                     <span className="soto-beam" style={st(`color:${m.color}`)}></span>
                     {faceRow(ms, 44, 9, (q) => `3px solid ${q.color}`, `box-shadow:3px 3px 0 #000,0 0 16px ${m.color}`)}
@@ -2842,7 +2845,7 @@ class SotoWasHere extends React.Component {
                       <button key={p.id} className="soto-h3" onClick={() => this.select(p)} style={st(`display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;width:100%;padding:12px 18px;border:0;border-bottom:1px solid #1f1930;background:${s.sel === p.id ? '#231b38' : 'transparent'};color:#f1eff5;text-align:left;cursor:pointer`)}>
                         {faceSet(ms, 40, 8, 2)}
                         <span style={st('display:flex;flex-direction:column;gap:3px;min-width:0')}>
-                          <span style={st('font-weight:700;font-size:15px;line-height:1.25;text-wrap:pretty')}>{tx(p.title)}</span>
+                          <span style={st('font-weight:700;font-size:15px;line-height:1.25;text-wrap:pretty')}>{ttl(p)}</span>
                           <span style={st('font-size:12px;color:#9a96a6')}>{ms.map((q) => q.name).join(', ')} · {fmt(p.date)}</span>
                         </span>
                       </button>
@@ -2862,7 +2865,7 @@ class SotoWasHere extends React.Component {
                     <div key={p.id} style={st(`display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 18px;border-top:1px solid #1f1930;background:${d && d.id === p.id ? '#231b38' : 'transparent'}`)}>
                       {faceSet(ms, 36, 8, 2)}
                       <span style={st('display:flex;flex-direction:column;gap:3px;min-width:0')}>
-                        <span style={st('font-weight:700;font-size:14px;line-height:1.25')}>{tx(p.title)}</span>
+                        <span style={st('font-weight:700;font-size:14px;line-height:1.25')}>{ttl(p)}</span>
                         <span style={st('display:flex;gap:6px;align-items:center;font-size:12px;color:#9a96a6')}><span style={st(`font-family:Silkscreen,monospace;font-size:10px;padding:1px 5px;border-radius:4px;border:1px ${pub ? 'solid' : 'dashed'} #a374f0;color:${pub ? '#c4a3ff' : '#9a96a6'}`)}>{pub ? S.pub.toUpperCase() : S.draft}</span>{fmt(p.date)}</span>
                       </span>
                       <span style={st('display:flex;gap:4px')}>
@@ -2903,7 +2906,7 @@ class SotoWasHere extends React.Component {
                       {shown.length > 1 && <button onClick={() => go(1)} aria-label={L === 'it' ? 'Punto successivo' : 'Next point'} style={st(nb)}>›</button>}
                       <button onClick={() => this.setState({ sel: null })} aria-label={S.close} style={st(nb)}>×</button>
                     </div>
-                    <h2 style={st("margin:4px 0 0;font-family:'Titan One',sans-serif;font-weight:400;font-size:26px;line-height:1.1;text-wrap:pretty")}>{tx(selP.title)}</h2>
+                    <h2 style={st("margin:4px 0 0;font-family:'Titan One',sans-serif;font-weight:400;font-size:26px;line-height:1.1;text-wrap:pretty")}>{ttl(selP)}</h2>
                     <p style={st('margin:0;font-size:15px;line-height:1.55;color:#d6d2de;white-space:pre-wrap;text-wrap:pretty')}>{(selP.text && (selP.text[L] || selP.text.it || selP.text.en)) || ''}</p>
                   </div>
                 </article>

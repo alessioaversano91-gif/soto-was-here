@@ -251,3 +251,7 @@ Aggiornata il 12 novembre 2026. Sito: https://alessioaversano91-gif.github.io/so
 - [x] Nel pannello della città, quando si è trovato almeno un punto, compare «↺ Ricomincia la caccia». Chiede conferma e poi nasconde di nuovo tutti i punti trovati, in tutte le città
 - [x] Provato in locale: con 3 punti trovati (2 a Lione, 1 a Marsiglia) il contatore torna a «0 di 4», l'elenco si svuota e la memoria del browser è vuota
 - [ ] Non provato dal vivo né su telefono
+
+## Titoli ripetuti numerati (23 novembre)
+- [x] Se in una città più punti hanno lo stesso titolo, il sito aggiunge «#1, #2…» (mappa, elenco, scheda). Numeri in ordine di inserimento nell'artifact: un punto nuovo prende il numero successivo e non sposta gli altri. I titoli salvati non cambiano
+- [x] Provato in locale a Marsiglia: sei «SOTO Was Here» numerati da #1 a #6, nessun errore
