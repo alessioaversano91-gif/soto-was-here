@@ -214,6 +214,27 @@
  },
  {
   "city": "marsiglia",
+  "date": "2025-02-03",
+  "id": "pmwtlpmvqj42z",
+  "lat": 43.215837,
+  "lon": 5.345135,
+  "member": "soto",
+  "members": [
+   "soto"
+  ],
+  "photo": "data/photos/pmwtlpmvqj42z.jpg?v=8e3b4d8e",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "SOTO Was Here"
+  }
+ },
+ {
+  "city": "marsiglia",
   "date": "2025-02-04",
   "id": "pmwrrn0mqy66l",
   "lat": 43.284582,
