@@ -109,6 +109,48 @@
  },
  {
   "city": "marsiglia",
+  "date": "2025-02-01",
+  "id": "pmwtlidb3hduj",
+  "lat": 43.293166,
+  "lon": 5.372035,
+  "member": "soto",
+  "members": [
+   "soto"
+  ],
+  "photo": "data/photos/pmwtlidb3hduj.jpg?v=4896a4f3",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "SOTO Was Here"
+  }
+ },
+ {
+  "city": "marsiglia",
+  "date": "2025-02-01",
+  "id": "pmwtljo5tcbzf",
+  "lat": 43.293291,
+  "lon": 5.372051,
+  "member": "soto",
+  "members": [
+   "soto"
+  ],
+  "photo": "data/photos/pmwtljo5tcbzf.jpg?v=0f789289",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "SOTO Was Here"
+  }
+ },
+ {
+  "city": "marsiglia",
   "date": "2025-02-02",
   "id": "pmwt8yy4m7zag",
   "lat": 43.289758,
@@ -126,6 +168,27 @@
   "title": {
    "en": "",
    "it": "SOTO Was Here"
+  }
+ },
+ {
+  "city": "marsiglia",
+  "date": "2025-02-02",
+  "id": "pmwtllpxt7azv",
+  "lat": 43.290274,
+  "lon": 5.355044,
+  "member": "alecio",
+  "members": [
+   "alecio"
+  ],
+  "photo": "data/photos/pmwtllpxt7azv.jpg?v=2b01c9d8",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "Beirut beer"
   }
  },
  {
