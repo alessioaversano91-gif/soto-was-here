@@ -109,6 +109,48 @@
  },
  {
   "city": "marsiglia",
+  "date": "2025-02-02",
+  "id": "pmwt8yy4m7zag",
+  "lat": 43.289758,
+  "lon": 5.366288,
+  "member": "soto",
+  "members": [
+   "soto"
+  ],
+  "photo": "data/photos/pmwt8yy4m7zag.jpg?v=cae68007",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "SOTO Was Here"
+  }
+ },
+ {
+  "city": "marsiglia",
+  "date": "2025-02-03",
+  "id": "pmwt8wj4gj4xk",
+  "lat": 43.285206,
+  "lon": 5.351319,
+  "member": "lollo",
+  "members": [
+   "lollo"
+  ],
+  "photo": "data/photos/pmwt8wj4gj4xk.jpg?v=6af89ecf",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "Zio Michele a Marsiglia '87"
+  }
+ },
+ {
+  "city": "marsiglia",
   "date": "2025-02-04",
   "id": "pmwrrn0mqy66l",
   "lat": 43.284582,
@@ -126,6 +168,27 @@
   "title": {
    "en": "",
    "it": "SOTO Was Here"
+  }
+ },
+ {
+  "city": "marsiglia",
+  "date": "2025-02-04",
+  "id": "pmwt8qpztktqh",
+  "lat": 43.303821,
+  "lon": 5.40697,
+  "member": "seba",
+  "members": [
+   "seba"
+  ],
+  "photo": "data/photos/pmwt8qpztktqh.jpg?v=2f6f78b3",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "Driiiiiin driiiiin"
   }
  },
  {
