@@ -84,6 +84,51 @@
   }
  },
  {
+  "city": "mantova",
+  "date": "2024-06-07",
+  "id": "pmwv1t2r3pi4s",
+  "lat": 45.156166,
+  "lon": 10.794689,
+  "member": "seba",
+  "members": [
+   "seba"
+  ],
+  "photo": "data/photos/pmwv1t2r3pi4s.jpg?v=7202ff67",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "Momento curiosità"
+  }
+ },
+ {
+  "city": "mantova",
+  "date": "2024-06-08",
+  "id": "pmwv1purxqv4v",
+  "lat": 45.147318,
+  "lon": 10.786671,
+  "member": "albi",
+  "members": [
+   "albi",
+   "seba",
+   "lollo",
+   "alecio"
+  ],
+  "photo": "data/photos/pmwv1purxqv4v.jpg?v=1892ef5c",
+  "status": "published",
+  "text": {
+   "en": "",
+   "it": ""
+  },
+  "title": {
+   "en": "",
+   "it": "SOTO Team Was Here"
+  }
+ },
+ {
   "city": "marsiglia",
   "date": "2025-02-01",
   "id": "pmwgh2nsozm2o",
